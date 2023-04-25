@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,20 +9,41 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;700&display=swap" rel="stylesheet">
 
     
-  <script type="module" crossorigin src="./assets/index-c3a0e940.js"></script>
-  <link rel="stylesheet" href="./assets/index-7e07a696.css">
+  <script type="module" crossorigin src="./assets/index-9d36828a.js"></script>
+  <link rel="stylesheet" href="./assets/index-0d63a18a.css">
 </head>
 <body>
     <canvas class="webgl"></canvas>
-    <ul class="nav">
-        <li><a href="#" class="above">View from Above</a></li>
-        <li><a href="#" class="level">View from Level</a></li>
-        <li><a href="#" class="sweep">Camera Sweep</a></li>
-        <li><a href="#" class="replaceModel" data-model="0">Tank</a></li>
-        <li><a href="#" class="replaceModel" data-model="1">M1126</a></li>
-        <li><a href="#" class="replaceModel" data-model="2">F-14</a></li>
-        <li><a href="#" class="replaceModel" data-model="3">HIND</a></li>
-    </ul>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary nav">
+        <div class="container-fluid">
+            <a class="navbar-brand equipment-name" href="#">M1A1</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a href="#" class="nav-link above">View from Above</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link level">View from Level</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link sweep">Camera Sweep</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link filter" data-category="TURRET">Turret</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link filter" data-category="TRACKS">Tracks</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link replaceModel" data-model="0">Tank</a></li>
+                    <!-- <li class="nav-item"><a href="#" class="nav-link replaceModel" data-model="1">M1126</a></li> -->
+                    <li class="nav-item"><a href="#" class="nav-link replaceModel" data-model="2">F-14</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link replaceModel" data-model="3">HIND</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- <ul class="nav">
+        <li><a href="#" class="btn btn-primary above">View from Above</a></li>
+        <li><a href="#" class="btn btn-primary level">View from Level</a></li>
+        <li><a href="#" class="btn btn-primary sweep">Camera Sweep</a></li>
+        <li><a href="#" class="btn btn-primary replaceModel" data-model="0">Tank</a></li>
+        <li><a href="#" class="btn btn-primary replaceModel" data-model="1">M1126</a></li>
+        <li><a href="#" class="btn btn-primary replaceModel" data-model="2">F-14</a></li>
+        <li><a href="#" class="btn btn-primary replaceModel" data-model="3">HIND</a></li>
+    </ul> -->
     
 </body>
 </html>
