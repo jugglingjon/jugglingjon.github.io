@@ -85,3 +85,22 @@ export function solveTwoBone(base, target, lengthA, lengthB, pole, joint, tip) {
   bend.normalize();
   joint.copy(base).addScaledVector(toTarget, along).addScaledVector(bend, out);
 }
+
+const restDir = new THREE.Vector3();
+const lean = new THREE.Vector3();
+
+// Swings a bone about its root (a saddle joint, like the thumb's CMC) by
+// `angle` radians, its end heading off towards `towards` (taken square to the
+// bone). Keeps the bone's length; writes its new end to `out`.
+export function swingBone(root, restEnd, towards, angle, out) {
+  restDir.subVectors(restEnd, root);
+  const length = restDir.length();
+  restDir.divideScalar(length);
+  lean.copy(towards).addScaledVector(restDir, -towards.dot(restDir));
+  if (lean.lengthSq() < 1e-12) return out.copy(restEnd);
+  lean.normalize();
+  return out
+    .copy(root)
+    .addScaledVector(restDir, Math.cos(angle) * length)
+    .addScaledVector(lean, Math.sin(angle) * length);
+}

@@ -65,7 +65,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 ## The arm and remote
 
 - **The mapping:** the middle 80% of the screen maps onto the remote's face, the way you see it. Up is towards the tip (POWER, then the number pad), down is the VOL and CH rockers, and left and right go across. The nearest button is the target, with a little hysteresis so the thumb doesn't flicker on a boundary (`src/viewmodel/thumbing.js`). The middle of the screen is **8**, and the bottom right is **CH ▲ / ▼**.
-- **The thumb** is a two-bone chain solved with IK every frame. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The arm also drifts a few centimetres after the pointer, and the remote's tip swings that way a little while it stays aimed at the set. The flannel sleeve comes in from the bottom-right corner.
+- **The thumb** is three bones, solved every frame. First the CMC joint by the wrist swings the metacarpal: as you reach across the remote it carries the big knuckle up and over the face, and the fleshy pad at the base of the thumb stretches with it. Then the MCP and IP joints bend (two-bone IK) to put the pad on the button. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The arm also drifts a few centimetres after the pointer, and the remote's tip swings that way a little while it stays aimed at the set. The flannel sleeve comes in from the bottom-right corner.
 - **Presses:** a click goes to `Remote.hold`. The remote fires `press` immediately, and `ArmRig` plays the thumb press: down 60 ms, hold, up 100 ms. The button sinks, the IR LED blinks, and the TV reacts after the IR latency. Keys, scroll and the lab remote go through the same `Remote`, so the thumb presses for those too.
 - **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, and scales it. It also sets how far the arm follows the pointer (**Follow pointer**) and how firmly the thumb settles onto the target. You can also switch the highlight off there.
 - When the pointer leaves the page, the arm lowers; it comes back up when the pointer returns. On touch screens a tap aims and presses in one go.
@@ -138,8 +138,8 @@ src/
   viewmodel/               your arm and the remote in your hand
     ArmRig.js              places the remote, targets buttons, plays presses, arm IK and sleeve
     RemoteModel.js         the remote: body, buttons with labels, highlight, press travel, IR LED
-    Hand.js                right hand: palm, curled fingers, IK thumb, grip slide
-    thumbing.js            button layout, pointer → button, two-bone IK (+ thumbing.test.js, Hand.test.js)
+    Hand.js                right hand: palm, curled fingers, three-joint thumb (CMC swing + IK), grip slide
+    thumbing.js            button layout, pointer → button, two-bone IK, bone swing (+ thumbing.test.js, Hand.test.js)
   camera/
     SeatedCamera.js        the viewer: seat, framing, breathing, screen rect
     framing.js             fitVerticalFov, projectBounds (+ framing.test.js)

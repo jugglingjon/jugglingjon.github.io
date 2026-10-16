@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { FIELD, REMOTE_BUTTONS, nearestButton, pointerToField, solveTwoBone } from './thumbing.js';
+import { FIELD, REMOTE_BUTTONS, nearestButton, pointerToField, solveTwoBone, swingBone } from './thumbing.js';
 import { BUTTONS } from '../tv/Remote.js';
 
 describe('remote layout', () => {
@@ -68,5 +68,23 @@ describe('solveTwoBone', () => {
     solveTwoBone(base, new THREE.Vector3(5, 0, 0), 1, 1, new THREE.Vector3(0, 1, 0), joint, tip);
     expect(tip.length()).toBeCloseTo(2, 3);
     expect(joint.distanceTo(base)).toBeCloseTo(1);
+  });
+});
+
+describe('swingBone', () => {
+  const root = new THREE.Vector3();
+  const rest = new THREE.Vector3(0, 0, 2);
+  const end = new THREE.Vector3();
+
+  it('stays put at no angle', () => {
+    swingBone(root, rest, new THREE.Vector3(1, 0, 0), 0, end);
+    expect(end.distanceTo(rest)).toBeLessThan(1e-9);
+  });
+
+  it('swings the end towards the given direction, keeping the length', () => {
+    swingBone(root, rest, new THREE.Vector3(1, 0, 1), Math.PI / 6, end);
+    expect(end.length()).toBeCloseTo(2);
+    expect(end.x).toBeCloseTo(1);
+    expect(end.y).toBeCloseTo(0);
   });
 });

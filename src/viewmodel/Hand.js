@@ -1,13 +1,18 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { solveTwoBone } from './thumbing.js';
+import { solveTwoBone, swingBone } from './thumbing.js';
 
 // A right hand gripping the remote, built in remote-local space (x across,
 // y up out of the button face, +z towards the TV; +x is on your left). The
 // palm wraps the bottom-right edge, the fingers curl under and up round
-// your-left edge, and the thumb reaches over the face from the right; it's a two-bone chain solved
-// with IK every frame. The whole grip can slide along the remote (`slide`),
-// the way you shuffle it in your hand to reach the far buttons.
+// your-left edge, and the thumb reaches over the face from the right.
+//
+// The thumb is three bones, solved every frame. The metacarpal swings from
+// the CMC joint down by the wrist, carrying the big knuckle (MCP) up and over
+// the face as you reach across it, and the fleshy pad at its base stretches
+// with it. Then the MCP and IP joints bend (two-bone IK) to put the pad on
+// the target. The whole grip can also slide along the remote (`slide`), the
+// way you shuffle it in your hand to reach the far end.
 
 const UP = new THREE.Vector3(0, 1, 0);
 const basis = new THREE.Matrix4();
@@ -30,11 +35,21 @@ function align(mesh, a, b, up = UP) {
 const v = (x, y, z) => new THREE.Vector3(x, y, z);
 
 const THUMB = {
-  base: v(-0.034, 0.006, -0.03), // the big knuckle, beside the remote's edge
-  pole: v(-0.044, 0.06, -0.04), // the middle joint arches up and back
+  cmc: v(-0.046, -0.016, -0.082), // where the thumb meets the wrist
+  base: v(-0.034, 0.006, -0.03), // the big knuckle at rest, beside the remote's edge
+  pole: v(-0.044, 0.06, -0.04), // the middle joint arches up and back (moves with the knuckle)
   lengths: [0.04, 0.034],
   radii: [0.0105, 0.0095],
+  // Reaching across the face, the CMC swings the knuckle up and over
+  // (`oppose`): from `swing[0]` radians for a target `across[0]` across from
+  // the knuckle (the near column; a little back and down, out of the way) to
+  // `swing[1]` at `across[1]` (the far column).
+  oppose: v(0.55, 0.83, 0),
+  across: [0.02, 0.05],
+  swing: [-0.1, 0.32],
 };
+const THENAR_ROOT = v(-0.052, -0.02, -0.09); // the fleshy pad starts in the palm…
+const THENAR_ALONG = 0.5; // …and runs to this far up the metacarpal
 
 export class Hand {
   constructor() {
@@ -74,19 +89,22 @@ export class Hand {
       segment(second, tip, r * 0.88);
     });
 
-    // The fleshy pad at the base of the thumb, out to its big knuckle.
-    segment(v(-0.05, -0.015, -0.088), v(-0.04, -0.003, -0.052), 0.016);
-    segment(v(-0.04, -0.003, -0.052), THUMB.base, 0.0122);
-
+    // Thumb: metacarpal (CMC → MCP) with the fleshy pad beneath it, then the
+    // two phalanges.
     const [la, lb] = THUMB.lengths;
     const [ra, rb] = THUMB.radii;
+    this.metacarpal = add(new THREE.Mesh(new THREE.CapsuleGeometry(0.0122, THUMB.cmc.distanceTo(THUMB.base), 6, 12), skin));
+    this.thenarEnd = new THREE.Vector3().lerpVectors(THUMB.cmc, THUMB.base, THENAR_ALONG);
+    this.thenar = add(new THREE.Mesh(new THREE.CapsuleGeometry(0.016, THENAR_ROOT.distanceTo(this.thenarEnd), 6, 12), skin));
     this.proximal = add(new THREE.Mesh(new THREE.CapsuleGeometry(ra, la, 6, 12), skin));
     this.distal = add(new THREE.Mesh(new THREE.CapsuleGeometry(rb, lb, 6, 12), skin));
     const thumbNail = new THREE.Mesh(new RoundedBoxGeometry(0.0105, 0.012, 0.002, 2, 0.0009), nail);
     thumbNail.position.set(0, lb / 2 - 0.003, rb * 0.9);
     this.distal.add(thumbNail);
 
-    this.joint = new THREE.Vector3();
+    this.knuckle = THUMB.base.clone(); // MCP, moved by the CMC
+    this.pole = new THREE.Vector3();
+    this.joint = new THREE.Vector3(); // IP
     this.tip = new THREE.Vector3();
     this.local = new THREE.Vector3();
     this.wristRest = v(-0.043, -0.03, -0.1); // where the forearm meets the hand
@@ -107,12 +125,24 @@ export class Hand {
   }
 
   // Bend the thumb so its tip (centre of the pad) reaches `target`, given in
-  // remote space.
+  // remote space: swing the metacarpal from the CMC, then bend the MCP and IP.
   setThumbTip(target) {
     const [la, lb] = THUMB.lengths;
     this.local.copy(target).setZ(target.z - this.group.position.z);
-    solveTwoBone(THUMB.base, this.local, la, lb, THUMB.pole, this.joint, this.tip);
-    align(this.proximal, THUMB.base, this.joint);
+    const [near, far] = THUMB.across;
+    const across = THREE.MathUtils.clamp((this.local.x - THUMB.base.x - near) / (far - near), 0, 1);
+    swingBone(THUMB.cmc, THUMB.base, THUMB.oppose, THREE.MathUtils.lerp(...THUMB.swing, across), this.knuckle);
+    this.pole.subVectors(THUMB.pole, THUMB.base).add(this.knuckle);
+    solveTwoBone(this.knuckle, this.local, la, lb, this.pole, this.joint, this.tip);
+    align(this.metacarpal, THUMB.cmc, this.knuckle);
+    this.thenarEnd.lerpVectors(THUMB.cmc, this.knuckle, THENAR_ALONG);
+    align(this.thenar, THENAR_ROOT, this.thenarEnd);
+    align(this.proximal, this.knuckle, this.joint);
     align(this.distal, this.joint, this.tip);
+  }
+
+  // Where the CMC sits, in hand space (fixed; the knuckle moves).
+  static get cmc() {
+    return THUMB.cmc;
   }
 }
