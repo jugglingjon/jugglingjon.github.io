@@ -45,8 +45,10 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   roomFolder.add(r, 'neon', 0, 3, 0.05).name('Neon sign');
   roomFolder.add(r, 'flicker').name('Neon flicker');
   roomFolder.add(r, 'blinds', -1.5, 1.5, 0.01).name('Blind tilt');
-  roomFolder.add(r, 'dust', 0, 3, 0.05).name('Dust');
-  roomFolder.add(r, 'smoke').name('Cigarette smoke');
+  roomFolder.add(r, 'dust', 0, 3, 0.05).name('Dust brightness');
+  roomFolder.add(r, 'dustSize', 0.2, 5, 0.05).name('Dust size');
+  roomFolder.add(r, 'tableReflectivity', 0, 1, 0.01).name('Table reflectivity');
+  roomFolder.add(r, 'tableGloss', 0, 1, 0.01).name('Table gloss');
   roomFolder.add(r, 'rain').name('Rain');
 
   const tuner = gui.addFolder('Tuner').close();

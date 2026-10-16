@@ -2,7 +2,7 @@
 
 A web and design portfolio set in a dingy 1980s apartment. You stare at an old CRT TV, raise a chunky remote, and every channel is a project.
 
-**Status: Phase 3, the apartment.** You now watch from the couch in a greybox 1980s living room: wood paneling, a lamp, a coffee table with an ashtray and a listings magazine, and neon from across the street striping the room through the blinds. The camera keeps the TV well framed on any screen shape and turns a little towards your pointer. Underneath is the Phase 1 screen and the Phase 2 tuner, remote and sound. Procedural models and a clickable remote stand in for the final art.
+**Status: Phase 3, the apartment.** You now watch from the couch in a greybox 1980s living room: wood paneling, a lamp, a varnished coffee table with a listings magazine, and neon from across the street striping the room through the blinds. The camera keeps the TV well framed on any screen shape and turns a little towards your pointer. Underneath is the Phase 1 screen and the Phase 2 tuner, remote and sound. Procedural models and a clickable remote stand in for the final art.
 
 ## Getting started
 
@@ -52,7 +52,8 @@ The set starts switched off. Press <kbd>P</kbd> or the red **POWER** button on t
 
 - **Layout:** everything is placed from `src/world/layout.js`. The room, the seated camera and the painted glass reflections all read from it, so moving the lamp moves its reflection too.
 - **Light:** the TV (its picture's average colour, see `TVGlow`), two warm lamps, the hallway bulb, and a pink neon sign across the street. The neon is the one shadow-casting light, and the blinds are real slats, so it throws genuine stripes across the floor, table and TV. **Room → Blind tilt** changes them.
-- **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, smoke curls from the cigarette, the neon buzzes and stutters, rain runs down the window, and the VCR blinks 12:00.
+- **Tuning:** the Room panel sets lamps, neon, blind tilt, dust brightness and size, and the coffee table's varnish. **Table reflectivity** is how strongly it reflects the TV and lamps; **Table gloss** is how sharp those reflections are.
+- **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon buzzes and stutters, rain runs down the window, and the VCR blinks 12:00.
 - **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath and a small head turn towards the pointer. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and, in Phase 4, the remote.
 - **Screen rect:** `seated.screenRect(tv.screen)` gives the TV glass's on-screen bounds in normalised coordinates every frame. Phase 4 maps the pointer against it. **Camera → Show screen rect** draws it, with the engage zone around it.
 - **Reduced motion:** with `prefers-reduced-motion`, breathing stops and the head turn shrinks.
@@ -129,9 +130,9 @@ src/
     layout.js              where everything is
     Room.js                walls, floor, ceiling, door, lights; assembles the rest
     furniture.js           TV stand + VCR + tapes, coffee table, couch, end table, lamps
-    props.js               ashtray, beer can, magazines, plant, framed print
+    props.js               beer can, magazines, plant, framed print
     windowView.js          window, real blind slats, rain glass, the street and its neon
-    atmosphere.js          dust motes, cigarette smoke, rain shader
+    atmosphere.js          dust motes, rain shader
     TV.js                  ~20" woodgrain set: fascia, dials, rabbit ears
     TVGlow.js              screen-coloured room light
     screenGeometry.js      curved (spherical cap) glass

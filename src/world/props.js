@@ -5,37 +5,6 @@ import { createCanTexture, createMagazineTexture, createPrintTexture, seededRand
 // Small set dressing. Each builder returns a group at the origin (sitting on
 // y = 0), plus any anchor points other systems need.
 
-// Glass ashtray with a cigarette left burning on the rim.
-export function createAshtray() {
-  const group = new THREE.Group();
-  const glass = new THREE.MeshStandardMaterial({ color: '#7d9c8c', roughness: 0.08, transparent: true, opacity: 0.55 });
-  const profile = [[0, 0], [0.065, 0], [0.07, 0.006], [0.072, 0.026], [0.062, 0.028], [0.05, 0.012], [0, 0.012]].map(([x, y]) => new THREE.Vector2(x, y));
-  place(group, new THREE.LatheGeometry(profile, 32), glass, 0, 0, 0, { cast: false });
-
-  const paper = new THREE.MeshStandardMaterial({ color: '#ece6d8', roughness: 0.8 });
-  const filter = new THREE.MeshStandardMaterial({ color: '#c8843a', roughness: 0.8 });
-  const butt = new THREE.CylinderGeometry(0.004, 0.004, 0.025, 8);
-  [[0.015, 0.02, 1.2], [-0.02, -0.01, 2.4]].forEach(([x, z, rot]) => {
-    const b = place(group, butt, filter, x, 0.016, z);
-    b.rotation.set(Math.PI / 2, 0, rot);
-  });
-
-  // The lit one rests across the rim, ember outwards.
-  const cigarette = new THREE.Group();
-  cigarette.position.set(0.06, 0.03, 0.01);
-  cigarette.rotation.set(0, 0.3, -0.08);
-  group.add(cigarette);
-  const stick = place(cigarette, new THREE.CylinderGeometry(0.004, 0.004, 0.07, 8), paper, 0.02, 0, 0);
-  stick.rotation.z = Math.PI / 2;
-  const tip = place(cigarette, new THREE.CylinderGeometry(0.004, 0.004, 0.022, 8), filter, -0.026, 0, 0);
-  tip.rotation.z = Math.PI / 2;
-  const glow = new THREE.MeshStandardMaterial({ color: '#3a1205', emissive: '#ff4a10', emissiveIntensity: 2.5 });
-  const ember = place(cigarette, new THREE.SphereGeometry(0.0045, 8, 6), glow, 0.056, 0, 0, { cast: false });
-
-  // The smoke rises from the ember; read its world position once placed.
-  return { group, ember };
-}
-
 export function createBeerCan() {
   const group = new THREE.Group();
   const label = new THREE.MeshStandardMaterial({ map: createCanTexture(), metalness: 0.7, roughness: 0.35 });

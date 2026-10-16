@@ -60,16 +60,20 @@ export function createTVStand(height) {
   return { group, vcrDisplay };
 }
 
+// The top is varnished: a clear coat over the wood, so it can pick up the TV's
+// glow and the lamps. Returns `surface` so its reflectivity can be tuned.
 export function createCoffeeTable({ width, depth, height }) {
   const group = new THREE.Group();
-  const wood = new THREE.MeshStandardMaterial({ map: createWoodTexture({ base: '#5a3519', seed: 41 }), roughness: 0.35 });
-  place(group, box(width, 0.04, depth, 0.012), wood, 0, height - 0.02, 0);
+  const grain = createWoodTexture({ base: '#5a3519', seed: 41 });
+  const wood = new THREE.MeshStandardMaterial({ map: grain, roughness: 0.45 });
+  const surface = new THREE.MeshPhysicalMaterial({ map: grain, roughness: 0.35, clearcoat: 0.5, clearcoatRoughness: 0.2 });
+  place(group, box(width, 0.04, depth, 0.012), surface, 0, height - 0.02, 0);
   place(group, box(width - 0.12, 0.02, depth - 0.12), wood, 0, 0.12, 0);
   const leg = new THREE.CylinderGeometry(0.022, 0.014, height - 0.04, 10);
   for (const sx of [-1, 1]) {
     for (const sz of [-1, 1]) place(group, leg, wood, sx * (width / 2 - 0.07), (height - 0.04) / 2, sz * (depth / 2 - 0.07));
   }
-  return { group, top: height };
+  return { group, top: height, surface };
 }
 
 // Boxy three-seater in rust corduroy. Faces −z (towards the TV).

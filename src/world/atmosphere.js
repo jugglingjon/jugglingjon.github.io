@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import common from '../screen/shaders/common.glsl?raw';
 
 // Ambient motion that keeps the room alive while you sit still.
 
@@ -27,6 +26,7 @@ export class DustMotes {
       uniforms: {
         uTime: { value: 0 },
         uScale: { value: 500 },
+        uSize: { value: 1 },
         uOpacity: { value: 1 },
         uTvColor: { value: new THREE.Color() },
         uTvLevel: { value: 0 },
@@ -38,6 +38,7 @@ export class DustMotes {
         attribute float aSeed;
         uniform float uTime;
         uniform float uScale;
+        uniform float uSize;
         uniform vec3 uBeamOrigin;
         uniform vec3 uBeamDir;
         varying float vGlow;
@@ -51,7 +52,7 @@ export class DustMotes {
           vec4 world = modelMatrix * vec4(p, 1.0);
           vec4 mv = viewMatrix * world;
           gl_Position = projectionMatrix * mv;
-          gl_PointSize = uScale * (0.002 + 0.004 * fract(aSeed * 7.31)) / max(0.1, -mv.z);
+          gl_PointSize = uScale * uSize * (0.002 + 0.004 * fract(aSeed * 7.31)) / max(0.1, -mv.z);
           // Brightest on the beam's axis; the beam widens and dims with distance.
           vec3 rel = world.xyz - uBeamOrigin;
           float along = dot(rel, uBeamDir);
@@ -83,78 +84,15 @@ export class DustMotes {
     this.points.frustumCulled = false;
   }
 
-  update(time, { tvColor, tvLevel, pixelScale, opacity }) {
+  update(time, { tvColor, tvLevel, pixelScale, opacity, size = 1 }) {
     const u = this.material.uniforms;
     u.uTime.value = time;
+    u.uSize.value = size;
     u.uTvColor.value.copy(tvColor);
     u.uTvLevel.value = tvLevel;
     u.uScale.value = pixelScale;
     u.uOpacity.value = opacity;
     this.points.visible = opacity > 0;
-  }
-}
-
-// Smoke curling up from the cigarette: a camera-facing card with rising noise.
-export class Smoke {
-  constructor({ width = 0.3, height = 0.8 } = {}) {
-    const geometry = new THREE.PlaneGeometry(width, height);
-    geometry.translate(0, height / 2, 0);
-    this.material = new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      uniforms: {
-        uTime: { value: 0 },
-        uColor: { value: new THREE.Color() },
-        uOpacity: { value: 0.5 },
-      },
-      vertexShader: /* glsl */ `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader:
-        common +
-        /* glsl */ `
-        uniform float uTime;
-        uniform vec3 uColor;
-        uniform float uOpacity;
-        varying vec2 vUv;
-        float fbm(vec2 p) {
-          float sum = 0.0;
-          float amp = 0.5;
-          for (int i = 0; i < 4; i++) {
-            sum += amp * valueNoise(p);
-            p *= 2.03;
-            amp *= 0.5;
-          }
-          return sum;
-        }
-        void main() {
-          vec2 uv = vUv;
-          float rise = uTime * 0.1;
-          float sway = (fbm(vec2(uv.y * 2.5 - rise * 1.5, 3.1)) - 0.5) * 0.9 * uv.y;
-          float width = mix(0.03, 0.32, pow(uv.y, 0.8));
-          float x = (uv.x - 0.5 - sway) / width;
-          float wisps = fbm(vec2(uv.x * 5.0 + sway * 3.0, uv.y * 4.0 - rise * 4.0));
-          float a = exp(-x * x * 2.5) * smoothstep(0.0, 0.05, uv.y) * smoothstep(1.0, 0.35, uv.y) * smoothstep(0.25, 0.75, wisps);
-          gl_FragColor = vec4(uColor, a * uOpacity);
-          #include <colorspace_fragment>
-        }
-      `,
-    });
-    this.mesh = new THREE.Mesh(geometry, this.material);
-    this.mesh.renderOrder = 2;
-  }
-
-  update(time, camera, color) {
-    this.material.uniforms.uTime.value = time;
-    this.material.uniforms.uColor.value.copy(color);
-    // Turn to face the camera around the vertical axis only, so it still rises.
-    const p = this.mesh.position;
-    this.mesh.rotation.y = Math.atan2(camera.position.x - p.x, camera.position.z - p.z);
   }
 }
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DustMotes, Smoke } from './atmosphere.js';
+import { DustMotes } from './atmosphere.js';
 import {
   createCoffeeTable,
   createCouch,
@@ -9,7 +9,7 @@ import {
   createTVStand,
   place,
 } from './furniture.js';
-import { createAshtray, createBeerCan, createMagazines, createPlant, createPrint } from './props.js';
+import { createBeerCan, createMagazines, createPlant, createPrint } from './props.js';
 import { createCarpetTexture, createCeilingTexture, createPanelingTexture, createRugTexture, createWallpaperTexture } from './textures.js';
 import { createWindow, neonFlicker } from './windowView.js';
 import { COFFEE_TABLE, COUCH, DOOR, END_TABLE, EYE, FLOOR_LAMP, NEON, PLANT, PRINT, ROOM, RUG, STAND, TABLE_LAMP, WINDOW } from './layout.js';
@@ -21,7 +21,9 @@ export const ROOM_DEFAULTS = {
   flicker: true,
   blinds: -0.9, // slats tipped down into the room, letting the street light in
   dust: 1,
-  smoke: true,
+  dustSize: 1,
+  tableReflectivity: 0.35, // 0 = dull oiled wood, 1 = glassy lacquer
+  tableGloss: 0.5, // how sharp the reflections are
   rain: true,
 };
 
@@ -64,7 +66,7 @@ function wall({ material, trim, from, to, height, tile, opening }) {
 
 // The apartment: a greybox stand-in for the Phase 5 art pass, laid out from
 // layout.js. Lit by the TV, two lamps, and a neon sign shining in through the
-// blinds; dust, smoke, rain and neon flicker keep it alive.
+// blinds; dust, rain and neon flicker keep it alive.
 export class Room {
   constructor({ env }) {
     this.settings = { ...ROOM_DEFAULTS };
@@ -84,12 +86,6 @@ export class Room {
       beamDir: new THREE.Vector3(0, 0.1, 1),
     });
     scene.add(this.dust.points);
-
-    this.smoke = new Smoke();
-    scene.updateMatrixWorld(true);
-    this.ashtray.ember.getWorldPosition(this.smoke.mesh.position);
-    scene.add(this.smoke.mesh);
-    this.smokeColor = new THREE.Color();
   }
 
   buildShell() {
@@ -187,6 +183,7 @@ export class Room {
     const table = createCoffeeTable(COFFEE_TABLE);
     table.group.position.copy(COFFEE_TABLE.position);
     scene.add(table.group);
+    this.tableSurface = table.surface;
 
     // Set dressing on the far half of the table, where it's in shot.
     const onTable = (object, dx, dz, rotation = 0) => {
@@ -194,8 +191,6 @@ export class Room {
       object.rotation.y = rotation;
       scene.add(object);
     };
-    this.ashtray = createAshtray();
-    onTable(this.ashtray.group, 0.28, -0.08, 0.4);
     onTable(createBeerCan().group, -0.33, -0.13);
     this.magazines = createMagazines();
     onTable(this.magazines.group, -0.03, -0.04, 0.3);
@@ -263,7 +258,7 @@ export class Room {
     this.dust.material.uniforms.uBeamDir.value.copy(EYE).sub(origin).normalize();
   }
 
-  update(time, { camera, tvColor, tvLevel, pixelScale }) {
+  update(time, { tvColor, tvLevel, pixelScale }) {
     const s = this.settings;
 
     const level = s.flicker ? neonFlicker(time) : 1;
@@ -280,16 +275,13 @@ export class Room {
     this.shades.forEach((m) => (m.emissiveIntensity = 1.6 * lamp));
 
     this.vcrDisplay.visible = time % 1 < 0.5;
-    this.dust.update(time, { tvColor, tvLevel, pixelScale, opacity: s.dust });
+    this.dust.update(time, { tvColor, tvLevel, pixelScale, opacity: s.dust, size: s.dustSize });
 
-    this.smoke.mesh.visible = s.smoke;
-    if (s.smoke) {
-      // Lit by the lamps, plus a tint of whatever's on the TV.
-      this.smokeColor.setRGB(0.09, 0.08, 0.07).multiplyScalar(0.3 + lamp * 0.7);
-      this.smokeColor.r += tvColor.r * tvLevel * 0.25;
-      this.smokeColor.g += tvColor.g * tvLevel * 0.25;
-      this.smokeColor.b += tvColor.b * tvLevel * 0.25;
-      this.smoke.update(time, camera, this.smokeColor);
-    }
+    // Clear coat stays just above zero so the shader never recompiles mid-tweak.
+    const table = this.tableSurface;
+    table.clearcoat = Math.max(0.001, s.tableReflectivity);
+    table.envMapIntensity = 0.3 + s.tableReflectivity * 2.7;
+    table.roughness = THREE.MathUtils.lerp(0.65, 0.18, s.tableGloss);
+    table.clearcoatRoughness = THREE.MathUtils.lerp(0.5, 0.02, s.tableGloss);
   }
 }
