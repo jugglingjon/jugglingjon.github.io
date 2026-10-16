@@ -345,7 +345,7 @@ renderer.setAnimationLoop(() => {
     glow.update(signal.texture, fx.power * params.display.emission, realDt);
     room.update(clock, {
       tvColor: glow.light.color,
-      tvLevel: glow.light.intensity / Math.max(glow.strength, 1e-3),
+      tvLevel: glow.level,
       pixelScale: renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))),
     });
     renderer.render(room.scene, camera);

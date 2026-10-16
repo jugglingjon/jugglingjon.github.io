@@ -1,6 +1,14 @@
 import * as THREE from 'three';
 import vertexShader from '../screen/shaders/fullscreen.vert?raw';
 
+// How the room's light responds to the picture's brightness. A white screen
+// really is ~10× brighter than a dark one, but your eyes adapt, so it should
+// read as a few times brighter, not flood the room. A soft knee compresses
+// the top end: dark pictures are unchanged, full white tops out about 3×.
+const KNEE = 0.15;
+const GAIN = 0.18; // keeps dark pictures where they were tuned
+export const glowResponse = (luminance) => (GAIN * luminance * (1 + KNEE)) / (luminance + KNEE);
+
 // Lights the room with whatever is on screen. The signal target's smallest mip
 // is its average colour; we render that into a 1×1 target and read it back
 // asynchronously (no pipeline stall), then drive a RectAreaLight from it.
@@ -29,6 +37,7 @@ export class TVGlow {
     quad.frustumCulled = false;
     this.scene.add(quad);
 
+    this.level = 0; // light output before `strength`; dust and other effects scale with it
     this.pixel = new Uint8Array(4);
     this.sampled = new THREE.Color(0, 0, 0);
     this.color = new THREE.Color(0, 0, 0);
@@ -59,6 +68,7 @@ export class TVGlow {
     const { r, g, b } = this.color;
     const peak = Math.max(r, g, b, 1e-4);
     this.light.color.setRGB(r / peak, g / peak, b / peak);
-    this.light.intensity = this.strength * (0.2126 * r + 0.7152 * g + 0.0722 * b) * brightness;
+    this.level = glowResponse(0.2126 * r + 0.7152 * g + 0.0722 * b) * brightness;
+    this.light.intensity = this.strength * this.level;
   }
 }
