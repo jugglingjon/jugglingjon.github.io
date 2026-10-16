@@ -27,7 +27,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 | Click | the lit one | Press it with your thumb; hold CH or VOL to repeat |
 | <kbd>P</kbd> | POWER | Power on/off (warm-up, degauss, collapse to a dot) |
 | <kbd>↑</kbd> <kbd>→</kbd> / <kbd>↓</kbd> <kbd>←</kbd> | CH ▲ / ▼ | Channel up/down; skips unprogrammed numbers; hold to surf |
-| Scroll down / up, <kbd>Page Down</kbd> / <kbd>Page Up</kbd> | CH ▲ / ▼ | Next / previous channel, like scrolling a list (orbit view keeps the wheel for zoom) |
+| Scroll up / down, <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | CH ▲ / ▼ | Channel up / down (orbit view keeps the wheel for zoom) |
 | <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> | 1–9, 0 | Tune straight to channel 1–9; 0 is channel 10 |
 | <kbd>R</kbd> / <kbd>Backspace</kbd> | RCL | Recall the previous channel |
 | <kbd>+</kbd> / <kbd>−</kbd> | VOL + / − | Volume, with the OSD bar; hold to repeat |
