@@ -22,8 +22,8 @@ export const ROOM_DEFAULTS = {
   blinds: -0.9, // slats tipped down into the room, letting the street light in
   dust: 1,
   dustSize: 1,
-  tableReflectivity: 0.35, // 0 = dull oiled wood, 1 = glassy lacquer
-  tableGloss: 0.5, // how sharp the reflections are
+  tableReflectivity: 0, // 0 = dull oiled wood, 1 = glassy lacquer
+  tableGloss: 1, // how sharp the reflections are
   rain: true,
 };
 

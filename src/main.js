@@ -202,6 +202,27 @@ async function addFiles(files) {
   tv.tune(added);
 }
 
+// Scroll wheel / trackpad: scroll down for the next channel, up for the
+// previous one. Deltas accumulate so a trackpad swipe surfs at a steady pace
+// rather than firing on every tiny event. Orbit view keeps the wheel for zoom.
+let wheelTravel = 0;
+let wheelLast = 0;
+canvas.addEventListener(
+  'wheel',
+  (e) => {
+    if (state.mode === 'orbit') return;
+    const now = performance.now();
+    if (now - wheelLast > 250) wheelTravel = 0;
+    wheelTravel += e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY; // lines → pixels
+    if (Math.abs(wheelTravel) >= 60 && now - wheelLast > 110) {
+      remote.press(wheelTravel > 0 ? 'ch+' : 'ch-');
+      wheelTravel = 0;
+      wheelLast = now;
+    }
+  },
+  { passive: true },
+);
+
 const fileInput = document.querySelector('#file');
 fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
 
@@ -255,6 +276,9 @@ const KEY_BUTTONS = {
   m: 'mute',
   r: 'recall',
   backspace: 'recall',
+  // Like scrolling a list: Page Down moves on to the next channel.
+  pagedown: 'ch+',
+  pageup: 'ch-',
 };
 
 window.addEventListener('keydown', (e) => {
