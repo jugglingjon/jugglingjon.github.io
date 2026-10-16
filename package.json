@@ -1,0 +1,22 @@
+{
+  "name": "retro-portfolio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "An 80s apartment, a CRT TV, and a remote. Every channel is a project.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "media:test": "sh scripts/make-test-media.sh"
+  },
+  "dependencies": {
+    "gsap": "3.15.0",
+    "lil-gui": "0.21.0",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "sass": "1.105.2",
+    "vite": "8.3.4"
+  }
+}
