@@ -18,6 +18,7 @@ import { Room } from './world/Room.js';
 import { TVGlow } from './world/TVGlow.js';
 import { COUCH, EYE, FLOOR_LAMP, STAND, WINDOW } from './world/layout.js';
 import { SeatedCamera } from './camera/SeatedCamera.js';
+import { ArmRig } from './viewmodel/ArmRig.js';
 import { createTestSources, sourceFromFile } from './lab/sources.js';
 import { createLabGui } from './lab/LabGui.js';
 import { createRemotePad } from './lab/RemotePad.js';
@@ -25,8 +26,9 @@ import { createScreenRectOverlay } from './lab/ScreenRectOverlay.js';
 import { loadSaved } from './lab/storage.js';
 
 // Screen lab: the CRT pipeline (Phase 1), driven by the set's tuner, remote and
-// sound (Phase 2), seen from the couch in a greybox apartment (Phase 3), or
-// from an orbit camera, or as a flat screen.
+// sound (Phase 2), seen from the couch in a greybox apartment (Phase 3) with
+// the remote in your outstretched hand (Phase 4), or from an orbit camera, or
+// as a flat screen.
 
 const FIRST_CHANNEL = 1; // so number keys 1–9 land on the first nine channels
 
@@ -88,17 +90,40 @@ resetCamera();
 const overlay = createScreenRectOverlay();
 document.body.append(overlay.el);
 
-// The head turns a little towards the pointer.
-window.addEventListener('pointermove', (e) => {
-  seated.setPointer((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
-});
-document.documentElement.addEventListener('pointerleave', () => seated.setPointer(0, 0));
-
 // The set, its lineup and the remote. Every source gets a channel number;
 // numbers without a source tune to dead air.
 const lineup = createTestSources().map((source, i) => ({ number: FIRST_CHANNEL + i, name: source.name, source }));
 const tv = new Television({ fx, osd, lineup, reducedMotion });
 const remote = new Remote(tv);
+
+// Your arm, holding the remote out towards the TV.
+const rig = new ArmRig({ remote, aimAt: screenWorld });
+room.scene.add(rig.root);
+
+// The pointer steers the thumb across the remote (and turns your head a
+// little); leaving the page lowers the arm.
+function aim(e) {
+  const x = (e.clientX / window.innerWidth) * 2 - 1;
+  const y = -(e.clientY / window.innerHeight) * 2 + 1;
+  seated.setPointer(x, y);
+  rig.setPointer(x, y);
+  rig.setActive(true);
+}
+window.addEventListener('pointermove', aim);
+document.documentElement.addEventListener('pointerleave', () => {
+  seated.setPointer(0, 0);
+  rig.setActive(false);
+});
+
+// Click presses whichever button the thumb is over; holding CH or VOL repeats.
+// Aim first: a tap on a touch screen arrives without a hover.
+canvas.addEventListener('pointerdown', (e) => {
+  if (state.mode !== 'seated' || e.button !== 0) return;
+  aim(e);
+  canvas.setPointerCapture(e.pointerId);
+  remote.hold(rig.target);
+});
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(type, () => remote.release());
 
 let current = null;
 
@@ -241,7 +266,7 @@ const actions = {
   },
 };
 
-const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room });
+const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig });
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;
@@ -366,6 +391,7 @@ renderer.setAnimationLoop(() => {
     const camera = seatedView ? seated.camera : orbitCamera;
     if (seatedView) seated.update(clock, dt);
     else controls.update();
+    rig.update(dt, seated.camera, clock, { reducedMotion });
     glow.update(signal.texture, fx.power * params.display.emission, realDt);
     room.update(clock, {
       tvColor: glow.light.color,
@@ -391,7 +417,7 @@ updateHud();
 
 if (import.meta.env.DEV) {
   window.lab = {
-    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote,
+    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote, rig,
     gsap,
     get audio() {
       return audio;

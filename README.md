@@ -2,7 +2,7 @@
 
 A web and design portfolio set in a dingy 1980s apartment. You stare at an old CRT TV, raise a chunky remote, and every channel is a project.
 
-**Status: Phase 3, the apartment.** You now watch from the couch in a greybox 1980s living room: wood paneling, a lamp, a varnished coffee table with a listings magazine, and neon from across the street striping the room through the blinds. The camera keeps the TV well framed on any screen shape and turns a little towards your pointer. Underneath is the Phase 1 screen and the Phase 2 tuner, remote and sound. Procedural models and a clickable remote stand in for the final art.
+**Status: Phase 4, the arm and remote.** Your right arm is held out towards the TV with a chunky remote in your hand. Moving the mouse glides your thumb over the buttons, and the one it's over lights up. Clicking presses it with your thumb. All of this sits in the Phase 3 greybox apartment, on top of the Phase 1 screen and the Phase 2 tuner and sound. Procedural models stand in for the final art.
 
 ## Getting started
 
@@ -11,7 +11,7 @@ Requires Node 20.19+ (or 22.12+).
 ```sh
 npm install
 npm run dev        # http://localhost:5173
-npm test           # unit tests for the tuner state machine (Vitest)
+npm test           # unit tests: tuner, framing, thumb mapping and reach (Vitest)
 npm run build      # static build in dist/, relative paths, runs from any folder
 npm run media:test # regenerate the placeholder test videos (needs ffmpeg)
 npm run media:music # regenerate the placeholder channel music (needs ffmpeg)
@@ -19,10 +19,12 @@ npm run media:music # regenerate the placeholder channel music (needs ffmpeg)
 
 ## Screen lab controls
 
-The set starts switched off. Press <kbd>P</kbd> or the red **POWER** button on the on-screen remote. That first press also enables sound, since browsers block audio until you interact with the page.
+The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red **POWER** button (top right of the remote) and click. That first press also enables sound, since browsers block audio until you interact with the page.
 
-| Key | Remote button | Action |
+| Input | Remote button | Action |
 |---|---|---|
+| Move the mouse | | Your thumb glides over the remote; the button it's over lights green |
+| Click | the lit one | Press it with your thumb; hold CH or VOL to repeat |
 | <kbd>P</kbd> | POWER | Power on/off (warm-up, degauss, collapse to a dot) |
 | <kbd>↑</kbd> <kbd>→</kbd> / <kbd>↓</kbd> <kbd>←</kbd> | CH ▲ / ▼ | Channel up/down; skips unprogrammed numbers; hold to surf |
 | Scroll down / up, <kbd>Page Down</kbd> / <kbd>Page Up</kbd> | CH ▲ / ▼ | Next / previous channel, like scrolling a list (orbit view keeps the wheel for zoom) |
@@ -34,7 +36,8 @@ The set starts switched off. Press <kbd>P</kbd> or the red **POWER** button on t
 | <kbd>V</kbd> | | Cycle views: seated (you, on the couch), orbit (free debug camera), flat screen |
 | <kbd>H</kbd> | | Hide the panels |
 
-- In the seated view, move the pointer to look around a little. In orbit view, drag to move the camera.
+- In the seated view the pointer also turns your head a little. In orbit view, drag to move the camera.
+- Every key, scroll and on-screen remote press plays out with your thumb too, so you always see which button went down.
 - Drop any image or video onto the page (or use **Source → Load image / video…**) to add it as the next channel. Dropped videos play their soundtrack through the TV speaker.
 - Channels start at 1, so the number keys reach the first ten. Tuning a number with nothing on it gives dead air: snow and hiss.
 - **TV → Speed (slow-mo)** runs the lab clock down to 2% speed, so you can study a channel change frame by frame.
@@ -55,9 +58,17 @@ The set starts switched off. Press <kbd>P</kbd> or the red **POWER** button on t
 - **Light:** the TV (its picture's average colour, see `TVGlow`), two warm lamps, the hallway bulb, and a pink neon sign across the street. The neon is the one shadow-casting light, and the blinds are real slats, so it throws genuine stripes across the floor, table and TV. **Room → Blind tilt** changes them.
 - **Tuning:** the Room panel sets lamps, neon, blind tilt, dust brightness and size, and the coffee table's varnish. **Table reflectivity** is how strongly it reflects the TV and lamps; **Table gloss** is how sharp those reflections are.
 - **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon buzzes and stutters, rain runs down the window, and the VCR blinks 12:00.
-- **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath and a small head turn towards the pointer. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and, in Phase 4, the remote.
-- **Screen rect:** `seated.screenRect(tv.screen)` gives the TV glass's on-screen bounds in normalised coordinates every frame. Phase 4 maps the pointer against it. **Camera → Show screen rect** draws it, with the engage zone around it.
+- **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath and a small head turn towards the pointer. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and the remote.
+- **Screen rect:** `seated.screenRect(tv.screen)` gives the TV glass's on-screen bounds in normalised coordinates every frame, for anything that has to line up with the picture. **Camera → Show screen rect** draws it, with the engage zone around it.
 - **Reduced motion:** with `prefers-reduced-motion`, breathing stops and the head turn shrinks.
+
+## The arm and remote
+
+- **The mapping:** the middle 80% of the screen maps onto the remote's face, the way you see it. Up is towards the tip (POWER, then the number pad), down is the VOL and CH rockers, and left and right go across. The nearest button is the target, with a little hysteresis so the thumb doesn't flicker on a boundary (`src/viewmodel/thumbing.js`). The middle of the screen is **8**, and the bottom right is **CH ▲ / ▼**.
+- **The thumb** is a two-bone chain solved with IK every frame. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The flannel sleeve comes in from the bottom-right corner.
+- **Presses:** a click goes to `Remote.hold`. The remote fires `press` immediately, and `ArmRig` plays the thumb press: down 60 ms, hold, up 100 ms. The button sinks, the IR LED blinks, and the TV reacts after the IR latency. Keys, scroll and the lab remote go through the same `Remote`, so the thumb presses for those too.
+- **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, scales it, and sets how firmly the thumb settles onto the target. You can also switch the highlight off there.
+- When the pointer leaves the page, the arm lowers; it comes back up when the pointer returns. On touch screens a tap aims and presses in one go.
 
 ## How the screen works
 
@@ -83,7 +94,7 @@ Stage B · ScreenMaterial on curved glass    TVGlow → RectAreaLight lights the
 ## How the set works
 
 ```
-Remote.press(button) ──'press'──▶ IR LED blink, button click sound (Phase 4: thumb)
+Remote.press(button) ──'press'──▶ thumb press, IR LED blink, button click sound
         │ after IR latency (~60 ms)
         ▼
 Television.receive(button)
@@ -124,6 +135,11 @@ src/
     transitions.js         signal loss / acquire / dead air, power on/off, degauss
     params.js              tunable defaults and presets
     shaders/               common.glsl, signal.frag, screen.vert/.frag, fullscreen.vert
+  viewmodel/               your arm and the remote in your hand
+    ArmRig.js              places the remote, targets buttons, plays presses, arm IK and sleeve
+    RemoteModel.js         the remote: body, buttons with labels, highlight, press travel, IR LED
+    Hand.js                right hand: palm, curled fingers, IK thumb, grip slide
+    thumbing.js            button layout, pointer → button, two-bone IK (+ thumbing.test.js, Hand.test.js)
   camera/
     SeatedCamera.js        the viewer: seat, framing, breathing, head turn, screen rect
     framing.js             fitVerticalFov, projectBounds (+ framing.test.js)
@@ -177,15 +193,15 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 - **TV, furniture, props and room:** procedural geometry and canvas textures, laid out in `layout.js`. They get replaced by Blender models with baked lightmaps (including a TV-light channel) in Phase 5.
 - **Projects:** canvas-drawn mock sites (Neon Burger Co., Field Notes, Orbit Analytics), test patterns and two ffmpeg-generated loops. Real screenshots and recordings arrive in Phase 6.
 - **Channel music:** synthesized placeholder loops; see [Channel music](#channel-music).
-- **Remote:** a clickable DOM remote (`src/lab/RemotePad.js`) drives the same `Remote` object the 3D arm and remote will use in Phase 4.
+- **Arm, hand and remote:** procedural capsules and rounded boxes (`src/viewmodel/`). They get replaced by a rigged model in Phase 5, with the same IK targets. The clickable DOM remote (`src/lab/RemotePad.js`) stays as a lab tool and drives the same `Remote`.
 - **Brand badge:** "Lumatron" is a stand-in for your own mark (`createBadgeTexture` in `src/world/textures.js`).
 
 ## Roadmap
 
 1. ~~Screen lab: both shader stages, tuning UI, presets~~
 2. ~~Channel engine: tuner state machine, remote with IR latency, number entry, volume, synthesized audio~~
-3. ~~Greybox apartment, seated camera, framing per aspect ratio, screen rect~~ (this phase)
-4. Arm and remote: viewmodel pass, mouse mapping (up/right = CH▲, left/down = CH▼), thumb poses
+3. ~~Greybox apartment, seated camera, framing per aspect ratio, screen rect~~
+4. ~~Arm and remote: viewmodel pass, pointer → thumb mapping over every button, highlight, thumb presses~~ (this phase)
 5. Art pass: Blender models, baked lightmaps with a TV light channel, post-processing
 6. Content: project data, PHP-rendered routes and fallback, TV Guide case-study overlay
 7. Polish: power-on intro, mobile, accessibility (reduced motion, keyboard), quality tiers

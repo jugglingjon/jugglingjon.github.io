@@ -1,8 +1,6 @@
 // A clickable stand-in for the remote until the 3D arm and remote arrive in
 // Phase 4. It drives the same Remote object the 3D one will.
 
-const REPEATING = /^(ch|vol)[+-]$/;
-
 function key(button, label, { modifier = '', aria = label } = {}) {
   const cls = modifier ? `remote__btn remote__btn--${modifier}` : 'remote__btn';
   return `<button type="button" class="${cls}" data-button="${button}" aria-label="${aria}">${label}</button>`;
@@ -35,14 +33,12 @@ export function createRemotePad(remote) {
     <p class="remote__brand" aria-hidden="true">LUMATRON</p>
   `;
 
-  // Channel and volume repeat while held, like a real IR remote.
-  let repeat = null;
+  // Held buttons repeat (handled by Remote.hold); the pressed look follows the pointer.
   let held = null;
   const release = () => {
-    clearTimeout(repeat);
-    clearInterval(repeat);
+    remote.release();
     held?.classList.remove('is-held');
-    repeat = held = null;
+    held = null;
   };
 
   el.addEventListener('pointerdown', (e) => {
@@ -53,13 +49,7 @@ export function createRemotePad(remote) {
     held = btn;
     btn.setPointerCapture(e.pointerId);
     btn.classList.add('is-held');
-    const { button } = btn.dataset;
-    remote.press(button);
-    if (REPEATING.test(button)) {
-      repeat = setTimeout(() => {
-        repeat = setInterval(() => remote.press(button), 150);
-      }, 450);
-    }
+    remote.hold(btn.dataset.button);
   });
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(type, release);
 

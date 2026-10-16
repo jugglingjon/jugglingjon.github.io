@@ -26,6 +26,11 @@ body {
   touch-action: none;
 }
 
+// From the couch your thumb is the cursor; the targeted button lights up.
+body[data-mode='seated'] #scene {
+  cursor: none;
+}
+
 body[data-mode='orbit'] #scene {
   cursor: grab;
 

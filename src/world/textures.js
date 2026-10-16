@@ -570,3 +570,27 @@ export function createEnvTexture({ origin, eye, couch, floorLamp, window: win, n
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   return texture;
 }
+
+// --- The viewer -----------------------------------------------------------------
+
+// Red and black flannel for your shirt sleeve.
+export function createFlannelTexture() {
+  const [canvas, ctx] = makeCanvas(128, 128);
+  ctx.fillStyle = '#8a1f1a';
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = 'rgba(20, 8, 8, 0.75)';
+  ctx.fillRect(0, 40, 128, 36);
+  ctx.fillRect(40, 0, 36, 128);
+  ctx.fillStyle = 'rgba(20, 8, 8, 0.45)';
+  ctx.fillRect(0, 96, 128, 8);
+  ctx.fillRect(96, 0, 8, 128);
+  ctx.fillStyle = 'rgba(240, 220, 190, 0.35)';
+  ctx.fillRect(0, 20, 128, 2);
+  ctx.fillRect(20, 0, 2, 128);
+  const rand = seededRandom(83);
+  for (let i = 0; i < 2500; i++) {
+    ctx.fillStyle = `rgba(0,0,0,${rand() * 0.15})`;
+    ctx.fillRect(rand() * 128, rand() * 128, 1, 2);
+  }
+  return colorTexture(canvas, [3, 4]);
+}

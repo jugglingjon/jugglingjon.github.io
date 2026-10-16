@@ -4,7 +4,7 @@ import { clearSaved, lookOnly, save } from './storage.js';
 
 // Tuning panel for the screen lab. Every look parameter is live; changes
 // auto-save to this browser, and "Copy JSON" exports them for a preset.
-export function createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room }) {
+export function createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig }) {
   const gui = new GUI({ title: 'Screen Lab' });
   gui.onFinishChange(() => save(params));
 
@@ -37,6 +37,17 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   view.add(seated.settings, 'breathing', 0, 3, 0.05).name('Breathing');
   view.add(seated.settings, 'parallax', 0, 3, 0.05).name('Head turn');
   view.add(state, 'overlay').name('Show screen rect');
+
+  const a = rig.settings;
+  const arm = gui.addFolder('Arm & remote').close();
+  arm.add(a, 'x', -0.3, 0.3, 0.005).name('Across');
+  arm.add(a, 'y', -0.45, 0.05, 0.005).name('Height');
+  arm.add(a, 'distance', 0.25, 0.8, 0.005).name('Reach');
+  arm.add(a, 'tilt', -0.2, 1.2, 0.01).name('Face tilt');
+  arm.add(a, 'roll', -0.8, 0.8, 0.01).name('Roll');
+  arm.add(a, 'size', 0.6, 1.6, 0.01).name('Size');
+  arm.add(a, 'snap', 0, 1, 0.01).name('Thumb snap');
+  arm.add(a, 'highlight').name('Highlight target');
 
   const r = room.settings;
   const roomFolder = gui.addFolder('Room').close();
