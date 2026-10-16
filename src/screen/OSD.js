@@ -58,8 +58,12 @@ const OSD_GREEN = '#5dff6a';
 const SAFE_X = 84;
 const SAFE_Y = 64;
 
-// The TV's own on-screen display: a green channel number and a closed-caption
-// style lower third. Drawn into a transparent canvas the size of the signal.
+const TIMED = ['channel', 'caption', 'volume'];
+
+// The TV's own on-screen display, drawn into a transparent canvas the size of
+// the signal: a green channel number (or a half-typed "CH 1-"), a closed-caption
+// style lower third, a volume bar and a MUTE flag. Like a real set, elements
+// pop on and off rather than fading; each has its own timer.
 export class OSD {
   constructor() {
     this.canvas = document.createElement('canvas');
@@ -70,51 +74,89 @@ export class OSD {
     this.texture.generateMipmaps = false;
     this.texture.minFilter = THREE.LinearFilter;
 
-    this.channel = null;
-    this.caption = '';
-    this.hold = 0;
-    this.opacity = 0;
+    this.layers = { channel: null, caption: null, volume: null, mute: false };
+    this.timers = { channel: 0, caption: 0, volume: 0 };
     this.pinned = false;
+    this.dirty = true;
   }
 
-  show(channel, caption = '', hold = 2.5) {
-    this.channel = channel;
-    this.caption = caption;
-    this.hold = hold;
-    this.opacity = 1;
-    this.draw();
+  // A number shows as "CH 05"; a string (number entry, "1-") shows as given.
+  setChannel(label, hold = 3) {
+    this.set('channel', typeof label === 'number' ? String(label).padStart(2, '0') : label, hold);
   }
 
+  setCaption(text, hold = 3) {
+    this.set('caption', text || null, hold);
+  }
+
+  setVolume(level, max, hold = 2) {
+    this.set('volume', { level, max }, hold);
+  }
+
+  setMute(on) {
+    this.layers.mute = on;
+    this.dirty = true;
+  }
+
+  clear() {
+    this.layers = { channel: null, caption: null, volume: null, mute: false };
+    this.dirty = true;
+  }
+
+  set(layer, value, hold) {
+    this.layers[layer] = value;
+    this.timers[layer] = hold;
+    this.dirty = true;
+  }
+
+  // Returns the OSD opacity for the signal pass.
   update(dt) {
-    if (this.pinned) {
-      this.opacity = 1;
-      return this.opacity;
+    if (!this.pinned) {
+      for (const layer of TIMED) {
+        if (this.layers[layer] !== null && (this.timers[layer] -= dt) <= 0) {
+          this.layers[layer] = null;
+          this.dirty = true;
+        }
+      }
     }
-    this.hold -= dt;
-    if (this.hold <= 0) this.opacity = Math.max(0, this.opacity - dt * 3);
-    return this.opacity;
+    if (this.dirty) this.draw();
+    return 1;
   }
 
   draw() {
-    const { ctx, canvas } = this;
+    const { ctx, canvas, layers } = this;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    this.dirty = false;
 
-    if (this.channel !== null) {
-      const label = `CH ${String(this.channel).padStart(2, '0')}`;
-      const scale = 6;
-      const x = canvas.width - SAFE_X - measure(label, scale);
-      drawText(ctx, label, x, SAFE_Y, scale, OSD_GREEN, '#000');
+    if (layers.channel !== null) {
+      const label = `CH ${layers.channel}`;
+      drawText(ctx, label, canvas.width - SAFE_X - measure(label, 6), SAFE_Y, 6, OSD_GREEN, '#000');
     }
 
-    if (this.caption) {
-      const text = this.caption.toUpperCase();
-      const scale = 3;
-      const width = measure(text, scale);
+    if (layers.mute) drawText(ctx, 'MUTE', SAFE_X, SAFE_Y, 4, OSD_GREEN, '#000');
+
+    const bottom = canvas.height - SAFE_Y - 37; // top of the bottom text line
+    if (layers.volume) {
+      // The bar takes the bottom line; the caption waits underneath it.
+      const { level, max } = layers.volume;
+      const barWidth = max * 12 - 4;
+      const x = (canvas.width - (measure('VOLUME', 3) + 18 + barWidth)) / 2;
+      drawText(ctx, 'VOLUME', x, bottom, 3, OSD_GREEN, '#000');
+      const bx = x + measure('VOLUME', 3) + 18;
+      for (let i = 0; i < max; i++) {
+        const h = i < level ? 21 : 5;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(bx + i * 12 - 2, bottom + 21 - h - 2, 12, h + 4);
+        ctx.fillStyle = OSD_GREEN;
+        ctx.fillRect(bx + i * 12, bottom + 21 - h, 8, h);
+      }
+    } else if (layers.caption) {
+      const text = layers.caption.toUpperCase();
+      const width = Math.min(measure(text, 3), canvas.width - SAFE_X * 2);
       const x = Math.max(SAFE_X, (canvas.width - width) / 2);
-      const y = canvas.height - SAFE_Y - 7 * scale - 24;
       ctx.fillStyle = '#000';
-      ctx.fillRect(x - 9, y - 9, Math.min(width, canvas.width - SAFE_X * 2) + 18, 7 * scale + 18);
-      drawText(ctx, text, x, y, scale, '#f4f4f0', null);
+      ctx.fillRect(x - 9, bottom - 9, width + 18, 39);
+      drawText(ctx, text, x, bottom, 3, '#f4f4f0', null);
     }
 
     this.texture.needsUpdate = true;

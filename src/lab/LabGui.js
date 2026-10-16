@@ -4,29 +4,60 @@ import { clearSaved, lookOnly, save } from './storage.js';
 
 // Tuning panel for the screen lab. Every look parameter is live; changes
 // auto-save to this browser, and "Copy JSON" exports them for a preset.
-export function createLabGui({ params, state, actions, glow, osd, renderer }) {
+export function createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings }) {
   const gui = new GUI({ title: 'Screen Lab' });
   gui.onFinishChange(() => save(params));
 
-  const tv = gui.addFolder('TV');
-  tv.add(state, 'mode', { 'TV set (3D)': 'tv', 'Flat screen': 'flat' }).name('View').listen().onChange(actions.setMode);
-  tv.add(actions, 'channelUp').name('Channel ▲   ↑ →');
-  tv.add(actions, 'channelDown').name('Channel ▼   ↓ ←');
-  tv.add(actions, 'togglePower').name('Power   P');
-  tv.add(actions, 'degauss').name('Degauss   D');
-  tv.add(actions, 'resetCamera').name('Reset camera');
-  tv.add(state, 'timeScale', 0.02, 1, 0.01).name('Speed (slow-mo)').onChange(actions.setTimeScale);
-  tv.add(glow, 'strength', 0, 1000, 5).name('Room glow');
-  tv.add(renderer, 'toneMappingExposure', 0.2, 5, 0.05).name('Room exposure');
+  const set = gui.addFolder('TV');
+  set.add(state, 'mode', { 'TV set (3D)': 'tv', 'Flat screen': 'flat' }).name('View').listen().onChange(actions.setMode);
+  set.add({ power: () => actions.press('power') }, 'power').name('Power   P');
+  set.add({ up: () => actions.press('ch+') }, 'up').name('Channel ▲   ↑ →');
+  set.add({ down: () => actions.press('ch-') }, 'down').name('Channel ▼   ↓ ←');
+  set.add(actions, 'degauss').name('Degauss   D');
+  set.add(actions, 'resetCamera').name('Reset camera');
+  set.add(state, 'timeScale', 0.02, 1, 0.01).name('Speed (slow-mo)').onChange(actions.setTimeScale);
+  set.add(glow, 'strength', 0, 1000, 5).name('Room glow');
+  set.add(renderer, 'toneMappingExposure', 0.2, 5, 0.05).name('Room exposure');
 
   const source = gui.addFolder('Source');
-  const channelOptions = () => Object.fromEntries(actions.channelNames().map((name, i) => [`${i + 2} · ${name}`, i]));
-  const channel = source.add(state, 'channel', channelOptions()).name('Channel').listen().onChange((i) => actions.tune(i));
+  const channelOptions = () => Object.fromEntries(actions.channels().map((c) => [`${c.number} · ${c.name}`, c.number]));
+  const channel = source.add(state, 'channel', channelOptions()).name('Channel').listen().onChange(actions.tune);
   source.add(params.source, 'fit', ['cover', 'contain']).name('Fit').onChange(actions.refit);
   source.add(params.source, 'focusX', 0, 1, 0.01).name('Focus X').onChange(actions.refit);
   source.add(params.source, 'focusY', 0, 1, 0.01).name('Focus Y').onChange(actions.refit);
   source.add(actions, 'loadFile').name('Load image / video…');
   source.add(osd, 'pinned').name('Pin OSD');
+
+  const tuner = gui.addFolder('Tuner').close();
+  tuner.add(tv, 'reducedMotion').name('Reduced motion');
+  tuner.add(tv, 'roughChance', 0, 1, 0.05).name('Rough changes');
+  tuner.add(remote, 'latency', 0, 0.3, 0.01).name('IR latency (s)');
+  tuner.add(tv, 'searchHold', 0, 0.6, 0.01).name('Snow hold (s)');
+  tuner.add(tv, 'surfHold', 0.05, 1, 0.01).name('Surf hold (s)');
+  tuner.add(tv, 'entryTimeout', 0.5, 3, 0.1).name('Digit wait (s)');
+
+  // Volume lives on the TV (it drives the OSD); the rest is the mix.
+  const knob = {
+    get volume() {
+      return tv.volume;
+    },
+    set volume(level) {
+      tv.setVolume(level);
+    },
+    get muted() {
+      return tv.muted;
+    },
+    set muted(muted) {
+      tv.setMuted(muted);
+    },
+  };
+  const sound = gui.addFolder('Sound').close();
+  sound.add(knob, 'volume', 0, 20, 1).name('TV volume').listen();
+  sound.add(knob, 'muted').name('Mute   M').listen();
+  sound.add(soundSettings, 'master', 0, 1, 0.01).name('Master');
+  sound.add(soundSettings, 'static', 0, 1.5, 0.01).name('Static');
+  sound.add(soundSettings, 'whine', 0, 1, 0.01).name('Flyback whine');
+  sound.add(soundSettings, 'roomTone', 0, 1.5, 0.01).name('Room tone');
 
   const s = params.signal;
   const signal = gui.addFolder('Signal · Stage A').close();

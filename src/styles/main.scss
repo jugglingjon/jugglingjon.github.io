@@ -1,8 +1,5 @@
-$ink: #e9e1d2;
-$muted: #9c907e;
-$osd-green: #5dff6a;
-$panel: rgba(14, 11, 9, 0.82);
-$mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+@use 'tokens' as *;
+@use 'remote';
 
 *,
 *::before,
@@ -146,7 +143,7 @@ body[data-mode='tv'] #scene {
   --width: 280px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (max-height: 720px) {
   .hud__keys {
     display: none;
   }

@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { createScrollRecording, drawColorBars, drawDashboard, drawNeonBurger, drawResolutionChart } from './testCards.js';
 
 // A source is anything the TV can show:
-//   { name, texture, width, height, update?(time), activate?(), deactivate?(), onResize? }
+//   { name, texture, width, height, update?(time), activate?(), deactivate?(), onResize?,
+//     video?, tone? }   ← sound: a <video> soundtrack, or a test tone in Hz
 // Textures stay in their native (sRGB-encoded) values; Stage A works in gamma space.
 
 function canvasSource(name, canvas) {
@@ -65,7 +66,7 @@ export function createTestSources() {
     canvasSource('Orbit Analytics', drawDashboard()),
     videoSource('Game of Life', testMedia('life')),
     videoSource('Gradient Reel', testMedia('gradient-reel')),
-    canvasSource('Colour Bars', drawColorBars()),
+    { ...canvasSource('Colour Bars', drawColorBars()), tone: 1000 }, // the classic 1 kHz line-up tone
     canvasSource('Resolution Chart', drawResolutionChart()),
   ];
 }

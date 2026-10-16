@@ -7,7 +7,10 @@ import { cloneDefaults, createFx } from './screen/params.js';
 import { SignalPass } from './screen/SignalPass.js';
 import { ScreenMaterial } from './screen/ScreenMaterial.js';
 import { OSD } from './screen/OSD.js';
-import { channelChange, degauss, powerOff, powerOn } from './screen/transitions.js';
+import { degauss } from './screen/transitions.js';
+import { Television } from './tv/Television.js';
+import { Remote } from './tv/Remote.js';
+import { AudioEngine, SOUND_DEFAULTS } from './audio/AudioEngine.js';
 import { createScreenGeometry, SCREEN_HEIGHT, SCREEN_WIDTH } from './world/screenGeometry.js';
 import { createEnvTexture, createSmudgeTexture } from './world/textures.js';
 import { TV } from './world/TV.js';
@@ -15,10 +18,11 @@ import { Stage } from './world/Stage.js';
 import { TVGlow } from './world/TVGlow.js';
 import { createTestSources, sourceFromFile } from './lab/sources.js';
 import { createLabGui } from './lab/LabGui.js';
+import { createRemotePad } from './lab/RemotePad.js';
 import { loadSaved } from './lab/storage.js';
 
-// Phase 1 screen lab: tune the two-stage CRT pipeline on a flat screen or on a
-// procedural TV in a greybox corner of the apartment.
+// Screen lab: the CRT pipeline (Phase 1) driven by the set's tuner, remote and
+// sound (Phase 2), on a flat screen or a procedural TV in a greybox room.
 
 const FIRST_CHANNEL = 2; // VHF starts at 2
 
@@ -32,7 +36,7 @@ RectAreaLightUniformsLib.init();
 const params = cloneDefaults();
 loadSaved(params);
 const fx = createFx();
-const state = { mode: 'tv', channel: 0, power: false, preset: '80s living room', panel: true, timeScale: 1 };
+const state = { mode: 'tv', channel: FIRST_CHANNEL, preset: '80s living room', panel: true, timeScale: 1 };
 
 // Screen pipeline: Stage A (signal) → Stage B (tube + glass).
 const osd = new OSD();
@@ -49,13 +53,13 @@ flat.camera.position.z = 1;
 
 // TV set view.
 const stage = new Stage({ env });
-const tv = new TV({ screenGeometry, screenMaterial });
-stage.placeTV(tv);
+const tvModel = new TV({ screenGeometry, screenMaterial });
+stage.placeTV(tvModel);
 const glow = new TVGlow(renderer, { width: 0.47, height: 0.35 });
-glow.light.position.copy(tv.screenCenter).add(new THREE.Vector3(0, 0, 0.01));
-tv.group.add(glow.light);
-tv.group.updateMatrixWorld(true);
-const screenWorld = tv.group.localToWorld(tv.screenCenter);
+glow.light.position.copy(tvModel.screenCenter).add(new THREE.Vector3(0, 0, 0.01));
+tvModel.group.add(glow.light);
+tvModel.group.updateMatrixWorld(true);
+const screenWorld = tvModel.group.localToWorld(tvModel.screenCenter);
 
 const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 50);
 const controls = new OrbitControls(camera, canvas);
@@ -72,48 +76,87 @@ function resetCamera() {
 }
 resetCamera();
 
-// Channels.
-const sources = createTestSources();
+// The set, its lineup and the remote. Every source gets a channel number;
+// numbers without a source tune to dead air.
+const lineup = createTestSources().map((source, i) => ({ number: FIRST_CHANNEL + i, name: source.name, source }));
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const tv = new Television({ fx, osd, lineup, reducedMotion });
+const remote = new Remote(tv);
+
 let current = null;
 
 function refit() {
   signal.setSource(current, params.source.fit, [params.source.focusX, params.source.focusY]);
 }
 
-function setSource(index) {
-  if (current) {
-    current.deactivate?.();
-    current.onResize = null;
+function showSource(channel) {
+  const source = channel?.source ?? null;
+  if (source !== current) {
+    current?.deactivate?.();
+    if (current) current.onResize = null;
+    current = source;
+    if (current) {
+      current.onResize = refit;
+      current.activate?.();
+    }
   }
-  current = sources[index];
-  current.onResize = refit;
-  current.activate?.();
   refit();
-  osd.show(index + FIRST_CHANNEL, current.name);
-  nowPlaying.textContent = `CH ${String(index + FIRST_CHANNEL).padStart(2, '0')} · ${current.name}`;
 }
 
-function tune(index) {
-  state.channel = index;
-  if (!state.power) {
-    setSource(index);
+// Sound. Browsers only allow audio after a user gesture, so the first click or
+// key press anywhere creates the engine (in the finished site, that's POWER).
+const soundSettings = { ...SOUND_DEFAULTS };
+let audio = null;
+
+function startAudio() {
+  if (audio) {
+    if (audio.ctx.state === 'suspended') audio.ctx.resume();
     return;
   }
-  channelChange(fx, () => setSource(state.channel));
+  const Context = window.AudioContext ?? window.webkitAudioContext;
+  if (!Context) return;
+  audio = new AudioEngine(new Context(), soundSettings);
+  audio.setVolume(tv.volume, tv.muted);
+  audio.setChannel(tv.on ? tv.channel : null);
+  updateHud();
+}
+window.addEventListener('pointerdown', startAudio, true);
+window.addEventListener('keydown', startAudio, true);
+
+const nowPlaying = document.querySelector('#now-playing');
+const soundLabel = document.querySelector('#sound');
+
+function updateHud() {
+  nowPlaying.textContent = tv.on
+    ? `CH ${String(tv.number).padStart(2, '0')} · ${tv.channel?.name ?? 'no signal'}`
+    : 'Off · press P or POWER';
+  if (!audio) soundLabel.textContent = 'Sound: click or press a key to enable';
+  else soundLabel.textContent = tv.muted ? 'Sound: muted' : `Sound: volume ${tv.volume}`;
 }
 
-const step = (dir) => tune((state.channel + dir + sources.length) % sources.length);
+tv.addEventListener('swap', (e) => {
+  showSource(e.detail.channel);
+  audio?.setChannel(e.detail.channel);
+});
+tv.addEventListener('tune', (e) => {
+  state.channel = e.detail.number;
+  updateHud();
+});
+tv.addEventListener('power', (e) => {
+  tvModel.setPower(e.detail.on);
+  document.body.classList.toggle('is-tv-on', e.detail.on);
+  audio?.power(e.detail.on);
+  if (!e.detail.on) audio?.setChannel(null);
+  updateHud();
+});
+tv.addEventListener('relay', () => audio?.relay());
+tv.addEventListener('volume', (e) => {
+  audio?.setVolume(e.detail.level, e.detail.muted);
+  updateHud();
+});
+remote.addEventListener('press', () => audio?.click());
 
-function togglePower() {
-  state.power = !state.power;
-  tv.setPower(state.power);
-  if (state.power) {
-    powerOn(fx);
-    osd.show(state.channel + FIRST_CHANNEL, current.name);
-  } else {
-    powerOff(fx);
-  }
-}
+document.body.append(createRemotePad(remote));
 
 function setMode(mode) {
   state.mode = mode;
@@ -122,19 +165,21 @@ function setMode(mode) {
 }
 
 async function addFiles(files) {
-  let added = 0;
+  let added = null;
   for (const file of files) {
     if (!/^(image|video)\//.test(file.type)) continue;
     try {
-      sources.push(await sourceFromFile(file));
-      added++;
+      const source = await sourceFromFile(file);
+      const number = Math.max(FIRST_CHANNEL - 1, ...tv.lineup.map((c) => c.number)) + 1;
+      tv.setLineup([...tv.lineup, { number, name: source.name, source }]);
+      added = number;
     } catch (error) {
       console.warn(`Could not load ${file.name}`, error);
     }
   }
-  if (!added) return;
+  if (added === null) return;
   lab.refreshChannels();
-  tune(sources.length - 1);
+  tv.tune(added);
 }
 
 const fileInput = document.querySelector('#file');
@@ -142,23 +187,20 @@ fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
 
 const actions = {
   setMode,
-  tune,
   refit,
   resetCamera,
-  togglePower,
-  channelUp: () => step(1),
-  channelDown: () => step(-1),
+  press: (button) => remote.press(button),
+  tune: (number) => tv.tune(number),
+  channels: () => tv.lineup,
   degauss: () => degauss(fx),
   loadFile: () => fileInput.click(),
   setTimeScale(value) {
     // Browsers clamp playbackRate; 1/16 is the lowest Chrome allows.
-    sources.forEach((s) => s.video && (s.video.playbackRate = Math.max(0.0625, value)));
+    tv.lineup.forEach(({ source }) => source.video && (source.video.playbackRate = Math.max(0.0625, value)));
   },
-  channelNames: () => sources.map((s) => s.name),
 };
 
-const nowPlaying = document.querySelector('#now-playing');
-const lab = createLabGui({ params, state, actions, glow, osd, renderer });
+const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings });
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;
@@ -178,20 +220,35 @@ window.addEventListener('drop', (e) => {
   addFiles([...e.dataTransfer.files]);
 });
 
+// Keyboard → remote buttons. Channel and volume keys auto-repeat when held,
+// like the real remote; everything else fires once per press.
+const KEY_BUTTONS = {
+  arrowup: 'ch+',
+  arrowright: 'ch+',
+  arrowdown: 'ch-',
+  arrowleft: 'ch-',
+  '+': 'vol+',
+  '=': 'vol+',
+  '-': 'vol-',
+  _: 'vol-',
+  p: 'power',
+  m: 'mute',
+  r: 'recall',
+  backspace: 'recall',
+};
+
 window.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
-  switch (e.key.toLowerCase()) {
-    case 'arrowup':
-    case 'arrowright':
-      step(1);
-      break;
-    case 'arrowdown':
-    case 'arrowleft':
-      step(-1);
-      break;
-    case 'p':
-      togglePower();
-      break;
+  if (e.metaKey || e.ctrlKey || e.altKey) return; // leave browser shortcuts (zoom, etc.) alone
+  const key = e.key.toLowerCase();
+  const button = /^\d$/.test(key) ? key : KEY_BUTTONS[key];
+  if (button) {
+    if (!e.repeat || /^(ch|vol)[+-]$/.test(button)) remote.press(button);
+    e.preventDefault();
+    return;
+  }
+  if (e.repeat) return;
+  switch (key) {
     case 'd':
       degauss(fx);
       break;
@@ -254,6 +311,7 @@ renderer.setAnimationLoop(() => {
   signal.setOSDOpacity(osd.update(dt));
   signal.render(params, fx, clock, dt);
   screenMaterial.update(params, fx, signal.texture, clock, frame);
+  audio?.update(fx);
 
   if (state.mode === 'tv') {
     controls.update();
@@ -274,7 +332,17 @@ renderer.setAnimationLoop(() => {
 });
 
 setMode(state.mode);
-setSource(0);
-setTimeout(togglePower, 600);
+updateHud();
 
-if (import.meta.env.DEV) window.lab = { params, fx, state, actions, renderer, camera, controls, glow, stage, tv, sources, signal, osd };
+if (import.meta.env.DEV) {
+  window.lab = {
+    params, fx, state, actions, renderer, camera, controls, glow, stage, tvModel, signal, osd, tv, remote,
+    gsap,
+    get audio() {
+      return audio;
+    },
+    get clock() {
+      return clock;
+    },
+  };
+}
