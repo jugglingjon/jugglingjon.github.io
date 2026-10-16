@@ -142,38 +142,31 @@ describe('tuning', () => {
     expect(tv.number).toBe(5);
   });
 
-  it('waits for a second digit, and tunes two digits at once', () => {
+  it('number buttons tune straight away, 0 being channel 10', () => {
     const { tv, osd } = ctx;
     tv.receive('3');
-    expect(osd.setChannel).toHaveBeenLastCalledWith('3-');
-    advance(1);
-    expect(tv.number).toBe(2);
-    advance(1);
     expect(tv.number).toBe(3);
-    tv.receive('1');
-    tv.receive('2');
-    expect(tv.number).toBe(12);
-  });
-
-  it('ignores a lone zero', () => {
-    const { tv } = ctx;
-    tv.receive('0');
+    expect(tv.phase).toBe('losing');
+    expect(osd.setChannel).toHaveBeenLastCalledWith(3);
     advance(2);
-    expect(tv.number).toBe(2);
     expect(tv.phase).toBe('locked');
+    tv.receive('0');
+    expect(tv.number).toBe(10);
   });
 
-  it('a channel button abandons a half-typed number', () => {
-    const { tv } = ctx;
-    tv.receive('4');
-    tv.receive('ch+');
+  it('number presses while changing surf like CH ▲/▼', () => {
+    const { tv, of } = ctx;
+    tv.receive('3');
+    advance(0.05);
+    tv.receive('5');
     advance(2);
-    expect(tv.number).toBe(3);
+    expect(tv.number).toBe(5);
+    expect(tv.phase).toBe('locked');
+    expect(of('phase').filter((e) => e.phase === 'acquiring')).toHaveLength(1);
   });
 
   it('tunes an empty number to dead air, and CH ▲ leaves it', () => {
     const { tv, fx, of } = ctx;
-    tv.receive('0');
     tv.receive('4');
     advance(2);
     expect(tv.phase).toBe('dead');
@@ -200,7 +193,6 @@ describe('tuning', () => {
 
   it('pressing the current channel only re-shows the OSD', () => {
     const { tv, osd, of } = ctx;
-    tv.receive('0');
     tv.receive('2');
     expect(tv.phase).toBe('locked');
     expect(osd.setChannel).toHaveBeenLastCalledWith(2);

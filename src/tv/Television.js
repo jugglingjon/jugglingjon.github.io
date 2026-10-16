@@ -11,6 +11,10 @@ import {
 
 export const VOLUME_STEPS = 20;
 
+// Number buttons tune straight away: 1–9 are channels 1–9, and 0 (the tenth
+// key) is channel 10.
+export const digitChannel = (digit) => (digit === '0' ? 10 : Number(digit));
+
 // The set itself: power, tuner, volume and on-screen display. Remote buttons
 // arrive through receive(); the picture reacts through the shared `fx` object
 // and the OSD. Times are seconds on the GSAP clock, so the lab's slow motion
@@ -34,18 +38,15 @@ export class Television extends EventTarget {
     this.roughChance = 0.2; // share of channel changes that come in extra wobbly
     this.searchHold = 0.12; // seconds of snow on a single press
     this.surfHold = 0.25; // seconds of quiet needed before locking while surfing
-    this.entryTimeout = 1.5; // seconds to wait for a second digit
 
     this.on = false;
     this.phase = 'off';
     this.volume = 8;
     this.muted = false;
-    this.entry = '';
     this.surfing = false;
     this.look = { rough: 1, dir: 1 };
     this.timeline = null;
     this.acquireCall = null;
-    this.entryCall = null;
     this.osdCall = null;
 
     this.setLineup(lineup);
@@ -74,10 +75,9 @@ export class Television extends EventTarget {
     }
     if (!this.on) return;
     if (/^\d$/.test(button)) {
-      this.digit(button);
+      this.tune(digitChannel(button));
       return;
     }
-    this.cancelEntry();
     switch (button) {
       case 'ch+':
         return this.step(1);
@@ -120,7 +120,6 @@ export class Television extends EventTarget {
     if (!this.on) return;
     this.on = false;
     this.killTuner();
-    this.cancelEntry();
     calm(this.fx);
     powerOffFx(this.fx);
     this.osd.clear();
@@ -212,34 +211,6 @@ export class Television extends EventTarget {
       this.setPhase('locked');
       this.osd.setCaption(channel.name);
     });
-  }
-
-  // Number entry: one digit waits for a second (“CH 1-”), two digits tune at once.
-  digit(d) {
-    this.entry += d;
-    this.entryCall?.kill();
-    if (this.entry.length >= 2) {
-      this.commitEntry();
-      return;
-    }
-    this.osd.setChannel(`${this.entry}-`);
-    this.entryCall = gsap.delayedCall(this.entryTimeout, () => this.commitEntry());
-  }
-
-  commitEntry() {
-    this.entryCall?.kill();
-    this.entryCall = null;
-    const number = parseInt(this.entry, 10);
-    this.entry = '';
-    if (number > 0) this.tune(number);
-    else this.osd.setChannel(this.number);
-  }
-
-  cancelEntry() {
-    if (!this.entry) return;
-    this.entryCall?.kill();
-    this.entryCall = null;
-    this.entry = '';
   }
 
   setVolume(level) {

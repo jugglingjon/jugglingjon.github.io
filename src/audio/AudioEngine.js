@@ -2,13 +2,15 @@ import { brownNoise, roomImpulse, softClipCurve, whiteNoise } from './synth.js';
 
 const FLYBACK_HZ = 15734; // NTSC line rate: the CRT's high-pitched whine
 
-export const SOUND_DEFAULTS = { master: 0.8, static: 1, whine: 0.3, roomTone: 0.5 };
+export const SOUND_DEFAULTS = { master: 0.8, music: 1, static: 1, whine: 0.3, roomTone: 0.5 };
+const MUSIC_GAIN = 1.5; // music level at settings.music = 1
 
-// Everything you hear, synthesized with Web Audio; no sound files.
+// Everything you hear. The set's own sounds are synthesized with Web Audio;
+// only channel music and video soundtracks come from files.
 //
-//   TV speaker: channel audio and static, through a small boxy speaker and the
-//   room, scaled by the set's volume. Static tracks the snow on screen, so
-//   picture and sound can never drift apart.
+//   TV speaker: channel music, soundtracks and static, through a small boxy
+//   speaker and the room, scaled by the set's volume. Static tracks the snow
+//   on screen, so picture and sound can never drift apart.
 //   Hardware: remote clicks, the tuner relay, power thunk, degauss hum and
 //   flyback whine come from the plastic and the chassis, so the volume knob
 //   doesn't touch them.
@@ -20,6 +22,10 @@ export class AudioEngine {
     this.mediaNodes = new WeakMap();
     this.channelNode = null;
     this.channelTone = null;
+    this.musicBuffers = new Map(); // url → Promise<AudioBuffer | null>
+    this.musicOffsets = new WeakMap(); // source → where its "broadcast" started
+    this.music = null;
+    this.musicToken = 0;
 
     this.master = gain(ctx, settings.master);
     const limiter = ctx.createDynamicsCompressor();
@@ -59,6 +65,8 @@ export class AudioEngine {
 
     this.channelBus = gain(ctx, 0);
     this.channelBus.connect(this.speaker);
+    this.musicBus = gain(ctx, settings.music * MUSIC_GAIN);
+    this.musicBus.connect(this.channelBus);
 
     this.whine = ctx.createOscillator();
     this.whine.frequency.value = FLYBACK_HZ;
@@ -83,11 +91,12 @@ export class AudioEngine {
     const t = this.ctx.currentTime;
     const s = this.settings;
     const alive = Math.min(1, fx.power * 1.5);
-    this.staticGain.gain.setTargetAtTime(Math.pow(fx.snow, 1.3) * 0.28 * s.static * alive, t, 0.015);
+    this.staticGain.gain.setTargetAtTime(Math.pow(fx.snow, 1.3) * 0.2 * s.static * alive, t, 0.015);
     this.channelBus.gain.setTargetAtTime((1 - fx.snow) * alive, t, 0.03);
     this.whineGain.gain.setTargetAtTime(0.004 * s.whine * fx.power, t, 0.05);
     this.roomTone.gain.setTargetAtTime(0.35 * s.roomTone, t, 0.2);
     this.master.gain.setTargetAtTime(s.master, t, 0.05);
+    this.musicBus.gain.setTargetAtTime(s.music * MUSIC_GAIN, t, 0.05);
   }
 
   setVolume(level, muted, max = 20) {
@@ -97,6 +106,7 @@ export class AudioEngine {
 
   // Route the current station's sound (video soundtrack or test tone) to the speaker.
   setChannel(channel) {
+    this.playMusic(channel?.source);
     this.channelNode?.disconnect();
     this.channelTone?.stop();
     this.channelNode = this.channelTone = null;
@@ -118,6 +128,49 @@ export class AudioEngine {
       this.channelTone.start();
     }
     this.channelNode?.connect(this.channelBus);
+  }
+
+  // Fetch and decode channel music ahead of time so tuning in is instant.
+  preloadMusic(urls) {
+    urls.forEach((url) => this.loadMusic(url));
+  }
+
+  loadMusic(url) {
+    if (!this.musicBuffers.has(url)) {
+      const pending = fetch(url)
+        .then((response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.arrayBuffer();
+        })
+        .then((data) => this.ctx.decodeAudioData(data))
+        .catch((error) => {
+          console.warn(`Channel music failed to load: ${url}`, error);
+          return null;
+        });
+      this.musicBuffers.set(url, pending);
+    }
+    return this.musicBuffers.get(url);
+  }
+
+  // Each channel's music loops forever "on air": tuning in lands mid-song,
+  // wherever the broadcast has got to, rather than at the top.
+  async playMusic(source) {
+    const token = ++this.musicToken;
+    this.music?.stop();
+    this.music?.disconnect();
+    this.music = null;
+    if (!source?.music) return;
+
+    const buffer = await this.loadMusic(source.music);
+    if (!buffer || token !== this.musicToken) return; // surfed past while it loaded
+    if (!this.musicOffsets.has(source)) this.musicOffsets.set(source, Math.random() * buffer.duration);
+
+    const node = this.ctx.createBufferSource();
+    node.buffer = buffer;
+    node.loop = true;
+    node.connect(this.musicBus);
+    node.start(0, (this.ctx.currentTime + this.musicOffsets.get(source)) % buffer.duration);
+    this.music = node;
   }
 
   // A remote button: plastic tick over a soft thock.

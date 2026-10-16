@@ -3,7 +3,8 @@ import { createScrollRecording, drawColorBars, drawDashboard, drawNeonBurger, dr
 
 // A source is anything the TV can show:
 //   { name, texture, width, height, update?(time), activate?(), deactivate?(), onResize?,
-//     video?, tone? }   ← sound: a <video> soundtrack, or a test tone in Hz
+//     video?, tone?, music? }   ← sound: a <video> soundtrack, a test tone in Hz,
+//                                 and/or a looping music URL
 // Textures stay in their native (sRGB-encoded) values; Stage A works in gamma space.
 
 function canvasSource(name, canvas) {
@@ -58,16 +59,18 @@ function videoSource(name, srcs) {
 }
 
 const testMedia = (name) => ['mp4', 'webm'].map((ext) => `${import.meta.env.BASE_URL}media/test/${name}.${ext}`);
+// Placeholder loops from scripts/make-placeholder-music.mjs; swap for real tracks.
+const music = (name) => `${import.meta.env.BASE_URL}media/music/${name}.mp3`;
 
 export function createTestSources() {
   return [
-    canvasSource('Neon Burger Co.', drawNeonBurger()),
-    animatedSource('Field Notes', createScrollRecording()),
-    canvasSource('Orbit Analytics', drawDashboard()),
-    videoSource('Game of Life', testMedia('life')),
-    videoSource('Gradient Reel', testMedia('gradient-reel')),
+    { ...canvasSource('Neon Burger Co.', drawNeonBurger()), music: music('neon-burger') },
+    { ...animatedSource('Field Notes', createScrollRecording()), music: music('field-notes') },
+    { ...canvasSource('Orbit Analytics', drawDashboard()), music: music('orbit-analytics') },
+    Object.assign(videoSource('Game of Life', testMedia('life')), { music: music('game-of-life') }),
+    Object.assign(videoSource('Gradient Reel', testMedia('gradient-reel')), { music: music('gradient-reel') }),
     { ...canvasSource('Colour Bars', drawColorBars()), tone: 1000 }, // the classic 1 kHz line-up tone
-    canvasSource('Resolution Chart', drawResolutionChart()),
+    { ...canvasSource('Resolution Chart', drawResolutionChart()), music: music('forecast') },
   ];
 }
 

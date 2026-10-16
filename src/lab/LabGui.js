@@ -34,7 +34,6 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   tuner.add(remote, 'latency', 0, 0.3, 0.01).name('IR latency (s)');
   tuner.add(tv, 'searchHold', 0, 0.6, 0.01).name('Snow hold (s)');
   tuner.add(tv, 'surfHold', 0.05, 1, 0.01).name('Surf hold (s)');
-  tuner.add(tv, 'entryTimeout', 0.5, 3, 0.1).name('Digit wait (s)');
 
   // Volume lives on the TV (it drives the OSD); the rest is the mix.
   const knob = {
@@ -55,6 +54,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   sound.add(knob, 'volume', 0, 20, 1).name('TV volume').listen();
   sound.add(knob, 'muted').name('Mute   M').listen();
   sound.add(soundSettings, 'master', 0, 1, 0.01).name('Master');
+  sound.add(soundSettings, 'music', 0, 1.5, 0.01).name('Channel music');
   sound.add(soundSettings, 'static', 0, 1.5, 0.01).name('Static');
   sound.add(soundSettings, 'whine', 0, 1, 0.01).name('Flyback whine');
   sound.add(soundSettings, 'roomTone', 0, 1.5, 0.01).name('Room tone');

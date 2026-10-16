@@ -24,7 +24,7 @@ import { loadSaved } from './lab/storage.js';
 // Screen lab: the CRT pipeline (Phase 1) driven by the set's tuner, remote and
 // sound (Phase 2), on a flat screen or a procedural TV in a greybox room.
 
-const FIRST_CHANNEL = 2; // VHF starts at 2
+const FIRST_CHANNEL = 1; // so number keys 1–9 land on the first nine channels
 
 const canvas = document.querySelector('#scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -116,6 +116,7 @@ function startAudio() {
   const Context = window.AudioContext ?? window.webkitAudioContext;
   if (!Context) return;
   audio = new AudioEngine(new Context(), soundSettings);
+  audio.preloadMusic(tv.lineup.map((c) => c.source.music).filter(Boolean));
   audio.setVolume(tv.volume, tv.muted);
   audio.setChannel(tv.on ? tv.channel : null);
   updateHud();

@@ -14,6 +14,7 @@ npm run dev        # http://localhost:5173
 npm test           # unit tests for the tuner state machine (Vitest)
 npm run build      # static build in dist/, relative paths, runs from any folder
 npm run media:test # regenerate the placeholder test videos (needs ffmpeg)
+npm run media:music # regenerate the placeholder channel music (needs ffmpeg)
 ```
 
 ## Screen lab controls
@@ -24,7 +25,7 @@ The set starts switched off. Press <kbd>P</kbd> or the red **POWER** button on t
 |---|---|---|
 | <kbd>P</kbd> | POWER | Power on/off (warm-up, degauss, collapse to a dot) |
 | <kbd>↑</kbd> <kbd>→</kbd> / <kbd>↓</kbd> <kbd>←</kbd> | CH ▲ / ▼ | Channel up/down; skips unprogrammed numbers; hold to surf |
-| <kbd>0</kbd>–<kbd>9</kbd> | 0–9 | Tune directly: one digit waits briefly for a second (`CH 1-`) |
+| <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> | 1–9, 0 | Tune straight to channel 1–9; 0 is channel 10 |
 | <kbd>R</kbd> / <kbd>Backspace</kbd> | RCL | Recall the previous channel |
 | <kbd>+</kbd> / <kbd>−</kbd> | VOL + / − | Volume, with the OSD bar; hold to repeat |
 | <kbd>M</kbd> | MUTE | Mute |
@@ -34,7 +35,7 @@ The set starts switched off. Press <kbd>P</kbd> or the red **POWER** button on t
 
 - Drag to orbit the TV in 3D view.
 - Drop any image or video onto the page (or use **Source → Load image / video…**) to add it as the next channel. Dropped videos play their soundtrack through the TV speaker.
-- Tuning a number with nothing on it gives dead air: snow and hiss.
+- Channels start at 1, so the number keys reach the first ten. Tuning a number with nothing on it gives dead air: snow and hiss.
 - **TV → Speed (slow-mo)** runs the lab clock down to 2% speed, so you can study a channel change frame by frame.
 - **Tuner** sets reduced motion, rough-change odds, IR latency and the snow/surf timings. **Sound** sets the volume and mix.
 - Every slider in **Signal**, **Tube** and **Glass** is live. Changes auto-save to this browser. **Presets → Copy JSON** exports the current look; paste it into `PRESETS` in `src/screen/params.js` to make it permanent.
@@ -78,8 +79,8 @@ Television.receive(button)
 
 - **Tuner phases:** `locked → losing → searching → acquiring → locked`, or `dead` when nothing is broadcasting on that number. Presses mid-change never restart the sequence. The tuner stays in the snow, swaps stations under it, and only locks once you stop pressing, so holding CH ▲ surfs the way a real set did.
 - **`Television`** decides *when* things happen. **`transitions.js`** decides *what they look like*. Both run on the GSAP clock, so the lab's slow motion applies to the whole set.
-- **Sound is fully synthesized** (`src/audio/`), so there are no audio files:
-  - **Through the TV speaker** (small-speaker EQ and a little room reverb, scaled by volume): static and channel audio. Static follows the snow on screen, so sound and picture can't drift apart.
+- **The set's own sounds are synthesized** (`src/audio/`); only channel music and video soundtracks are files:
+  - **Through the TV speaker** (small-speaker EQ and a little room reverb, scaled by volume): channel music, video soundtracks and static. Static follows the snow on screen and channel audio ducks under it, so sound and picture can't drift apart.
   - **Straight from the hardware** (unaffected by volume): remote clicks, the tuner relay, the power thunk, degauss hum and HV crackle, and the 15.7 kHz flyback whine.
   - **Always on:** quiet room tone.
 - **Reduced motion:** with `prefers-reduced-motion` the tuner swaps through a quick snow cut, with no roll or tearing.
@@ -114,13 +115,41 @@ src/
     LabGui.js · RemotePad.js · sources.js · testCards.js · storage.js
   styles/                  main.scss, _tokens.scss, _remote.scss
 public/media/test/         placeholder videos (MP4 + WebM)
-scripts/make-test-media.sh
+public/media/music/        placeholder channel music (MP3 loops)
+scripts/
+  make-test-media.sh       renders the test videos
+  make-placeholder-music.mjs  synthesizes the music loops from note data
 ```
+
+## Channel music
+
+Each channel can have a looping music track (`music` on its source, see `src/lab/sources.js`). It plays through the TV speaker, ducks under the static during a channel change, and keeps "airing" while you're away: tune back in and you land mid-song, not at the top. Tracks are fetched and decoded when sound is first enabled, so tuning is instant.
+
+The current tracks are placeholders synthesized by `scripts/make-placeholder-music.mjs`. They are original, so there is nothing to license. To use a real track:
+
+1. Export a short loop (10–30 s) as MP3, mono is fine. Cut it on a bar line so it loops cleanly.
+2. Drop it in `public/media/music/`.
+3. Point the channel's `music` at it.
+
+The TV speaker filter makes everything appropriately tinny, so there's no need for hi-fi files.
+
+### Where to find music that fits
+
+Tinny, synth, fun, ambient, retro, short:
+
+- **Make your own in [BeepBox](https://www.beepbox.co/)** (or its fork JummBox). This is the closest fit. It's a free browser chiptune tracker that exports WAV, and BeepBox doesn't claim ownership of songs made with it, so there's no licence to manage.
+- **[OpenGameArt.org](https://opengameart.org/)**: lots of short, loopable chiptune and synth tracks, many under CC0 (no credit needed), e.g. [short chiptune loop](https://opengameart.org/content/short-chiptune-loop) and [chiploop](https://opengameart.org/content/chiploop), both CC0. Synthwave packs exist too but are often CC-BY, which means credit required.
+- **[Freesound.org](https://freesound.org/)**: synth loops and jingles. Filter by licence: CC0 is free to use, CC BY needs credit, and CC BY-NC is non-commercial only, so avoid it for a portfolio that wins you paid work.
+- **[Pixabay Music](https://pixabay.com/music/)**: big searchable catalogue ("synthwave", "80s", "retro"), generally free with no attribution under the Pixabay Content License. Check the licence page and each track's page before relying on it.
+- **Avoid the YouTube Audio Library** for a website. Its terms are written around use on YouTube, and use elsewhere is unclear track by track.
+
+Keep a note of each track's source and licence (and credit CC-BY artists somewhere on the site).
 
 ## Placeholders to replace
 
 - **TV, stand and room:** procedural geometry and canvas textures. They get replaced by Blender models with baked lightmaps in Phase 5.
 - **Projects:** canvas-drawn mock sites (Neon Burger Co., Field Notes, Orbit Analytics), test patterns and two ffmpeg-generated loops. Real screenshots and recordings arrive in Phase 6.
+- **Channel music:** synthesized placeholder loops; see [Channel music](#channel-music).
 - **Remote:** a clickable DOM remote (`src/lab/RemotePad.js`) drives the same `Remote` object the 3D arm and remote will use in Phase 4.
 - **Brand badge:** "Lumatron" is a stand-in for your own mark (`createBadgeTexture` in `src/world/textures.js`).
 
