@@ -36,7 +36,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 | <kbd>V</kbd> | | Cycle views: seated (you, on the couch), orbit (free debug camera), flat screen |
 | <kbd>H</kbd> | | Hide the panels |
 
-- In the seated view the pointer also turns your head a little. In orbit view, drag to move the camera.
+- In the seated view the camera stays still; the pointer moves your arm a little as well as your thumb. In orbit view, drag to move the camera.
 - Every key, scroll and on-screen remote press plays out with your thumb too, so you always see which button went down.
 - Drop any image or video onto the page (or use **Source → Load image / video…**) to add it as the next channel. Dropped videos play their soundtrack through the TV speaker.
 - Channels start at 1, so the number keys reach the first ten. Tuning a number with nothing on it gives dead air: snow and hiss.
@@ -58,16 +58,16 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - **Light:** the TV (its picture's average colour, see `TVGlow`), two warm lamps, the hallway bulb, and a pink neon sign across the street. The neon is the one shadow-casting light, and the blinds are real slats, so it throws genuine stripes across the floor, table and TV. **Room → Blind tilt** changes them.
 - **Tuning:** the Room panel sets lamps, neon, blind tilt, dust brightness and size, and the coffee table's varnish. **Table reflectivity** is how strongly it reflects the TV and lamps; **Table gloss** is how sharp those reflections are.
 - **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon buzzes and stutters, rain runs down the window, and the VCR blinks 12:00.
-- **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath and a small head turn towards the pointer. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and the remote.
+- **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath (**Camera → Breathing**, 0 for a dead-still camera); the pointer moves your arm, not your head. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and the remote.
 - **Screen rect:** `seated.screenRect(tv.screen)` gives the TV glass's on-screen bounds in normalised coordinates every frame, for anything that has to line up with the picture. **Camera → Show screen rect** draws it, with the engage zone around it.
-- **Reduced motion:** with `prefers-reduced-motion`, breathing stops and the head turn shrinks.
+- **Reduced motion:** with `prefers-reduced-motion`, breathing stops and the arm follows the pointer half as much.
 
 ## The arm and remote
 
 - **The mapping:** the middle 80% of the screen maps onto the remote's face, the way you see it. Up is towards the tip (POWER, then the number pad), down is the VOL and CH rockers, and left and right go across. The nearest button is the target, with a little hysteresis so the thumb doesn't flicker on a boundary (`src/viewmodel/thumbing.js`). The middle of the screen is **8**, and the bottom right is **CH ▲ / ▼**.
-- **The thumb** is a two-bone chain solved with IK every frame. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The flannel sleeve comes in from the bottom-right corner.
+- **The thumb** is a two-bone chain solved with IK every frame. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The arm also drifts a few centimetres after the pointer, and the remote's tip swings that way a little while it stays aimed at the set. The flannel sleeve comes in from the bottom-right corner.
 - **Presses:** a click goes to `Remote.hold`. The remote fires `press` immediately, and `ArmRig` plays the thumb press: down 60 ms, hold, up 100 ms. The button sinks, the IR LED blinks, and the TV reacts after the IR latency. Keys, scroll and the lab remote go through the same `Remote`, so the thumb presses for those too.
-- **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, scales it, and sets how firmly the thumb settles onto the target. You can also switch the highlight off there.
+- **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, and scales it. It also sets how far the arm follows the pointer (**Follow pointer**) and how firmly the thumb settles onto the target. You can also switch the highlight off there.
 - When the pointer leaves the page, the arm lowers; it comes back up when the pointer returns. On touch screens a tap aims and presses in one go.
 
 ## How the screen works
@@ -141,7 +141,7 @@ src/
     Hand.js                right hand: palm, curled fingers, IK thumb, grip slide
     thumbing.js            button layout, pointer → button, two-bone IK (+ thumbing.test.js, Hand.test.js)
   camera/
-    SeatedCamera.js        the viewer: seat, framing, breathing, head turn, screen rect
+    SeatedCamera.js        the viewer: seat, framing, breathing, screen rect
     framing.js             fitVerticalFov, projectBounds (+ framing.test.js)
   world/                   procedural stand-ins until the Blender art pass
     layout.js              where everything is

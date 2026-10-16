@@ -35,7 +35,6 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   view.add(seated.settings, 'frameHeight', 0.5, 2, 0.01).name('Keep height (m)').onChange(reframe);
   view.add(seated.settings, 'tvHeight', -0.5, 0.6, 0.01).name('TV height in frame');
   view.add(seated.settings, 'breathing', 0, 3, 0.05).name('Breathing');
-  view.add(seated.settings, 'parallax', 0, 3, 0.05).name('Head turn');
   view.add(state, 'overlay').name('Show screen rect');
 
   const a = rig.settings;
@@ -45,6 +44,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   arm.add(a, 'distance', 0.25, 0.8, 0.005).name('Reach');
   arm.add(a, 'tilt', -0.2, 1.2, 0.01).name('Face tilt');
   arm.add(a, 'roll', -0.8, 0.8, 0.01).name('Roll');
+  arm.add(a, 'follow', 0, 3, 0.05).name('Follow pointer');
   arm.add(a, 'size', 0.6, 1.6, 0.01).name('Size');
   arm.add(a, 'snap', 0, 1, 0.01).name('Thumb snap');
   arm.add(a, 'highlight').name('Highlight target');

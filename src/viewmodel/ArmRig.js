@@ -10,6 +10,7 @@ export const ARM_DEFAULTS = {
   distance: 0.5,
   tilt: 0.45, // nose-up, so the face turns towards you (radians)
   roll: -0.3,
+  follow: 1, // how much the arm drifts and swings towards the pointer
   size: 1,
   snap: 0.7, // how strongly the thumb settles onto the targeted button
   highlight: true,
@@ -25,6 +26,8 @@ const PRESS = { down: 0.06, hold: 0.06, up: 0.1 };
 const PRESS_LENGTH = PRESS.down + PRESS.hold + PRESS.up;
 const Y = new THREE.Vector3(0, 1, 0);
 const dir = new THREE.Vector3();
+const right = new THREE.Vector3();
+const up = new THREE.Vector3();
 
 // Stretch a unit-height mesh between two points.
 function span(mesh, a, b) {
@@ -66,6 +69,8 @@ export class ArmRig {
 
     // Rest the thumb over CH ▲ until the pointer arrives.
     this.pointer = new THREE.Vector2(0.41, -0.45);
+    this.look = this.pointer.clone(); // the pointer, eased, for the arm's drift
+    this.aim = new THREE.Vector3();
     this.active = true;
     this.raise = 0;
     this.hovered = 'ch+';
@@ -116,15 +121,25 @@ export class ArmRig {
     this.raise += ((this.active ? 1 : 0) - this.raise) * (1 - Math.exp(-dt * 5));
     const lower = 1 - this.raise;
     const sway = reducedMotion ? 0 : 1;
+    this.look.lerp(this.pointer, 1 - Math.exp(-dt * 4));
+    const follow = s.follow * (reducedMotion ? 0.5 : 1);
 
     // Hold the remote out in front, aimed at the TV, face tilted towards you.
+    // The arm drifts a few centimetres after the pointer, and the tip swings
+    // that way a little, while still pointing at the set.
     this.offset.set(
-      s.x + Math.sin(time * 0.9) * 0.002 * sway,
-      s.y - lower * 0.45 + Math.sin(time * 1.3) * 0.0015 * sway,
+      s.x + this.look.x * 0.02 * follow + Math.sin(time * 0.9) * 0.002 * sway,
+      s.y + this.look.y * 0.014 * follow - lower * 0.45 + Math.sin(time * 1.3) * 0.0015 * sway,
       -s.distance + lower * 0.1,
     );
     this.held.position.copy(this.offset).applyMatrix4(camera.matrixWorld);
-    this.held.lookAt(this.aimAt);
+    right.setFromMatrixColumn(camera.matrixWorld, 0);
+    up.setFromMatrixColumn(camera.matrixWorld, 1);
+    this.aim
+      .copy(this.aimAt)
+      .addScaledVector(right, this.look.x * 0.2 * follow)
+      .addScaledVector(up, this.look.y * 0.12 * follow);
+    this.held.lookAt(this.aim);
     this.held.rotateX(-s.tilt + lower * 0.9);
     this.held.rotateZ(s.roll);
     this.held.scale.setScalar(s.size);

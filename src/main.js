@@ -100,20 +100,16 @@ const remote = new Remote(tv);
 const rig = new ArmRig({ remote, aimAt: screenWorld });
 room.scene.add(rig.root);
 
-// The pointer steers the thumb across the remote (and turns your head a
-// little); leaving the page lowers the arm.
+// The pointer steers the thumb across the remote and nudges your arm about;
+// the camera stays still. Leaving the page lowers the arm.
 function aim(e) {
   const x = (e.clientX / window.innerWidth) * 2 - 1;
   const y = -(e.clientY / window.innerHeight) * 2 + 1;
-  seated.setPointer(x, y);
   rig.setPointer(x, y);
   rig.setActive(true);
 }
 window.addEventListener('pointermove', aim);
-document.documentElement.addEventListener('pointerleave', () => {
-  seated.setPointer(0, 0);
-  rig.setActive(false);
-});
+document.documentElement.addEventListener('pointerleave', () => rig.setActive(false));
 
 // Click presses whichever button the thumb is over; holding CH or VOL repeats.
 // Aim first: a tap on a touch screen arrives without a hover.
@@ -389,7 +385,7 @@ renderer.setAnimationLoop(() => {
   } else {
     const seatedView = state.mode === 'seated';
     const camera = seatedView ? seated.camera : orbitCamera;
-    if (seatedView) seated.update(clock, dt);
+    if (seatedView) seated.update(clock);
     else controls.update();
     rig.update(dt, seated.camera, clock, { reducedMotion });
     glow.update(signal.texture, fx.power * params.display.emission, realDt);
