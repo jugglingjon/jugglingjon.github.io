@@ -13,16 +13,20 @@ import { Remote } from './tv/Remote.js';
 import { AudioEngine, SOUND_DEFAULTS } from './audio/AudioEngine.js';
 import { createScreenGeometry, SCREEN_HEIGHT, SCREEN_WIDTH } from './world/screenGeometry.js';
 import { createEnvTexture, createSmudgeTexture } from './world/textures.js';
-import { TV } from './world/TV.js';
-import { Stage } from './world/Stage.js';
+import { SCREEN_CENTER, TV } from './world/TV.js';
+import { Room } from './world/Room.js';
 import { TVGlow } from './world/TVGlow.js';
+import { COUCH, EYE, FLOOR_LAMP, STAND, WINDOW } from './world/layout.js';
+import { SeatedCamera } from './camera/SeatedCamera.js';
 import { createTestSources, sourceFromFile } from './lab/sources.js';
 import { createLabGui } from './lab/LabGui.js';
 import { createRemotePad } from './lab/RemotePad.js';
+import { createScreenRectOverlay } from './lab/ScreenRectOverlay.js';
 import { loadSaved } from './lab/storage.js';
 
-// Screen lab: the CRT pipeline (Phase 1) driven by the set's tuner, remote and
-// sound (Phase 2), on a flat screen or a procedural TV in a greybox room.
+// Screen lab: the CRT pipeline (Phase 1), driven by the set's tuner, remote and
+// sound (Phase 2), seen from the couch in a greybox apartment (Phase 3), or
+// from an orbit camera, or as a flat screen.
 
 const FIRST_CHANNEL = 1; // so number keys 1–9 land on the first nine channels
 
@@ -31,17 +35,20 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPrefere
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 2; // the screen ignores tone mapping, so this only lifts the room
+renderer.shadowMap.enabled = true; // one caster: the neon through the blinds
+renderer.shadowMap.type = THREE.PCFShadowMap;
 RectAreaLightUniformsLib.init();
 
 const params = cloneDefaults();
 loadSaved(params);
 const fx = createFx();
-const state = { mode: 'tv', channel: FIRST_CHANNEL, preset: '80s living room', panel: true, timeScale: 1 };
+const state = { mode: 'seated', overlay: false, channel: FIRST_CHANNEL, preset: '80s living room', panel: true, timeScale: 1 };
 
 // Screen pipeline: Stage A (signal) → Stage B (tube + glass).
 const osd = new OSD();
 const signal = new SignalPass(renderer, osd.texture);
-const env = createEnvTexture();
+const screenWorld = SCREEN_CENTER.clone().add(STAND.position).setY(SCREEN_CENTER.y + STAND.height);
+const env = createEnvTexture({ origin: screenWorld, eye: EYE, couch: COUCH, floorLamp: FLOOR_LAMP, window: WINDOW });
 const screenMaterial = new ScreenMaterial({ signal: signal.texture, env, smudge: createSmudgeTexture() });
 const screenGeometry = createScreenGeometry();
 
@@ -51,35 +58,45 @@ flat.scene.background = new THREE.Color('#060504');
 flat.scene.add(new THREE.Mesh(screenGeometry, screenMaterial));
 flat.camera.position.z = 1;
 
-// TV set view.
-const stage = new Stage({ env });
+// The apartment, the set in it, and the light it throws.
+const room = new Room({ env });
 const tvModel = new TV({ screenGeometry, screenMaterial });
-stage.placeTV(tvModel);
+room.placeTV(tvModel);
 const glow = new TVGlow(renderer, { width: 0.47, height: 0.35 });
 glow.light.position.copy(tvModel.screenCenter).add(new THREE.Vector3(0, 0, 0.01));
 tvModel.group.add(glow.light);
-tvModel.group.updateMatrixWorld(true);
-const screenWorld = tvModel.group.localToWorld(tvModel.screenCenter);
 
-const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 50);
-const controls = new OrbitControls(camera, canvas);
+// Seated: you, on the couch. Orbit: a free debug camera around the room.
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const seated = new SeatedCamera({ eye: EYE, target: screenWorld });
+seated.reducedMotion = reducedMotion;
+
+const orbitCamera = new THREE.PerspectiveCamera(45, 1, 0.05, 50);
+const controls = new OrbitControls(orbitCamera, canvas);
 controls.enableDamping = true;
 controls.minDistance = 0.5;
-controls.maxDistance = 4.5;
+controls.maxDistance = 6;
 controls.maxPolarAngle = Math.PI * 0.53;
 
 function resetCamera() {
-  // Roughly where you'd sit on the couch.
-  camera.position.set(0.25, 1.12, 2.35);
-  controls.target.copy(screenWorld);
+  orbitCamera.position.set(1.6, 1.7, 3.2);
+  controls.target.set(0, 0.9, 0.8);
   controls.update();
 }
 resetCamera();
 
+const overlay = createScreenRectOverlay();
+document.body.append(overlay.el);
+
+// The head turns a little towards the pointer.
+window.addEventListener('pointermove', (e) => {
+  seated.setPointer((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+});
+document.documentElement.addEventListener('pointerleave', () => seated.setPointer(0, 0));
+
 // The set, its lineup and the remote. Every source gets a channel number;
 // numbers without a source tune to dead air.
 const lineup = createTestSources().map((source, i) => ({ number: FIRST_CHANNEL + i, name: source.name, source }));
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const tv = new Television({ fx, osd, lineup, reducedMotion });
 const remote = new Remote(tv);
 
@@ -159,9 +176,11 @@ remote.addEventListener('press', () => audio?.click());
 
 document.body.append(createRemotePad(remote));
 
+const MODES = ['seated', 'orbit', 'flat'];
+
 function setMode(mode) {
   state.mode = mode;
-  controls.enabled = mode === 'tv';
+  controls.enabled = mode === 'orbit';
   document.body.dataset.mode = mode;
 }
 
@@ -201,7 +220,7 @@ const actions = {
   },
 };
 
-const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings });
+const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room });
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;
@@ -254,7 +273,7 @@ window.addEventListener('keydown', (e) => {
       degauss(fx);
       break;
     case 'v':
-      setMode(state.mode === 'tv' ? 'flat' : 'tv');
+      setMode(MODES[(MODES.indexOf(state.mode) + 1) % MODES.length]);
       break;
     case 'h':
       state.panel = !state.panel;
@@ -271,8 +290,9 @@ function resize() {
   const width = window.innerWidth;
   const height = window.innerHeight;
   renderer.setSize(width, height);
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
+  seated.setAspect(width / height);
+  orbitCamera.aspect = width / height;
+  orbitCamera.updateProjectionMatrix();
 
   // Fit the 4:3 glass in the flat view with a small margin.
   const aspect = width / height;
@@ -314,13 +334,24 @@ renderer.setAnimationLoop(() => {
   screenMaterial.update(params, fx, signal.texture, clock, frame);
   audio?.update(fx);
 
-  if (state.mode === 'tv') {
-    controls.update();
-    stage.update(clock);
-    glow.update(signal.texture, fx.power * params.display.emission, realDt);
-    renderer.render(stage.scene, camera);
-  } else {
+  if (state.mode === 'flat') {
+    overlay.hide();
     renderer.render(flat.scene, flat.camera);
+  } else {
+    const seatedView = state.mode === 'seated';
+    const camera = seatedView ? seated.camera : orbitCamera;
+    if (seatedView) seated.update(clock, dt);
+    else controls.update();
+    glow.update(signal.texture, fx.power * params.display.emission, realDt);
+    room.update(clock, {
+      camera,
+      tvColor: glow.light.color,
+      tvLevel: glow.light.intensity / Math.max(glow.strength, 1e-3),
+      pixelScale: renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))),
+    });
+    renderer.render(room.scene, camera);
+    if (seatedView && state.overlay) overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight);
+    else overlay.hide();
   }
 
   fpsFrames++;
@@ -337,7 +368,7 @@ updateHud();
 
 if (import.meta.env.DEV) {
   window.lab = {
-    params, fx, state, actions, renderer, camera, controls, glow, stage, tvModel, signal, osd, tv, remote,
+    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote,
     gsap,
     get audio() {
       return audio;

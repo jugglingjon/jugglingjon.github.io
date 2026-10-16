@@ -26,7 +26,7 @@ body {
   touch-action: none;
 }
 
-body[data-mode='tv'] #scene {
+body[data-mode='orbit'] #scene {
   cursor: grab;
 
   &:active {
@@ -146,5 +146,39 @@ body[data-mode='tv'] #scene {
 @media (max-width: 640px), (max-height: 720px) {
   .hud__keys {
     display: none;
+  }
+}
+
+// Lab overlay: projected TV screen and the Phase 4 engage zone.
+.screen-rect {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+
+  &[hidden] {
+    display: none;
+  }
+
+  > div {
+    position: absolute;
+    border: 1px dashed;
+  }
+
+  span {
+    position: absolute;
+    top: -16px;
+    left: 0;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  &__screen {
+    border-color: $osd-green !important;
+    color: $osd-green;
+  }
+
+  &__zone {
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    color: rgba(255, 255, 255, 0.5);
   }
 }

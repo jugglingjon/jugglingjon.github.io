@@ -2,7 +2,7 @@
 
 A web and design portfolio set in a dingy 1980s apartment. You stare at an old CRT TV, raise a chunky remote, and every channel is a project.
 
-**Status: Phase 2, the channel engine.** The screen lab from Phase 1 now has a working set behind it: a tuner state machine, a remote with infrared lag, number entry, volume and mute, and synthesized sound. A procedural TV, a greybox corner of the room and a clickable remote stand in for the final models.
+**Status: Phase 3, the apartment.** You now watch from the couch in a greybox 1980s living room: wood paneling, a lamp, a coffee table with an ashtray and a listings magazine, and neon from across the street striping the room through the blinds. The camera keeps the TV well framed on any screen shape and turns a little towards your pointer. Underneath is the Phase 1 screen and the Phase 2 tuner, remote and sound. Procedural models and a clickable remote stand in for the final art.
 
 ## Getting started
 
@@ -30,15 +30,32 @@ The set starts switched off. Press <kbd>P</kbd> or the red **POWER** button on t
 | <kbd>+</kbd> / <kbd>−</kbd> | VOL + / − | Volume, with the OSD bar; hold to repeat |
 | <kbd>M</kbd> | MUTE | Mute |
 | <kbd>D</kbd> | | Degauss |
-| <kbd>V</kbd> | | Toggle the 3D TV set and the flat, head-on screen |
+| <kbd>V</kbd> | | Cycle views: seated (you, on the couch), orbit (free debug camera), flat screen |
 | <kbd>H</kbd> | | Hide the panels |
 
-- Drag to orbit the TV in 3D view.
+- In the seated view, move the pointer to look around a little. In orbit view, drag to move the camera.
 - Drop any image or video onto the page (or use **Source → Load image / video…**) to add it as the next channel. Dropped videos play their soundtrack through the TV speaker.
 - Channels start at 1, so the number keys reach the first ten. Tuning a number with nothing on it gives dead air: snow and hiss.
 - **TV → Speed (slow-mo)** runs the lab clock down to 2% speed, so you can study a channel change frame by frame.
 - **Tuner** sets reduced motion, rough-change odds, IR latency and the snow/surf timings. **Sound** sets the volume and mix.
 - Every slider in **Signal**, **Tube** and **Glass** is live. Changes auto-save to this browser. **Presets → Copy JSON** exports the current look; paste it into `PRESETS` in `src/screen/params.js` to make it permanent.
+
+## The apartment
+
+```
+            TV wall (paneling) ── print · lamp on end table · TV on stand · plant
+   door ▏                                                                 ▕ window + blinds
+ (ajar,  ▏                    rug · coffee table                          ▕  ← neon sign
+  hall)  ▏                                                                ▕    across the street
+            couch (you sit here, eye 1.1 m) · floor lamp behind
+```
+
+- **Layout:** everything is placed from `src/world/layout.js`. The room, the seated camera and the painted glass reflections all read from it, so moving the lamp moves its reflection too.
+- **Light:** the TV (its picture's average colour, see `TVGlow`), two warm lamps, the hallway bulb, and a pink neon sign across the street. The neon is the one shadow-casting light, and the blinds are real slats, so it throws genuine stripes across the floor, table and TV. **Room → Blind tilt** changes them.
+- **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, smoke curls from the cigarette, the neon buzzes and stutters, rain runs down the window, and the VCR blinks 12:00.
+- **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath and a small head turn towards the pointer. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and, in Phase 4, the remote.
+- **Screen rect:** `seated.screenRect(tv.screen)` gives the TV glass's on-screen bounds in normalised coordinates every frame. Phase 4 maps the pointer against it. **Camera → Show screen rect** draws it, with the engage zone around it.
+- **Reduced motion:** with `prefers-reduced-motion`, breathing stops and the head turn shrinks.
 
 ## How the screen works
 
@@ -105,14 +122,22 @@ src/
     transitions.js         signal loss / acquire / dead air, power on/off, degauss
     params.js              tunable defaults and presets
     shaders/               common.glsl, signal.frag, screen.vert/.frag, fullscreen.vert
+  camera/
+    SeatedCamera.js        the viewer: seat, framing, breathing, head turn, screen rect
+    framing.js             fitVerticalFov, projectBounds (+ framing.test.js)
   world/                   procedural stand-ins until the Blender art pass
+    layout.js              where everything is
+    Room.js                walls, floor, ceiling, door, lights; assembles the rest
+    furniture.js           TV stand + VCR + tapes, coffee table, couch, end table, lamps
+    props.js               ashtray, beer can, magazines, plant, framed print
+    windowView.js          window, real blind slats, rain glass, the street and its neon
+    atmosphere.js          dust motes, cigarette smoke, rain shader
     TV.js                  ~20" woodgrain set: fascia, dials, rabbit ears
-    Stage.js               carpet, paneling, TV stand, VCR, tapes, lights
     TVGlow.js              screen-coloured room light
     screenGeometry.js      curved (spherical cap) glass
-    textures.js            canvas textures: wood, carpet, smudges, room reflection
+    textures.js            canvas textures for all of the above, plus the room reflection
   lab/                     screen-lab-only tooling
-    LabGui.js · RemotePad.js · sources.js · testCards.js · storage.js
+    LabGui.js · RemotePad.js · ScreenRectOverlay.js · sources.js · testCards.js · storage.js
   styles/                  main.scss, _tokens.scss, _remote.scss
 public/media/test/         placeholder videos (MP4 + WebM)
 public/media/music/        placeholder channel music (MP3 loops)
@@ -147,7 +172,7 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 
 ## Placeholders to replace
 
-- **TV, stand and room:** procedural geometry and canvas textures. They get replaced by Blender models with baked lightmaps in Phase 5.
+- **TV, furniture, props and room:** procedural geometry and canvas textures, laid out in `layout.js`. They get replaced by Blender models with baked lightmaps (including a TV-light channel) in Phase 5.
 - **Projects:** canvas-drawn mock sites (Neon Burger Co., Field Notes, Orbit Analytics), test patterns and two ffmpeg-generated loops. Real screenshots and recordings arrive in Phase 6.
 - **Channel music:** synthesized placeholder loops; see [Channel music](#channel-music).
 - **Remote:** a clickable DOM remote (`src/lab/RemotePad.js`) drives the same `Remote` object the 3D arm and remote will use in Phase 4.
@@ -156,8 +181,8 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 ## Roadmap
 
 1. ~~Screen lab: both shader stages, tuning UI, presets~~
-2. ~~Channel engine: tuner state machine, remote with IR latency, number entry, volume, synthesized audio~~ (this phase)
-3. Greybox apartment, camera framing per aspect ratio
+2. ~~Channel engine: tuner state machine, remote with IR latency, number entry, volume, synthesized audio~~
+3. ~~Greybox apartment, seated camera, framing per aspect ratio, screen rect~~ (this phase)
 4. Arm and remote: viewmodel pass, mouse mapping (up/right = CH▲, left/down = CH▼), thumb poses
 5. Art pass: Blender models, baked lightmaps with a TV light channel, post-processing
 6. Content: project data, PHP-rendered routes and fallback, TV Guide case-study overlay

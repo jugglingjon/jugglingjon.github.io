@@ -7,7 +7,7 @@ import { createBadgeTexture, createDialTexture, createGrilleTexture, createWoodT
 // the origin is the floor point under the cabinet's centre.
 
 const FEET = 0.012;
-const SCREEN_CENTER = new THREE.Vector3(-0.075, FEET + 0.29, 0.226);
+export const SCREEN_CENTER = new THREE.Vector3(-0.075, FEET + 0.29, 0.226); // in TV-local space
 
 function roundedRectPath(path, cx, cy, w, h, r) {
   const x = cx - w / 2;

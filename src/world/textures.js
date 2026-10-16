@@ -63,7 +63,7 @@ export function createWoodTexture({ base = '#5e3a20', dark = '#2e1a0c', light = 
 }
 
 // Vertical wood paneling with V-grooves between planks.
-export function createPanelingTexture() {
+export function createPanelingTexture(repeat = [6, 1]) {
   const [canvas, ctx] = makeCanvas(512, 512);
   ctx.fillStyle = '#4a2e19';
   ctx.fillRect(0, 0, 512, 512);
@@ -75,7 +75,7 @@ export function createPanelingTexture() {
     ctx.fillStyle = 'rgba(10, 5, 2, 0.85)';
     ctx.fillRect(x, 0, 3, 512);
   }
-  return colorTexture(canvas, [6, 1]);
+  return colorTexture(canvas, repeat);
 }
 
 // Brown-orange shag carpet.
@@ -220,17 +220,308 @@ export function createSmudgeTexture() {
   return texture;
 }
 
-// Equirectangular "photo" of the room behind the viewer, reflected by the
-// screen glass and used as the scene environment. Layout matches Stage.js:
-// the viewer sits at +z (u = 0.75); window is to their right, lamp to their left.
-export function createEnvTexture() {
+// --- Room surfaces ---------------------------------------------------------
+
+// Seventies wallpaper: staggered rings in mustard and rust.
+export function createWallpaperTexture(repeat) {
+  const [canvas, ctx] = makeCanvas(256, 256);
+  ctx.fillStyle = '#4f3b22';
+  ctx.fillRect(0, 0, 256, 256);
+  const rings = ['#7a5a2e', '#8c4a1e', '#3d2a17'];
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 5; col++) {
+      const x = col * 64 + (row % 2 ? 32 : 0);
+      const y = row * 64 + 32;
+      rings.forEach((color, i) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 26 - i * 8, 30 - i * 8, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+    }
+  }
+  return colorTexture(canvas, repeat);
+}
+
+// Popcorn ceiling.
+export function createCeilingTexture(repeat) {
+  const [canvas, ctx] = makeCanvas(256, 256);
+  ctx.fillStyle = '#8a8174';
+  ctx.fillRect(0, 0, 256, 256);
+  const rand = seededRandom(31);
+  for (let i = 0; i < 5000; i++) {
+    const v = 100 + rand() * 60;
+    ctx.fillStyle = `rgba(${v},${v - 6},${v - 14},0.6)`;
+    ctx.fillRect(rand() * 256, rand() * 256, 1 + rand() * 2, 1 + rand() * 2);
+  }
+  return colorTexture(canvas, repeat);
+}
+
+// Rust corduroy for the couch.
+export function createCorduroyTexture(repeat = [6, 3]) {
+  const [canvas, ctx] = makeCanvas(64, 64);
+  ctx.fillStyle = '#6e3a1c';
+  ctx.fillRect(0, 0, 64, 64);
+  for (let x = 0; x < 64; x += 4) {
+    ctx.fillStyle = 'rgba(255, 190, 130, 0.14)';
+    ctx.fillRect(x, 0, 2, 64);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.fillRect(x + 3, 0, 1, 64);
+  }
+  return colorTexture(canvas, repeat);
+}
+
+// Rectangular rug: striped border around a diamond field.
+export function createRugTexture() {
+  const [canvas, ctx] = makeCanvas(512, 352);
+  ctx.fillStyle = '#5a2f17';
+  ctx.fillRect(0, 0, 512, 352);
+  [['#c9822e', 10], ['#e8d2a6', 22], ['#8c3a17', 30]].forEach(([color, inset]) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 6;
+    ctx.strokeRect(inset, inset, 512 - inset * 2, 352 - inset * 2);
+  });
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(40, 40, 432, 272);
+  ctx.clip();
+  for (let y = 40; y < 320; y += 56) {
+    for (let x = 40 + ((y / 56) % 2) * 28; x < 480; x += 56) {
+      ctx.fillStyle = (x + y) % 3 ? '#a4521f' : '#d69a3a';
+      ctx.beginPath();
+      ctx.moveTo(x, y - 22);
+      ctx.lineTo(x + 22, y);
+      ctx.lineTo(x, y + 22);
+      ctx.lineTo(x - 22, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+  const rand = seededRandom(13);
+  for (let i = 0; i < 4000; i++) {
+    ctx.fillStyle = `rgba(0,0,0,${rand() * 0.2})`;
+    ctx.fillRect(rand() * 512, rand() * 352, 1, 2);
+  }
+  return colorTexture(canvas);
+}
+
+// Lampshade fringe: hanging strands with gaps (alpha).
+export function createFringeTexture() {
+  const [canvas, ctx] = makeCanvas(256, 32);
+  const rand = seededRandom(17);
+  for (let x = 0; x < 256; x += 3) {
+    ctx.fillStyle = '#e8c890';
+    ctx.fillRect(x, 0, 2, 22 + rand() * 10);
+  }
+  return colorTexture(canvas, [6, 1]);
+}
+
+// --- Props -------------------------------------------------------------------
+
+// A generic weekly TV listings magazine.
+export function createMagazineTexture() {
+  const [canvas, ctx] = makeCanvas(256, 360);
+  ctx.fillStyle = '#f2ead8';
+  ctx.fillRect(0, 0, 256, 360);
+  ctx.fillStyle = '#c8281e';
+  ctx.fillRect(0, 0, 256, 74);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'italic 900 50px "Arial Black", Arial, sans-serif';
+  ctx.fillText('LISTINGS', 10, 56);
+  ctx.fillStyle = '#1b1b1b';
+  ctx.font = 'bold 13px Arial, sans-serif';
+  ctx.fillText('YOUR WEEK ON THE DIAL · OCT 12–18', 12, 96);
+  const g = ctx.createLinearGradient(0, 110, 0, 290);
+  g.addColorStop(0, '#3b6fb0');
+  g.addColorStop(1, '#e0a24a');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.roundRect(24, 110, 208, 170, 24);
+  ctx.fill();
+  ctx.fillStyle = '#1b1b1b';
+  ctx.font = 'bold 18px Georgia, serif';
+  ctx.fillText('Fall Preview!', 24, 312);
+  ctx.font = '12px Georgia, serif';
+  ctx.fillText('What to watch this season', 24, 330);
+  ctx.fillStyle = '#c8281e';
+  ctx.font = 'bold 16px Arial, sans-serif';
+  ctx.fillText('65¢', 206, 346);
+  return colorTexture(canvas);
+}
+
+// Label wrapped around a beer can.
+export function createCanTexture() {
+  const [canvas, ctx] = makeCanvas(256, 128);
+  ctx.fillStyle = '#d9a52c';
+  ctx.fillRect(0, 0, 256, 128);
+  ctx.fillStyle = '#9e1f1a';
+  ctx.fillRect(0, 34, 256, 54);
+  ctx.fillStyle = '#f6e7c1';
+  ctx.font = 'italic 900 26px Georgia, serif';
+  ctx.fillText('Golden Stag', 30, 70);
+  ctx.font = 'bold 12px Arial, sans-serif';
+  ctx.fillText('LAGER  BEER', 70, 84);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillRect(0, 8, 256, 4);
+  ctx.fillRect(0, 112, 256, 4);
+  return colorTexture(canvas);
+}
+
+// A framed 80s sunset-grid poster.
+export function createPrintTexture() {
+  const [canvas, ctx] = makeCanvas(300, 400);
+  ctx.fillStyle = '#efe6d6';
+  ctx.fillRect(0, 0, 300, 400);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(24, 24, 252, 352);
+  ctx.clip();
+  const sky = ctx.createLinearGradient(0, 24, 0, 250);
+  sky.addColorStop(0, '#2a1450');
+  sky.addColorStop(0.6, '#c2307a');
+  sky.addColorStop(1, '#f6a04a');
+  ctx.fillStyle = sky;
+  ctx.fillRect(24, 24, 252, 226);
+  ctx.fillStyle = '#ffd36a';
+  ctx.beginPath();
+  ctx.arc(150, 210, 70, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = sky;
+  for (let i = 0; i < 6; i++) ctx.fillRect(80, 160 + i * 9 + i * i, 140, 2 + i);
+  ctx.fillStyle = '#140a26';
+  ctx.fillRect(24, 250, 252, 126);
+  ctx.strokeStyle = '#ff3ea5';
+  ctx.lineWidth = 2;
+  for (let i = -8; i <= 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(150 + i * 6, 250);
+    ctx.lineTo(150 + i * 40, 376);
+    ctx.stroke();
+  }
+  for (let i = 0; i < 7; i++) {
+    const y = 250 + Math.pow(i / 6, 2) * 126;
+    ctx.beginPath();
+    ctx.moveTo(24, y);
+    ctx.lineTo(276, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+  return colorTexture(canvas);
+}
+
+// --- Outside -----------------------------------------------------------------
+
+// Vertical rain streaks and beads on the window (alpha, tiled vertically).
+export function createRainTexture() {
+  const [canvas, ctx] = makeCanvas(256, 512);
+  const rand = seededRandom(23);
+  for (let i = 0; i < 140; i++) {
+    const x = rand() * 256;
+    const y = rand() * 512;
+    const len = 20 + rand() * 90;
+    const g = ctx.createLinearGradient(0, y, 0, y + len);
+    g.addColorStop(0, 'rgba(255,255,255,0)');
+    g.addColorStop(1, `rgba(255,255,255,${0.25 + rand() * 0.5})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, 1 + rand(), len);
+  }
+  for (let i = 0; i < 220; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${0.2 + rand() * 0.5})`;
+    ctx.beginPath();
+    ctx.arc(rand() * 256, rand() * 512, 0.6 + rand() * 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+// Across the street: night sky, building silhouettes, a few lit windows.
+export function createNightTexture() {
+  const [canvas, ctx] = makeCanvas(1024, 512);
+  const sky = ctx.createLinearGradient(0, 0, 0, 512);
+  sky.addColorStop(0, '#05070f');
+  sky.addColorStop(0.7, '#141a33');
+  sky.addColorStop(1, '#2a1d2e');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, 1024, 512);
+  const rand = seededRandom(29);
+  let x = 0;
+  while (x < 1024) {
+    const w = 80 + rand() * 160;
+    const top = 150 + rand() * 200;
+    ctx.fillStyle = '#07080c';
+    ctx.fillRect(x, top, w, 512 - top);
+    for (let wy = top + 14; wy < 500; wy += 26) {
+      for (let wx = x + 10; wx < x + w - 14; wx += 22) {
+        if (rand() < 0.12) {
+          ctx.fillStyle = rand() < 0.7 ? '#f2c27a' : '#8fb3e8';
+          ctx.fillRect(wx, wy, 10, 14);
+        }
+      }
+    }
+    x += w + 6;
+  }
+  return colorTexture(canvas);
+}
+
+// The neon sign that lights the room through the blinds.
+export function createNeonSignTexture() {
+  const [canvas, ctx] = makeCanvas(512, 256);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.font = 'italic 900 112px "Arial Black", Arial, sans-serif';
+  ctx.textAlign = 'center';
+  for (const [blur, width, color] of [[30, 10, 'rgba(255, 60, 160, 0.9)'], [8, 6, '#ff5fb4'], [0, 2, '#ffe0f0']]) {
+    ctx.shadowColor = '#ff3ca0';
+    ctx.shadowBlur = blur;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.strokeText('MOTEL', 256, 130);
+  }
+  ctx.shadowBlur = 16;
+  ctx.shadowColor = '#3ef0ff';
+  ctx.strokeStyle = '#9ff8ff';
+  ctx.lineWidth = 3;
+  ctx.font = 'bold 40px Arial, sans-serif';
+  ctx.strokeText('VACANCY', 256, 200);
+  const texture = colorTexture(canvas);
+  return texture;
+}
+
+// --- Reflections ---------------------------------------------------------------
+
+// Equirectangular picture of the room as seen from the screen, reflected by
+// the glass and used as the scene environment. Everything is placed by
+// projecting real positions from the layout, so reflections line up with the
+// room: the couch and the viewer behind you, the floor lamp over your
+// shoulder, the window and its neon off to the right.
+export function createEnvTexture({ origin, eye, couch, floorLamp, window: win, neonColor = '#ff3ca0' }) {
   const W = 1024;
   const H = 512;
   const [canvas, ctx] = makeCanvas(W, H);
-  // u: 0.75 is straight behind the viewer; positive angle a (radians) towards +x.
-  const ux = (a) => (0.75 - a / (Math.PI * 2)) * W;
-  const vy = (v) => (1 - v) * H;
+  const at = (x, y, z) => {
+    const d = new THREE.Vector3(x, y, z).sub(origin).normalize();
+    return [(Math.atan2(d.z, d.x) / (Math.PI * 2) + 0.5) * W, (0.5 - Math.asin(d.y) / Math.PI) * H];
+  };
+  const poly = (points, fill) => {
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath();
+    ctx.fill();
+  };
+  const glow = ([x, y], radius, color) => {
+    const g = ctx.createRadialGradient(x, y, 2, x, y, radius);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  };
 
+  // Ceiling, wallpapered walls, carpet.
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, '#070605');
   g.addColorStop(0.3, '#120c08');
@@ -240,61 +531,37 @@ export function createEnvTexture() {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
-  // Paneling seams on the walls.
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  for (let x = 0; x < W; x += 22) ctx.fillRect(x, vy(0.72), 2, vy(0.5) - vy(0.72));
-
-  // Couch behind the viewer.
-  ctx.fillStyle = '#2c1a0e';
-  ctx.beginPath();
-  ctx.roundRect(ux(0.5), vy(0.5), ux(-0.5) - ux(0.5), vy(0.4) - vy(0.5), 12);
-  ctx.fill();
-
-  // The viewer: a dark silhouette faintly lit by the TV.
+  // The couch along the back of the room, and you on it, lit by the screen.
+  const cz = couch.position.z - couch.depth / 2;
+  const cx = couch.position.x;
+  poly([at(cx - couch.width / 2, 0.85, cz), at(cx + couch.width / 2, 0.85, cz), at(cx + couch.width / 2, 0.1, cz), at(cx - couch.width / 2, 0.1, cz)], '#2c1a0e');
+  const shoulders = [at(eye.x - 0.24, eye.y - 0.25, eye.z), at(eye.x + 0.24, eye.y - 0.25, eye.z), at(eye.x + 0.2, eye.y - 0.6, eye.z), at(eye.x - 0.2, eye.y - 0.6, eye.z)];
+  poly(shoulders, '#10131a');
+  const [hx, hy] = at(eye.x, eye.y, eye.z);
+  const [hr] = at(eye.x + 0.1, eye.y, eye.z);
   ctx.fillStyle = '#10131a';
   ctx.beginPath();
-  ctx.ellipse(ux(0), vy(0.475), 26, 22, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(ux(0), vy(0.535), 9, 12, 0, 0, Math.PI * 2);
+  ctx.ellipse(hx, hy, Math.abs(hr - hx), Math.abs(hr - hx) * 1.25, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Window with venetian blinds and a neon sign glowing outside.
-  const wx0 = ux(0.48);
-  const wx1 = ux(0.3);
-  const wy0 = vy(0.7);
-  const wy1 = vy(0.53);
-  const neon = ctx.createRadialGradient(wx0 + 10, wy1, 2, wx0 + 10, wy1, 90);
-  neon.addColorStop(0, 'rgba(255, 60, 154, 0.9)');
-  neon.addColorStop(1, 'rgba(255, 60, 154, 0)');
-  ctx.fillStyle = '#7f97c4';
-  ctx.fillRect(wx0, wy0, wx1 - wx0, wy1 - wy0);
-  ctx.fillStyle = neon;
-  ctx.fillRect(wx0 - 60, wy0, wx1 - wx0 + 80, wy1 - wy0 + 60);
+  // Floor lamp over your left shoulder.
+  const lamp = floorLamp.shade;
+  glow(at(lamp.x, lamp.y, lamp.z), 110, 'rgba(255, 196, 120, 0.5)');
+  poly([at(lamp.x - 0.15, lamp.y + 0.12, lamp.z), at(lamp.x + 0.15, lamp.y + 0.12, lamp.z), at(lamp.x + 0.22, lamp.y - 0.12, lamp.z), at(lamp.x - 0.22, lamp.y - 0.12, lamp.z)], '#ffd59a');
+
+  // The window on the right wall: neon-pink blinds with dark slats.
+  const z0 = win.z - win.width / 2;
+  const z1 = win.z + win.width / 2;
+  const y0 = win.y - win.height / 2;
+  const y1 = win.y + win.height / 2;
+  const corners = [at(win.x, y1, z0), at(win.x, y1, z1), at(win.x, y0, z1), at(win.x, y0, z0)];
+  poly(corners, '#6d5b8f');
+  const xs = corners.map(([x]) => x);
+  const ys = corners.map(([, y]) => y);
+  const center = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+  glow(center, 140, neonColor);
   ctx.fillStyle = 'rgba(8, 6, 6, 0.8)';
-  for (let y = wy0; y < wy1; y += 7) ctx.fillRect(wx0, y, wx1 - wx0, 3);
-
-  // Lamp with a warm shade and a big soft glow.
-  const lx = ux(-0.5);
-  const ly = vy(0.57);
-  const glow = ctx.createRadialGradient(lx, ly, 4, lx, ly, 120);
-  glow.addColorStop(0, 'rgba(255, 196, 120, 0.55)');
-  glow.addColorStop(1, 'rgba(255, 196, 120, 0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(lx - 120, ly - 120, 240, 240);
-  ctx.fillStyle = '#ffd59a';
-  ctx.beginPath();
-  ctx.moveTo(lx - 12, ly - 16);
-  ctx.lineTo(lx + 12, ly - 16);
-  ctx.lineTo(lx + 22, ly + 14);
-  ctx.lineTo(lx - 22, ly + 14);
-  ctx.closePath();
-  ctx.fill();
-
-  // Hallway light through a door left ajar.
-  const dx = ux(-1.05);
-  ctx.fillStyle = 'rgba(255, 220, 170, 0.8)';
-  ctx.fillRect(dx, vy(0.68), 3, vy(0.42) - vy(0.68));
+  for (let y = Math.min(...ys); y < Math.max(...ys); y += 6) ctx.fillRect(Math.min(...xs), y, Math.max(...xs) - Math.min(...xs), 3);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;

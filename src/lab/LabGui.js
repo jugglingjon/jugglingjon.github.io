@@ -4,17 +4,17 @@ import { clearSaved, lookOnly, save } from './storage.js';
 
 // Tuning panel for the screen lab. Every look parameter is live; changes
 // auto-save to this browser, and "Copy JSON" exports them for a preset.
-export function createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings }) {
+export function createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room }) {
   const gui = new GUI({ title: 'Screen Lab' });
   gui.onFinishChange(() => save(params));
 
   const set = gui.addFolder('TV');
-  set.add(state, 'mode', { 'TV set (3D)': 'tv', 'Flat screen': 'flat' }).name('View').listen().onChange(actions.setMode);
+  set.add(state, 'mode', { 'Seated (you)': 'seated', 'Orbit (debug)': 'orbit', 'Flat screen': 'flat' }).name('View   V').listen().onChange(actions.setMode);
   set.add({ power: () => actions.press('power') }, 'power').name('Power   P');
   set.add({ up: () => actions.press('ch+') }, 'up').name('Channel ▲   ↑ →');
   set.add({ down: () => actions.press('ch-') }, 'down').name('Channel ▼   ↓ ←');
   set.add(actions, 'degauss').name('Degauss   D');
-  set.add(actions, 'resetCamera').name('Reset camera');
+  set.add(actions, 'resetCamera').name('Reset orbit camera');
   set.add(state, 'timeScale', 0.02, 1, 0.01).name('Speed (slow-mo)').onChange(actions.setTimeScale);
   set.add(glow, 'strength', 0, 1000, 5).name('Room glow');
   set.add(renderer, 'toneMappingExposure', 0.2, 5, 0.05).name('Room exposure');
@@ -27,6 +27,27 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   source.add(params.source, 'focusY', 0, 1, 0.01).name('Focus Y').onChange(actions.refit);
   source.add(actions, 'loadFile').name('Load image / video…');
   source.add(osd, 'pinned').name('Pin OSD');
+
+  const view = gui.addFolder('Camera').close();
+  const reframe = () => seated.frame();
+  view.add(seated.settings, 'fov', 30, 60, 0.5).name('Preferred FOV').onChange(reframe);
+  view.add(seated.settings, 'frameWidth', 0.5, 2, 0.01).name('Keep width (m)').onChange(reframe);
+  view.add(seated.settings, 'frameHeight', 0.5, 2, 0.01).name('Keep height (m)').onChange(reframe);
+  view.add(seated.settings, 'tvHeight', -0.5, 0.6, 0.01).name('TV height in frame');
+  view.add(seated.settings, 'breathing', 0, 3, 0.05).name('Breathing');
+  view.add(seated.settings, 'parallax', 0, 3, 0.05).name('Head turn');
+  view.add(state, 'overlay').name('Show screen rect');
+
+  const r = room.settings;
+  const roomFolder = gui.addFolder('Room').close();
+  roomFolder.add(r, 'lamps').name('Lamps on');
+  roomFolder.add(r, 'lampLevel', 0, 3, 0.05).name('Lamp brightness');
+  roomFolder.add(r, 'neon', 0, 3, 0.05).name('Neon sign');
+  roomFolder.add(r, 'flicker').name('Neon flicker');
+  roomFolder.add(r, 'blinds', -1.5, 1.5, 0.01).name('Blind tilt');
+  roomFolder.add(r, 'dust', 0, 3, 0.05).name('Dust');
+  roomFolder.add(r, 'smoke').name('Cigarette smoke');
+  roomFolder.add(r, 'rain').name('Rain');
 
   const tuner = gui.addFolder('Tuner').close();
   tuner.add(tv, 'reducedMotion').name('Reduced motion');
