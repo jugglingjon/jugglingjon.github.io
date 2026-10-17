@@ -18,11 +18,10 @@ const FINGER_PARTS = ['metacarpal', 'phalanx-proximal', 'phalanx-intermediate', 
 const THUMB_PARTS = ['metacarpal', 'phalanx-proximal', 'phalanx-distal', 'tip'];
 
 // How the hand holds the remote. Angles in radians, distances in metres.
-// Fitted numerically: the hand lies along the remote, which crosses the palm
-// diagonally, the wrist just behind its tail (thumb on CH ▲) so the forearm
-// carries straight on, within ~17° of sideways wrist bend. No skin goes more
-// than a millimetre or two into the remote, the fingertips end on its left
-// edge, and the thumb reaches every button.
+// Fitted numerically, then tuned by eye in the lab's Grip folder: the hand lies
+// along the remote, which crosses the palm diagonally, with the wrist just
+// behind its tail (thumb on CH ▲), the fingers wrapping its left edge and the
+// thumb reaching every button.
 export const GRIP_DEFAULTS = {
   wristX: -0.055, // where the wrist sits, in remote space
   wristY: -0.043,
@@ -32,12 +31,12 @@ export const GRIP_DEFAULTS = {
   roll: -0.03, // the palm turned about that line
   scale: 1.188,
   bendKnuckle: 0.643, // finger bends at the knuckle, middle and end joints…
-  bendMiddle: 0.39,
-  bendEnd: 1.055,
-  wrapIndex: 0.6, // …scaled per finger, since the longer ones loop wider
-  wrapMiddle: 1.194,
+  bendMiddle: 0.64,
+  bendEnd: 0.33,
+  wrapIndex: 0.77, // …scaled per finger, since the longer ones loop wider
+  wrapMiddle: 1.26,
   wrapRing: 1.5,
-  wrapPinky: 1.5,
+  wrapPinky: 1.56,
   thumbLength: 1.2, // the model's thumb is short for a remote this wide; this stretches it
   thumbSwing: 0.332, // how far the CMC swings the thumb across for the far button column
   slideFollow: 0.4, // how much of the way the grip shifts up the remote after the thumb

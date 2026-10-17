@@ -17,10 +17,6 @@ export const ARM_DEFAULTS = {
   highlight: true,
 };
 
-// The arm and remote render on their own layer, through a camera that doesn't
-// zoom (see SeatedCamera), so they stay put while the room zooms.
-export const VIEWMODEL_LAYER = 1;
-
 const HOVER = 0.007; // gap between the thumb pad and the targeted button
 // Your right shoulder and the elbow's pull, in camera space, and arm bone lengths.
 const SHOULDER = new THREE.Vector3(0.17, -0.22, 0.06);
@@ -86,7 +82,6 @@ export class ArmRig {
     // A little warm fill so the hand reads against the dark room.
     this.fill = new THREE.PointLight('#ffd6b8', 0.35, 1.2, 2);
     this.root.add(this.fill);
-    this.root.traverse((o) => o.layers.set(VIEWMODEL_LAYER));
 
     // Rest the thumb over CH ▲ until the pointer arrives.
     this.pointer = new THREE.Vector2(0.41, -0.45);
@@ -113,7 +108,6 @@ export class ArmRig {
 
   // Make another hand available (the WebXR model, once it has loaded).
   addHand(name, hand) {
-    hand.group.traverse((o) => o.layers.set(VIEWMODEL_LAYER));
     this.hands[name] = hand;
     this.syncHand();
   }

@@ -12,21 +12,24 @@ export const CAMERA_DEFAULTS = {
   breathing: 1,
 };
 
-// Scroll zoom: the framed field of view is multiplied by this (below 1 zooms in).
-export const ZOOM = { min: 0.3, max: 1.25 };
+// Scroll zoom: up eases the view in to this vertical field of view (degrees),
+// down eases it back out to the framed view, over `duration` seconds.
+export const ZOOM = { fov: 20, duration: 0.7, reducedDuration: 0.15 };
+
+const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
 // The viewer, slumped on the couch: a fixed seat, framing that adapts to the
-// screen's shape, a slow breath, and a zoom. The head stays put; the pointer
-// moves your arm instead (see ArmRig), which hangs off this camera. The arm is
-// drawn through `viewmodel`, a twin camera that never zooms, so zooming brings
-// the TV closer without blowing up the remote in your hand.
+// screen's shape, a slow breath, and a two-step zoom. The head stays put; the
+// pointer moves your arm instead (see ArmRig), which hangs off this camera and
+// so zooms with the room.
 export class SeatedCamera {
   constructor({ eye, target }) {
     this.camera = new THREE.PerspectiveCamera(CAMERA_DEFAULTS.fov, 1, 0.03, 40);
-    this.viewmodel = new THREE.PerspectiveCamera(CAMERA_DEFAULTS.fov, 1, 0.03, 40);
-    this.baseFov = CAMERA_DEFAULTS.fov;
-    this.zoom = 1;
-    this.zoomTarget = 1;
+    this.baseFov = CAMERA_DEFAULTS.fov; // the framed view, before zooming
+    this.zoomed = false;
+    this.zoom = 0; // 0 = framed view, 1 = zoomed in
+    this.zoomFrom = 0;
+    this.zoomProgress = 1;
     this.eye = eye.clone();
     this.target = target.clone();
     this.settings = { ...CAMERA_DEFAULTS };
@@ -41,7 +44,6 @@ export class SeatedCamera {
   setAspect(aspect) {
     this.aspect = aspect;
     this.camera.aspect = aspect;
-    this.viewmodel.aspect = aspect;
     this.frame();
   }
 
@@ -58,22 +60,24 @@ export class SeatedCamera {
   }
 
   applyFov() {
-    this.camera.fov = this.baseFov * this.zoom;
+    this.camera.fov = THREE.MathUtils.lerp(this.baseFov, Math.min(ZOOM.fov, this.baseFov), this.zoom);
     this.camera.updateProjectionMatrix();
-    this.viewmodel.fov = this.baseFov;
-    this.viewmodel.updateProjectionMatrix();
   }
 
-  // Zoom in (factor below 1) or out, within ZOOM; it eases there in update().
-  zoomBy(factor) {
-    this.zoomTarget = THREE.MathUtils.clamp(this.zoomTarget * factor, ZOOM.min, ZOOM.max);
+  // Zoom in on the set, or back out to the framed view; update() eases there,
+  // picking up from wherever the view is if it's still moving.
+  setZoomed(zoomed) {
+    if (zoomed === this.zoomed) return;
+    this.zoomed = zoomed;
+    this.zoomFrom = this.zoom;
+    this.zoomProgress = 0;
   }
 
   update(time, dt = 1) {
     const s = this.settings;
-    if (this.zoom !== this.zoomTarget) {
-      this.zoom = THREE.MathUtils.damp(this.zoom, this.zoomTarget, 10, dt);
-      if (Math.abs(this.zoom - this.zoomTarget) < 1e-4) this.zoom = this.zoomTarget;
+    if (this.zoomProgress < 1) {
+      this.zoomProgress = Math.min(1, this.zoomProgress + dt / (this.reducedMotion ? ZOOM.reducedDuration : ZOOM.duration));
+      this.zoom = THREE.MathUtils.lerp(this.zoomFrom, this.zoomed ? 1 : 0, easeInOut(this.zoomProgress));
       this.applyFov();
     }
     const motion = this.reducedMotion ? 0 : s.breathing;
@@ -98,9 +102,6 @@ export class SeatedCamera {
       .addScaledVector(this.up, breath * 0.5);
     this.camera.lookAt(this.aim);
     this.camera.updateMatrixWorld();
-    this.viewmodel.position.copy(this.camera.position);
-    this.viewmodel.quaternion.copy(this.camera.quaternion);
-    this.viewmodel.updateMatrixWorld();
   }
 
   // Where the TV screen sits on screen, in NDC.

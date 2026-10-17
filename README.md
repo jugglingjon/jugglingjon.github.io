@@ -34,7 +34,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 | <kbd>P</kbd> | POWER | Power on/off (warm-up, degauss, collapse to a dot) |
 | <kbd>↑</kbd> <kbd>→</kbd> / <kbd>↓</kbd> <kbd>←</kbd> | CH ▲ / ▼ | Channel up/down; skips unprogrammed numbers; hold to surf |
 | <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | CH ▲ / ▼ | Channel up / down |
-| Scroll up / down, or pinch | | Zoom in on the set / back out; your arm and the remote stay put (orbit view keeps the wheel for its own zoom) |
+| Scroll up / down, or pinch | | Zoom in on the set / back out to the whole room (orbit view keeps the wheel for its own zoom) |
 | <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> | 1–9, 0 | Tune straight to channel 1–9; 0 is channel 10 |
 | <kbd>R</kbd> / <kbd>Backspace</kbd> | RCL | Recall the previous channel |
 | <kbd>+</kbd> / <kbd>−</kbd> | VOL + / − | Volume, with the OSD bar; hold to repeat |
@@ -67,7 +67,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - **Tuning:** the Room panel sets lamps, neon, blind tilt, dust brightness and size, and the coffee table's varnish. **Table reflectivity** is how strongly it reflects the TV and lamps; **Table gloss** is how sharp those reflections are.
 - **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon can buzz and stutter (**Room → Neon flicker**, off by default), rain runs down the window, and the VCR blinks 12:00.
 - **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath (**Camera → Breathing**, 0 for a dead-still camera); the pointer moves your arm, not your head. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and the remote.
-- **Zoom:** scrolling narrows the field of view, from 0.3× (the TV fills the screen) to 1.25× the framed view, and eases there. The arm and remote are on their own layer and draw in a second pass through `seated.viewmodel`, a twin camera that never zooms. They stay the same size while the room zooms, lit by the same lights and reusing the room's shadow map, so the blinds still stripe the hand.
+- **Zoom:** scrolling up eases the view in to a 20° field of view, and scrolling down eases it back out to the framed view (0.7 s, ease-in-out; 0.15 s with reduced motion). A reversal mid-zoom carries on from where the view is. Your arm zooms with the room.
 - **Screen rect:** `seated.screenRect(tv.screen)` gives the TV glass's on-screen bounds in normalised coordinates every frame, for anything that has to line up with the picture. **Camera → Show screen rect** draws it, with the engage zone around it.
 - **Reduced motion:** with `prefers-reduced-motion`, breathing stops and the arm follows the pointer half as much.
 
@@ -152,7 +152,7 @@ src/
     Hand.js                built-in fallback hand: palm, curled fingers, three-joint thumb (CMC swing + IK), grip slide
     thumbing.js            button layout, pointer → button, two-bone IK, bone swing (+ thumbing.test.js, Hand.test.js)
   camera/
-    SeatedCamera.js        the viewer: seat, framing, breathing, zoom, arm camera, screen rect (+ SeatedCamera.test.js)
+    SeatedCamera.js        the viewer: seat, framing, breathing, zoom, screen rect (+ SeatedCamera.test.js)
     framing.js             fitVerticalFov, projectBounds (+ framing.test.js)
   world/                   procedural stand-ins until the Blender art pass
     layout.js              where everything is

@@ -8,28 +8,40 @@ describe('SeatedCamera zoom', () => {
     seated.setAspect(16 / 10);
     return seated;
   };
+  const run = (seated, seconds) => {
+    for (let t = 0; t < seconds; t += 1 / 60) seated.update(0, 1 / 60);
+  };
 
-  it('narrows the room camera but never the arm camera', () => {
+  it('eases in to the zoomed view and back out to the framed one', () => {
     const seated = make();
-    const base = seated.camera.fov;
-    seated.zoomBy(0.5);
-    for (let i = 0; i < 120; i++) seated.update(0, 1 / 60);
-    expect(seated.camera.fov).toBeCloseTo(base * 0.5, 3);
-    expect(seated.viewmodel.fov).toBeCloseTo(base, 6);
+    const framed = seated.camera.fov;
+    seated.setZoomed(true);
+    run(seated, ZOOM.duration / 2);
+    expect(seated.camera.fov).toBeLessThan(framed);
+    expect(seated.camera.fov).toBeGreaterThan(ZOOM.fov);
+    run(seated, ZOOM.duration);
+    expect(seated.camera.fov).toBeCloseTo(ZOOM.fov, 6);
+    seated.setZoomed(false);
+    run(seated, ZOOM.duration + 0.1);
+    expect(seated.camera.fov).toBeCloseTo(framed, 6);
   });
 
-  it('keeps the zoom within its range', () => {
+  it('turns round mid-zoom without jumping', () => {
     const seated = make();
-    seated.zoomBy(0.01);
-    expect(seated.zoomTarget).toBe(ZOOM.min);
-    seated.zoomBy(1000);
-    expect(seated.zoomTarget).toBe(ZOOM.max);
+    seated.setZoomed(true);
+    run(seated, ZOOM.duration / 2);
+    const midway = seated.camera.fov;
+    seated.setZoomed(false);
+    seated.update(0, 1 / 60);
+    expect(Math.abs(seated.camera.fov - midway)).toBeLessThan(0.5);
   });
 
-  it('keeps the arm camera in step with the room camera', () => {
+  it('ignores repeat requests while already heading that way', () => {
     const seated = make();
-    seated.update(1.3, 1 / 60);
-    expect(seated.viewmodel.position.distanceTo(seated.camera.position)).toBeLessThan(1e-9);
-    expect(seated.viewmodel.quaternion.angleTo(seated.camera.quaternion)).toBeLessThan(1e-9);
+    seated.setZoomed(true);
+    run(seated, ZOOM.duration / 2);
+    const progress = seated.zoomProgress;
+    seated.setZoomed(true);
+    expect(seated.zoomProgress).toBe(progress);
   });
 });
