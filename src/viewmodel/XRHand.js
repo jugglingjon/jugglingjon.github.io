@@ -18,27 +18,34 @@ const FINGER_PARTS = ['metacarpal', 'phalanx-proximal', 'phalanx-intermediate', 
 const THUMB_PARTS = ['metacarpal', 'phalanx-proximal', 'phalanx-distal', 'tip'];
 
 // How the hand holds the remote. Angles in radians, distances in metres.
-// Fitted numerically: no skin more than a few millimetres into the remote, the
-// fingers hugging it with their tips on its left edge, the wrist low and to
-// the right, and the thumb reaching every button.
+// Fitted numerically: the hand lies along the remote, which crosses the palm
+// diagonally, the wrist just behind its tail (thumb on CH ▲) so the forearm
+// carries straight on, within ~17° of sideways wrist bend. No skin goes more
+// than a millimetre or two into the remote, the fingertips end on its left
+// edge, and the thumb reaches every button.
 export const GRIP_DEFAULTS = {
-  wristX: -0.095, // where the wrist sits, in remote space
-  wristY: -0.032,
-  wristZ: -0.049,
-  heading: 0.472, // wrist → knuckles: turned from across the remote (+x) towards its tip (+z)…
-  elevation: -0.109, // …and tilted up (negative: down)
-  roll: 0.039, // the palm turned about that line
-  scale: 1.167,
-  bendKnuckle: 0.505, // finger bends at the knuckle, middle and end joints…
-  bendMiddle: 1.079,
-  bendEnd: 0.924,
-  wrapIndex: 0.843, // …scaled per finger, since the longer ones loop wider
-  wrapMiddle: 1.228,
-  wrapRing: 1.172,
-  wrapPinky: 0.972,
+  wristX: -0.055, // where the wrist sits, in remote space
+  wristY: -0.043,
+  wristZ: -0.105,
+  heading: 1.025, // wrist → knuckles: turned from across the remote (+x) towards its tip (+z)…
+  elevation: -0.121, // …and tilted up (negative: down)
+  roll: -0.03, // the palm turned about that line
+  scale: 1.188,
+  bendKnuckle: 0.643, // finger bends at the knuckle, middle and end joints…
+  bendMiddle: 0.39,
+  bendEnd: 1.055,
+  wrapIndex: 0.6, // …scaled per finger, since the longer ones loop wider
+  wrapMiddle: 1.194,
+  wrapRing: 1.5,
+  wrapPinky: 1.5,
   thumbLength: 1.2, // the model's thumb is short for a remote this wide; this stretches it
-  thumbSwing: 0.218, // how far the CMC swings the thumb across for the far button column
+  thumbSwing: 0.332, // how far the CMC swings the thumb across for the far button column
+  slideFollow: 0.4, // how much of the way the grip shifts up the remote after the thumb
 };
+
+// With the thumb on the CH ▲ row, the grip sits where the settings put it;
+// it shifts up the remote (partly) for buttons further along.
+const HOME_Z = -0.024;
 
 // The thumb, in remote space. Reaching across the face, the CMC swings the big
 // knuckle up and over (`oppose`): `nearSwing` radians for the near button
@@ -186,10 +193,10 @@ export class XRHand {
     if (this.tipTarget) this.setThumbTip(this.tipTarget);
   }
 
-  // How far along the remote (z) the grip should sit so the thumb reaches
-  // `target` comfortably: big knuckle a little behind the button.
+  // How far along the remote (z) the grip shifts for the thumb to reach
+  // `target`: part of the way, the thumb stretching or folding for the rest.
   slideFor(target) {
-    return THREE.MathUtils.clamp(target.z - 0.035 - this.knuckleRest.z, -0.03, 0.05);
+    return THREE.MathUtils.clamp((target.z - HOME_Z) * this.settings.slideFollow, -0.03, 0.09);
   }
 
   // Shift the whole grip along the remote.

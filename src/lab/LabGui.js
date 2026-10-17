@@ -192,6 +192,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
         ['wrapPinky', 0.5, 1.6, 0.01, 'Wrap: pinky'],
         ['thumbLength', 0.9, 1.4, 0.01, 'Thumb length'],
         ['thumbSwing', 0, 0.9, 0.01, 'Thumb swing (CMC)'],
+        ['slideFollow', 0, 1, 0.01, 'Grip follows thumb'],
       ].forEach(([key, min, max, step, name]) => grip.add(g, key, min, max, step).name(name).onChange(apply));
       grip
         .add(
