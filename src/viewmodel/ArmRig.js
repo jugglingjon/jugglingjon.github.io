@@ -10,6 +10,7 @@ export const ARM_DEFAULTS = {
   distance: 0.5,
   tilt: 0.45, // nose-up, so the face turns towards you (radians)
   roll: -0.3,
+  hand: 'webxr', // which hand model, once it has loaded ('procedural' is always there)
   follow: 1, // how much the arm drifts and swings towards the pointer
   size: 1,
   snap: 0.7, // how strongly the thumb settles onto the targeted button
@@ -48,7 +49,8 @@ export class ArmRig {
 
     this.held = new THREE.Group(); // remote-local space
     this.model = new RemoteModel();
-    this.hand = new Hand();
+    this.hands = { procedural: new Hand() };
+    this.hand = this.hands.procedural;
     this.held.add(this.model.group, this.hand.group);
     this.root.add(this.held);
 
@@ -91,6 +93,23 @@ export class ArmRig {
     remote.addEventListener('press', (e) => this.animatePress(e.detail.button));
   }
 
+  // Make another hand available (the WebXR model, once it has loaded).
+  addHand(name, hand) {
+    this.hands[name] = hand;
+    this.syncHand();
+  }
+
+  // Show the hand named in settings, falling back to the procedural one.
+  syncHand() {
+    const next = this.hands[this.settings.hand] ?? this.hands.procedural;
+    if (next === this.hand) return;
+    this.held.remove(this.hand.group);
+    this.held.add(next.group);
+    this.hand = next;
+    this.wristSkin.material = next.skin;
+    this.slide = null;
+  }
+
   // Pointer in NDC (−1…1, y up). The target updates straight away, so a
   // press right after (a tap) goes to the right button.
   setPointer(x, y) {
@@ -118,6 +137,7 @@ export class ArmRig {
 
   update(dt, camera, time, { reducedMotion = false } = {}) {
     const s = this.settings;
+    this.syncHand();
     this.raise += ((this.active ? 1 : 0) - this.raise) * (1 - Math.exp(-dt * 5));
     const lower = 1 - this.raise;
     const sway = reducedMotion ? 0 : 1;
@@ -164,7 +184,7 @@ export class ArmRig {
     if (!this.tip) this.tip = this.tipTarget.clone();
     this.tip.lerp(this.tipTarget, 1 - Math.exp(-dt * (pressing ? 45 : 18)));
     // The grip shuffles along the remote, more lazily than the thumb moves.
-    const slide = Hand.slideFor(this.tipTarget);
+    const slide = this.hand.slideFor(this.tipTarget);
     this.slide = this.slide === null ? slide : THREE.MathUtils.damp(this.slide, slide, 7, dt);
     this.hand.setSlide(this.slide);
     this.hand.setThumbTip(this.tip);

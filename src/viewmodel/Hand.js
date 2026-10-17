@@ -118,6 +118,10 @@ export class Hand {
     return THREE.MathUtils.clamp(target.z - 0.03 - THUMB.base.z, -0.02, 0.06);
   }
 
+  slideFor(target) {
+    return Hand.slideFor(target);
+  }
+
   // Shift the whole grip along the remote.
   setSlide(z) {
     this.group.position.z = z;

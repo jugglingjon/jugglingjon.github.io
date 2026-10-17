@@ -2,7 +2,7 @@
 
 A web and design portfolio set in a dingy 1980s apartment. You stare at an old CRT TV, raise a chunky remote, and every channel is a project.
 
-**Status: Phase 4, the arm and remote.** Your right arm is held out towards the TV with a chunky remote in your hand. Moving the mouse glides your thumb over the buttons, and the one it's over lights up. Clicking presses it with your thumb. All of this sits in the Phase 3 greybox apartment, on top of the Phase 1 screen and the Phase 2 tuner and sound. Procedural models stand in for the final art.
+**Status: Phase 5 under way, starting with the hand.** Your right arm is held out towards the TV with a chunky remote in your hand. Moving the mouse glides your thumb over the buttons, and the one it's over lights up. Clicking presses it with your thumb. The hand is now a real rigged model, the WebXR generic hand. The room, the TV and the remote are still the procedural greybox from Phases 1–4.
 
 ## Getting started
 
@@ -71,9 +71,10 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 ## The arm and remote
 
 - **The mapping:** the middle 80% of the screen maps onto the remote's face, the way you see it. Up is towards the tip (POWER, then the number pad), down is the VOL and CH rockers, and left and right go across. The nearest button is the target, with a little hysteresis so the thumb doesn't flicker on a boundary (`src/viewmodel/thumbing.js`). The middle of the screen is **8**, and the bottom right is **CH ▲ / ▼**.
+- **The hand** is the WebXR generic hand model (`public/models/hand/right.glb`, 94 KB). Its joints follow the WebXR Hand Input names, so the thumb's `thumb-metacarpal`, `thumb-phalanx-proximal` and `thumb-phalanx-distal` are our CMC, MCP and IP. The grip, meaning where the palm sits and how far each finger wraps, was fitted numerically. Under it, no skin goes more than a few millimetres into the remote, the fingertips end on its left edge and the thumb reaches every button. The model's thumb is short for a remote this wide, so the grip stretches it by 20%. Until the model loads, or if it fails to, the built-in hand made from capsules stands in.
 - **The thumb** is three bones, solved every frame. First the CMC joint by the wrist swings the metacarpal: as you reach across the remote it carries the big knuckle up and over the face, and the fleshy pad at the base of the thumb stretches with it. Then the MCP and IP joints bend (two-bone IK) to put the pad on the button. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The arm also drifts a few centimetres after the pointer, and the remote's tip swings that way a little while it stays aimed at the set. The flannel sleeve comes in from the bottom-right corner.
 - **Presses:** a click goes to `Remote.hold`. The remote fires `press` immediately, and `ArmRig` plays the thumb press: down 60 ms, hold, up 100 ms. The button sinks, the IR LED blinks, and the TV reacts after the IR latency. Keys, scroll and the lab remote go through the same `Remote`, so the thumb presses for those too.
-- **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, and scales it. It also sets how far the arm follows the pointer (**Follow pointer**) and how firmly the thumb settles onto the target. You can also switch the highlight off there.
+- **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, and scales it. It also sets how far the arm follows the pointer (**Follow pointer**) and how firmly the thumb settles onto the target. You can also switch the highlight off there, and switch between the WebXR and built-in hands (**Hand**). **Grip (WebXR hand)** has every grip setting: wrist position, hand heading, tilt and roll, size, finger bends, the wrap of each finger, and thumb length and swing. **Copy grip JSON** copies the result, ready to paste into `GRIP_DEFAULTS` in `src/viewmodel/XRHand.js`.
 - When the pointer leaves the page, the arm lowers; it comes back up when the pointer returns. On touch screens a tap aims and presses in one go.
 
 ## How the screen works
@@ -144,7 +145,8 @@ src/
   viewmodel/               your arm and the remote in your hand
     ArmRig.js              places the remote, targets buttons, plays presses, arm IK and sleeve
     RemoteModel.js         the remote: body, buttons with labels, highlight, press travel, IR LED
-    Hand.js                right hand: palm, curled fingers, three-joint thumb (CMC swing + IK), grip slide
+    XRHand.js              the WebXR hand model gripping the remote: grip fit, finger curls, thumb IK (+ XRHand.test.js)
+    Hand.js                built-in fallback hand: palm, curled fingers, three-joint thumb (CMC swing + IK), grip slide
     thumbing.js            button layout, pointer → button, two-bone IK, bone swing (+ thumbing.test.js, Hand.test.js)
   camera/
     SeatedCamera.js        the viewer: seat, framing, breathing, screen rect
@@ -165,6 +167,7 @@ src/
   styles/                  main.scss, _tokens.scss, _remote.scss
 public/media/test/         placeholder videos (MP4 + WebM)
 public/media/music/        placeholder channel music (MP3 loops)
+public/models/hand/        WebXR generic right hand (.glb) and its MIT licence
 scripts/
   make-test-media.sh       renders the test videos
   make-placeholder-music.mjs  synthesizes the music loops from note data
@@ -199,8 +202,13 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 - **TV, furniture, props and room:** procedural geometry and canvas textures, laid out in `layout.js`. They get replaced by Blender models with baked lightmaps (including a TV-light channel) in Phase 5.
 - **Projects:** canvas-drawn mock sites (Neon Burger Co., Field Notes, Orbit Analytics), test patterns and two ffmpeg-generated loops. Real screenshots and recordings arrive in Phase 6.
 - **Channel music:** synthesized placeholder loops; see [Channel music](#channel-music).
-- **Arm, hand and remote:** procedural capsules and rounded boxes (`src/viewmodel/`). They get replaced by a rigged model in Phase 5, with the same IK targets. The clickable DOM remote (`src/lab/RemotePad.js`) stays as a lab tool and drives the same `Remote`.
+- **Hand:** the WebXR generic hand (see [Credits](#credits)). A more realistic rigged hand can replace it. Any model with three thumb joints and three per finger works with the same IK; only the joint names and the grip fit change.
+- **Arm and remote:** procedural cylinders and rounded boxes (`src/viewmodel/`), still to be replaced in Phase 5. The clickable DOM remote (`src/lab/RemotePad.js`) stays as a lab tool and drives the same `Remote`.
 - **Brand badge:** "Lumatron" is a stand-in for your own mark (`createBadgeTexture` in `src/world/textures.js`).
+
+## Credits
+
+- **Hand model:** the generic hand from [WebXR Input Profiles](https://github.com/immersive-web/webxr-input-profiles) (`@webxr-input-profiles/assets` 1.0.20). MIT licence, © 2019 Amazon; the full notice is in `public/models/hand/LICENSE.md`.
 
 ## Roadmap
 
@@ -208,6 +216,6 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 2. ~~Channel engine: tuner state machine, remote with IR latency, number entry, volume, synthesized audio~~
 3. ~~Greybox apartment, seated camera, framing per aspect ratio, screen rect~~
 4. ~~Arm and remote: viewmodel pass, pointer → thumb mapping over every button, highlight, thumb presses~~ (this phase)
-5. Art pass: Blender models, baked lightmaps with a TV light channel, post-processing
+5. Art pass: rigged hand (done: the WebXR hand), Blender models, baked lightmaps with a TV light channel, post-processing (this phase)
 6. Content: project data, PHP-rendered routes and fallback, TV Guide case-study overlay
 7. Polish: power-on intro, mobile, accessibility (reduced motion, keyboard), quality tiers

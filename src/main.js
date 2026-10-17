@@ -19,6 +19,7 @@ import { TVGlow } from './world/TVGlow.js';
 import { COUCH, EYE, FLOOR_LAMP, STAND, WINDOW } from './world/layout.js';
 import { SeatedCamera } from './camera/SeatedCamera.js';
 import { ArmRig } from './viewmodel/ArmRig.js';
+import { XRHand } from './viewmodel/XRHand.js';
 import { createTestSources, sourceFromFile } from './lab/sources.js';
 import { createLabGui } from './lab/LabGui.js';
 import { createRemotePad } from './lab/RemotePad.js';
@@ -263,6 +264,14 @@ const actions = {
 };
 
 const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig });
+
+// The WebXR hand model replaces the built-in hand once it has loaded.
+XRHand.load(`${import.meta.env.BASE_URL}models/hand/right.glb`)
+  .then((hand) => {
+    rig.addHand('webxr', hand);
+    lab.addGripControls(hand);
+  })
+  .catch((err) => console.warn("Couldn't load the hand model; keeping the built-in hand.", err));
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;

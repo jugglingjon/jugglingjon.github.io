@@ -44,6 +44,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   arm.add(a, 'distance', 0.25, 0.8, 0.005).name('Reach');
   arm.add(a, 'tilt', -0.2, 1.2, 0.01).name('Face tilt');
   arm.add(a, 'roll', -0.8, 0.8, 0.01).name('Roll');
+  arm.add(a, 'hand', { 'WebXR model': 'webxr', 'Built-in (code)': 'procedural' }).name('Hand');
   arm.add(a, 'follow', 0, 3, 0.05).name('Follow pointer');
   arm.add(a, 'size', 0.6, 1.6, 0.01).name('Size');
   arm.add(a, 'snap', 0, 1, 0.01).name('Thumb snap');
@@ -168,6 +169,39 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
     gui,
     refreshChannels() {
       channel.options(channelOptions());
+    },
+    // How the WebXR hand holds the remote; added once the model has loaded.
+    addGripControls(hand) {
+      const g = hand.settings;
+      const grip = arm.addFolder('Grip (WebXR hand)').close();
+      const apply = () => hand.applyGrip();
+      [
+        ['wristX', -0.15, 0.02, 0.001, 'Wrist across'],
+        ['wristY', -0.12, 0.02, 0.001, 'Wrist height'],
+        ['wristZ', -0.18, 0.02, 0.001, 'Wrist along'],
+        ['heading', -0.6, 1.8, 0.01, 'Hand heading'],
+        ['elevation', -1, 0.7, 0.01, 'Hand tilt'],
+        ['roll', -1.8, 1.8, 0.01, 'Palm roll'],
+        ['scale', 0.8, 1.4, 0.01, 'Hand size'],
+        ['bendKnuckle', 0, 1.9, 0.01, 'Finger bend: knuckle'],
+        ['bendMiddle', 0, 1.9, 0.01, 'Finger bend: middle'],
+        ['bendEnd', 0, 1.9, 0.01, 'Finger bend: end'],
+        ['wrapIndex', 0.5, 1.6, 0.01, 'Wrap: index'],
+        ['wrapMiddle', 0.5, 1.6, 0.01, 'Wrap: middle'],
+        ['wrapRing', 0.5, 1.6, 0.01, 'Wrap: ring'],
+        ['wrapPinky', 0.5, 1.6, 0.01, 'Wrap: pinky'],
+        ['thumbLength', 0.9, 1.4, 0.01, 'Thumb length'],
+        ['thumbSwing', 0, 0.9, 0.01, 'Thumb swing (CMC)'],
+      ].forEach(([key, min, max, step, name]) => grip.add(g, key, min, max, step).name(name).onChange(apply));
+      grip
+        .add(
+          {
+            copy: () =>
+              navigator.clipboard?.writeText(JSON.stringify(g, null, 2)).catch(() => console.log(JSON.stringify(g, null, 2))),
+          },
+          'copy',
+        )
+        .name('Copy grip JSON');
     },
   };
 }

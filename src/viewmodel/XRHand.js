@@ -1,0 +1,223 @@
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { solveTwoBone, swingBone } from './thumbing.js';
+
+// The WebXR generic right hand (public/models/hand/right.glb, MIT, from
+// @webxr-input-profiles/assets), gripping the remote. Same interface as the
+// procedural Hand, so ArmRig can use either.
+//
+// Its 25 joints follow the WebXR Hand Input names and aren't parented to each
+// other: each one is set directly. Each joint's −Z runs along its bone and +Y
+// out of the back of the hand (the nail side). The model lives in "hand
+// space"; `placement` takes it into remote space (x across, +x on your left;
+// y up out of the button face; +z towards the TV), and `group` slides the
+// whole grip along the remote.
+
+const FINGERS = ['index-finger', 'middle-finger', 'ring-finger', 'pinky-finger'];
+const FINGER_PARTS = ['metacarpal', 'phalanx-proximal', 'phalanx-intermediate', 'phalanx-distal', 'tip'];
+const THUMB_PARTS = ['metacarpal', 'phalanx-proximal', 'phalanx-distal', 'tip'];
+
+// How the hand holds the remote. Angles in radians, distances in metres.
+// Fitted numerically: no skin more than a few millimetres into the remote, the
+// fingers hugging it with their tips on its left edge, the wrist low and to
+// the right, and the thumb reaching every button.
+export const GRIP_DEFAULTS = {
+  wristX: -0.095, // where the wrist sits, in remote space
+  wristY: -0.032,
+  wristZ: -0.049,
+  heading: 0.472, // wrist → knuckles: turned from across the remote (+x) towards its tip (+z)…
+  elevation: -0.109, // …and tilted up (negative: down)
+  roll: 0.039, // the palm turned about that line
+  scale: 1.167,
+  bendKnuckle: 0.505, // finger bends at the knuckle, middle and end joints…
+  bendMiddle: 1.079,
+  bendEnd: 0.924,
+  wrapIndex: 0.843, // …scaled per finger, since the longer ones loop wider
+  wrapMiddle: 1.228,
+  wrapRing: 1.172,
+  wrapPinky: 0.972,
+  thumbLength: 1.2, // the model's thumb is short for a remote this wide; this stretches it
+  thumbSwing: 0.218, // how far the CMC swings the thumb across for the far button column
+};
+
+// The thumb, in remote space. Reaching across the face, the CMC swings the big
+// knuckle up and over (`oppose`): `nearSwing` radians for the near button
+// column (`across[0]`, remote x) up to the grip's `thumbSwing` for the far one
+// (`across[1]`). The IP joint bends towards `pole`, an offset from the big knuckle.
+const THUMB = {
+  oppose: new THREE.Vector3(0.55, 0.83, 0),
+  across: [-0.0135, 0.0165],
+  nearSwing: -0.1,
+  pole: new THREE.Vector3(-0.01, 0.054, -0.01),
+};
+
+// The thumb-tip joint sits at the very end of the thumb; this is how far above
+// a button it rests when touching it (ArmRig adds its hover gap on top).
+const TIP_ABOVE = 0.006;
+
+const UP = new THREE.Vector3(0, 1, 0);
+const pivot = new THREE.Vector3();
+const axis = new THREE.Vector3();
+const dir = new THREE.Vector3();
+const turn = new THREE.Quaternion();
+const basis = new THREE.Matrix4();
+const restBasis = new THREE.Matrix4();
+
+// Bend a chain of independent joints at each joint in turn, about that joint's
+// own hinge (+X): positive angles curl towards the palm.
+function bend(chain, angles) {
+  angles.forEach((angle, k) => {
+    if (!angle) return;
+    pivot.copy(chain[k].position);
+    axis.set(1, 0, 0).applyQuaternion(chain[k].quaternion);
+    turn.setFromAxisAngle(axis, -angle);
+    for (let i = k; i < chain.length; i++) {
+      if (i > k) chain[i].position.sub(pivot).applyQuaternion(turn).add(pivot);
+      chain[i].quaternion.premultiply(turn);
+    }
+  });
+}
+
+export class XRHand {
+  static async load(url) {
+    const gltf = await new GLTFLoader().loadAsync(url);
+    return new XRHand(gltf.scene);
+  }
+
+  constructor(model) {
+    this.settings = { ...GRIP_DEFAULTS };
+    this.group = new THREE.Group();
+    this.placement = new THREE.Group();
+    this.group.add(this.placement);
+    this.placement.add(model);
+
+    this.skin = new THREE.MeshStandardMaterial({ color: '#c98d6b', roughness: 0.6 });
+    this.bones = {};
+    model.traverse((o) => {
+      if (o.isSkinnedMesh) {
+        this.mesh = o;
+        o.material = this.skin;
+        o.frustumCulled = false; // its bounds don't follow the pose
+        o.receiveShadow = true;
+      }
+      if (o.isBone) this.bones[o.name] = o;
+    });
+    this.rest = new Map([...Object.values(this.bones)].map((b) => [b, { p: b.position.clone(), q: b.quaternion.clone() }]));
+    this.fingers = FINGERS.map((f) => FINGER_PARTS.map((p) => this.bones[`${f}-${p}`]));
+    this.thumb = THUMB_PARTS.map((p) => this.bones[`thumb-${p}`]);
+
+    // The thumb's rest pose: joint positions, bone lengths and directions.
+    const at = (bone) => this.rest.get(bone).p;
+    const [cmc, mcp, ip, tip] = this.thumb.map(at);
+    this.cmc = cmc.clone();
+    this.mcpModel = mcp.clone();
+    this.mcpRest = mcp.clone(); // big knuckle at rest, after stretching
+    this.modelLengths = [mcp.distanceTo(ip), ip.distanceTo(tip)];
+    this.lengths = [...this.modelLengths];
+    this.restDirs = [
+      new THREE.Vector3().subVectors(mcp, cmc).normalize(),
+      new THREE.Vector3().subVectors(ip, mcp).normalize(),
+      new THREE.Vector3().subVectors(tip, ip).normalize(),
+    ];
+
+    // The hand's own frame at rest: wrist → middle knuckle, the palm's normal
+    // (pointing out of the palm) and their cross product.
+    const wrist = at(this.bones.wrist);
+    const toMiddle = new THREE.Vector3().subVectors(at(this.fingers[1][1]), wrist).normalize();
+    const palm = new THREE.Vector3()
+      .crossVectors(new THREE.Vector3().subVectors(at(this.fingers[0][1]), wrist), new THREE.Vector3().subVectors(at(this.fingers[3][1]), wrist))
+      .normalize();
+    const back = new THREE.Vector3(0, 1, 0).applyQuaternion(this.rest.get(this.fingers[1][1]).q); // nail side
+    if (palm.dot(back) > 0) palm.negate();
+    palm.addScaledVector(toMiddle, -palm.dot(toMiddle)).normalize();
+    this.restFrame = { wrist: wrist.clone(), forward: toMiddle, palm, side: new THREE.Vector3().crossVectors(toMiddle, palm) };
+
+    this.knuckle = new THREE.Vector3(); // MCP, moved by the CMC
+    this.joint = new THREE.Vector3(); // IP
+    this.tip = new THREE.Vector3();
+    this.local = new THREE.Vector3();
+    this.pole = new THREE.Vector3();
+    this.oppose = new THREE.Vector3();
+    this.poleOffset = new THREE.Vector3();
+    this.inverse = new THREE.Matrix4();
+    this.knuckleRest = new THREE.Vector3(); // big knuckle at rest, remote space (before sliding)
+    this.wristRest = new THREE.Vector3();
+    this.wrist = new THREE.Vector3(); // where the forearm meets the hand, remote space
+    this.thumbRadius = TIP_ABOVE;
+    this.applyGrip();
+  }
+
+  // Place the hand round the remote and curl the fingers, from `settings`.
+  applyGrip() {
+    const s = this.settings;
+    const forward = new THREE.Vector3(
+      Math.cos(s.elevation) * Math.cos(s.heading),
+      Math.sin(s.elevation),
+      Math.cos(s.elevation) * Math.sin(s.heading),
+    );
+    const palm = UP.clone().addScaledVector(forward, -UP.dot(forward)).normalize().applyAxisAngle(forward, s.roll);
+    const side = new THREE.Vector3().crossVectors(forward, palm);
+    const r = this.restFrame;
+    basis.makeBasis(r.palm, r.forward, r.side);
+    restBasis.copy(basis).transpose();
+    basis.makeBasis(palm, forward, side).multiply(restBasis);
+    this.placement.quaternion.setFromRotationMatrix(basis);
+    this.placement.scale.setScalar(s.scale);
+    this.placement.position.set(s.wristX, s.wristY, s.wristZ).sub(r.wrist.clone().multiplyScalar(s.scale).applyQuaternion(this.placement.quaternion));
+    this.placement.updateMatrix();
+    this.inverse.copy(this.placement.matrix).invert();
+
+    // The thumb, stretched by `thumbLength`, and its directions brought into hand space.
+    this.mcpRest.subVectors(this.mcpModel, this.cmc).multiplyScalar(s.thumbLength).add(this.cmc);
+    this.lengths = this.modelLengths.map((l) => l * s.thumbLength);
+    const toHand = this.placement.quaternion.clone().invert();
+    this.oppose.copy(THUMB.oppose).applyQuaternion(toHand);
+    this.poleOffset.copy(THUMB.pole).applyQuaternion(toHand).divideScalar(s.scale);
+    this.knuckleRest.copy(this.mcpRest).applyMatrix4(this.placement.matrix);
+    this.wristRest.copy(r.wrist).applyMatrix4(this.placement.matrix);
+    this.setSlide(this.group.position.z);
+
+    for (const [bone, { p, q }] of this.rest) {
+      bone.position.copy(p);
+      bone.quaternion.copy(q);
+    }
+    const wraps = [s.wrapIndex, s.wrapMiddle, s.wrapRing, s.wrapPinky];
+    this.fingers.forEach((chain, n) => bend(chain, [0, s.bendKnuckle * wraps[n], s.bendMiddle * wraps[n], s.bendEnd * wraps[n]]));
+    if (this.tipTarget) this.setThumbTip(this.tipTarget);
+  }
+
+  // How far along the remote (z) the grip should sit so the thumb reaches
+  // `target` comfortably: big knuckle a little behind the button.
+  slideFor(target) {
+    return THREE.MathUtils.clamp(target.z - 0.035 - this.knuckleRest.z, -0.03, 0.05);
+  }
+
+  // Shift the whole grip along the remote.
+  setSlide(z) {
+    this.group.position.z = z;
+    this.wrist.copy(this.wristRest).setZ(this.wristRest.z + z);
+  }
+
+  // Put the end of the thumb on `target` (remote space): swing the metacarpal
+  // from the CMC, then bend the MCP and IP (two-bone IK).
+  setThumbTip(target) {
+    this.tipTarget = target;
+    this.local.copy(target).setZ(target.z - this.group.position.z).applyMatrix4(this.inverse);
+    const [near, far] = THUMB.across;
+    const across = THREE.MathUtils.clamp((target.x - near) / (far - near), 0, 1);
+    swingBone(this.cmc, this.mcpRest, this.oppose, THREE.MathUtils.lerp(THUMB.nearSwing, this.settings.thumbSwing, across), this.knuckle);
+    this.pole.addVectors(this.knuckle, this.poleOffset);
+    solveTwoBone(this.knuckle, this.local, ...this.lengths, this.pole, this.joint, this.tip);
+
+    const [metacarpal, proximal, distal, end] = this.thumb;
+    const points = [this.cmc, this.knuckle, this.joint, this.tip];
+    [metacarpal, proximal, distal].forEach((bone, i) => {
+      dir.subVectors(points[i + 1], points[i]).normalize();
+      turn.setFromUnitVectors(this.restDirs[i], dir);
+      bone.position.copy(points[i]);
+      bone.quaternion.copy(this.rest.get(bone).q).premultiply(turn);
+    });
+    end.position.copy(this.tip);
+    end.quaternion.copy(distal.quaternion);
+  }
+}
