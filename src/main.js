@@ -20,6 +20,7 @@ import { COUCH, EYE, FLOOR_LAMP, STAND, WINDOW } from './world/layout.js';
 import { SeatedCamera } from './camera/SeatedCamera.js';
 import { ArmRig } from './viewmodel/ArmRig.js';
 import { XRHand } from './viewmodel/XRHand.js';
+import { locatePointer, remoteArea } from './camera/pointerZones.js';
 import { createTestSources, sourceFromFile } from './lab/sources.js';
 import { createLabGui } from './lab/LabGui.js';
 import { createRemotePad } from './lab/RemotePad.js';
@@ -101,22 +102,31 @@ const remote = new Remote(tv);
 const rig = new ArmRig({ remote, aimAt: screenWorld });
 room.scene.add(rig.root);
 
-// The pointer steers the thumb across the remote and nudges your arm about;
-// the camera stays still. Leaving the page lowers the arm.
+// In the remote area (a centred square), the pointer steers your thumb across
+// the remote and nudges your arm about, and the view stays still. Outside it,
+// the arm drops out of view and you look around a little instead; the cursor
+// shows there, so you can see where you're pointing. Leaving the page lowers
+// the arm and faces the set again.
 function aim(e) {
-  const x = (e.clientX / window.innerWidth) * 2 - 1;
-  const y = -(e.clientY / window.innerHeight) * 2 + 1;
-  rig.setPointer(x, y);
-  rig.setActive(true);
+  const where = locatePointer(e.clientX, e.clientY, window.innerWidth, window.innerHeight, rig.settings.area);
+  if (where.inside) rig.setPointer(where.u, where.v);
+  rig.setActive(where.inside);
+  seated.setLook(where.lookX, where.lookY);
+  document.body.dataset.aim = where.inside ? 'remote' : 'look';
+  return where;
 }
 window.addEventListener('pointermove', aim);
-document.documentElement.addEventListener('pointerleave', () => rig.setActive(false));
+document.documentElement.addEventListener('pointerleave', () => {
+  rig.setActive(false);
+  seated.setLook(0, 0);
+});
 
 // Click presses whichever button the thumb is over; holding CH or VOL repeats.
-// Aim first: a tap on a touch screen arrives without a hover.
+// Aim first: a tap on a touch screen arrives without a hover. Clicks outside
+// the remote area, where the arm is down, press nothing.
 canvas.addEventListener('pointerdown', (e) => {
   if (state.mode !== 'seated' || e.button !== 0) return;
-  aim(e);
+  if (!aim(e).inside) return;
   canvas.setPointerCapture(e.pointerId);
   remote.hold(rig.target);
 });
@@ -204,6 +214,9 @@ function setMode(mode) {
   state.mode = mode;
   controls.enabled = mode === 'orbit';
   document.body.dataset.mode = mode;
+  // OrbitControls leaves an inline cursor on the canvas; let the stylesheet
+  // decide (hidden over the remote area, ordinary elsewhere).
+  if (mode !== 'orbit') canvas.style.removeProperty('cursor');
 }
 
 async function addFiles(files) {
@@ -398,7 +411,9 @@ renderer.setAnimationLoop(() => {
       pixelScale: renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))),
     });
     renderer.render(room.scene, camera);
-    if (seatedView && state.overlay) overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight);
+    if (seatedView && state.overlay) {
+      overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight, remoteArea(window.innerWidth, window.innerHeight, rig.settings.area));
+    }
     else overlay.hide();
   }
 

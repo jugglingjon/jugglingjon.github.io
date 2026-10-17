@@ -35,6 +35,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   view.add(seated.settings, 'frameHeight', 0.5, 2, 0.01).name('Keep height (m)').onChange(reframe);
   view.add(seated.settings, 'tvHeight', -0.5, 0.6, 0.01).name('TV height in frame');
   view.add(seated.settings, 'breathing', 0, 3, 0.05).name('Breathing');
+  view.add(seated.settings, 'lookAround', 0, 3, 0.05).name('Look around');
   view.add(state, 'overlay').name('Show screen rect');
 
   const a = rig.settings;
@@ -46,6 +47,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   arm.add(a, 'roll', -0.8, 0.8, 0.01).name('Roll');
   arm.add(a, 'hand', { 'WebXR model': 'webxr', 'Built-in (code)': 'procedural' }).name('Hand');
   arm.add(a, 'follow', 0, 3, 0.05).name('Follow pointer');
+  arm.add(a, 'area', 0.3, 1, 0.01).name('Remote area (× height)');
   arm.add(a, 'size', 0.6, 1.6, 0.01).name('Size');
   arm.add(a, 'snap', 0, 1, 0.01).name('Thumb snap');
   arm.add(a, 'highlight').name('Highlight target');

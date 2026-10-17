@@ -29,8 +29,9 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 
 | Input | Remote button | Action |
 |---|---|---|
-| Move the mouse | | Your thumb glides over the remote; the button it's over lights green |
-| Click | the lit one | Press it with your thumb; hold CH or VOL to repeat |
+| Move the mouse, middle of the screen | | Your thumb glides over the remote; the button it's over lights green |
+| Move the mouse towards the edges | | Your arm drops out of view and you look around a little |
+| Click, middle of the screen | the lit one | Press it with your thumb; hold CH or VOL to repeat |
 | <kbd>P</kbd> | POWER | Power on/off (warm-up, degauss, collapse to a dot) |
 | <kbd>↑</kbd> <kbd>→</kbd> / <kbd>↓</kbd> <kbd>←</kbd> | CH ▲ / ▼ | Channel up/down; skips unprogrammed numbers; hold to surf |
 | <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | CH ▲ / ▼ | Channel up / down |
@@ -43,7 +44,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 | <kbd>V</kbd> | | Cycle views: seated (you, on the couch), orbit (free debug camera), flat screen |
 | <kbd>H</kbd> | | Hide the panels |
 
-- In the seated view the camera stays still; the pointer moves your arm a little as well as your thumb. In orbit view, drag to move the camera.
+- In the seated view, the middle of the screen is the **remote area**: a centred square 70% of the window's height (no wider than the window). There the view holds still, the pointer moves your thumb and arm, and the cursor hides because your thumb is the cursor. Outside it the arm drops out of view, the cursor comes back, and the view turns towards the pointer. The turn is nothing at the square's edge and grows to about 11° sideways or 7° up and down at the edge of the screen. Clicks out there press nothing. In orbit view, drag to move the camera.
 - The **Screen Lab** panel starts collapsed: click its title bar (top right) to open it.
 - Every key, scroll and on-screen remote press plays out with your thumb too, so you always see which button went down.
 - Drop any image or video onto the page (or use **Source → Load image / video…**) to add it as the next channel. Dropped videos play their soundtrack through the TV speaker.
@@ -66,9 +67,9 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - **Light:** the TV (its picture's average colour, see `TVGlow`), two warm lamps, the hallway bulb, and a pink neon sign across the street. The neon is the one shadow-casting light, and the blinds are real slats, so it throws genuine stripes across the floor, table and TV. **Room → Blind tilt** changes them.
 - **Tuning:** the Room panel sets lamps, neon, blind tilt, dust brightness and size, and the coffee table's varnish. **Table reflectivity** is how strongly it reflects the TV and lamps; **Table gloss** is how sharp those reflections are.
 - **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon can buzz and stutter (**Room → Neon flicker**, off by default), rain runs down the window, and the VCR blinks 12:00.
-- **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath (**Camera → Breathing**, 0 for a dead-still camera); the pointer moves your arm, not your head. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and the remote.
+- **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath (**Camera → Breathing**, 0 for a dead-still camera). Over the remote area the pointer moves your arm, not your head; outside it, the head turns a little towards the pointer (**Camera → Look around** scales it, 0 turns it off; reduced motion halves it). `src/camera/pointerZones.js` works out which zone the pointer is in. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and the remote.
 - **Zoom:** scrolling up eases the view in to a 20° field of view, and scrolling down eases it back out to the framed view (0.7 s, ease-in-out; 0.15 s with reduced motion). A reversal mid-zoom carries on from where the view is. Your arm zooms with the room.
-- **Screen rect:** `seated.screenRect(tv.screen)` gives the TV glass's on-screen bounds in normalised coordinates every frame, for anything that has to line up with the picture. **Camera → Show screen rect** draws it, with the engage zone around it.
+- **Screen rect:** `seated.screenRect(tv.screen)` gives the TV glass's on-screen bounds in normalised coordinates every frame, for anything that has to line up with the picture. **Camera → Show screen rect** draws it, along with the remote area.
 - **Reduced motion:** with `prefers-reduced-motion`, breathing stops and the arm follows the pointer half as much.
 
 ## The arm and remote
@@ -78,7 +79,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - **The thumb** is three bones, solved every frame. First the CMC joint by the wrist swings the metacarpal: as you reach across the remote it carries the big knuckle up and over the face, and the fleshy pad at the base of the thumb stretches with it. Then the MCP and IP joints bend (two-bone IK) to put the pad on the button. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The arm also drifts a few centimetres after the pointer, and the remote's tip swings that way a little while it stays aimed at the set. The forearm leaves the hand along the wrist's own axis, with the same oval section as the hand model's wrist. The flannel cuff starts just before the hand mesh ends, so the two meet with no seam or kink. The elbow sits at the far end of the forearm, and the upper arm runs from there up to the shoulder.
 - **Presses:** a click goes to `Remote.hold`. The remote fires `press` immediately, and `ArmRig` plays the thumb press: down 60 ms, hold, up 100 ms. The button sinks, the IR LED blinks, and the TV reacts after the IR latency. Keys, scroll and the lab remote go through the same `Remote`, so the thumb presses for those too.
 - **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, and scales it. It also sets how far the arm follows the pointer (**Follow pointer**) and how firmly the thumb settles onto the target. You can also switch the highlight off there, and switch between the WebXR and built-in hands (**Hand**). **Grip (WebXR hand)** has every grip setting: wrist position, hand heading, tilt and roll, size, finger bends, the wrap of each finger, thumb length and swing, and how far the grip follows the thumb up the remote. **Copy grip JSON** copies the result, ready to paste into `GRIP_DEFAULTS` in `src/viewmodel/XRHand.js`.
-- When the pointer leaves the page, the arm lowers; it comes back up when the pointer returns. On touch screens a tap aims and presses in one go.
+- When the pointer leaves the remote area or the page, the arm lowers out of view; it comes back up when the pointer returns. Inside the square, the square itself maps onto the remote's buttons, so every button is in reach without leaving it. **Arm & remote → Remote area** sets its size. On touch screens a tap in the square aims and presses in one go.
 
 ## How the screen works
 

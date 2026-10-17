@@ -12,6 +12,7 @@ export const ARM_DEFAULTS = {
   roll: -0.3,
   hand: 'webxr', // which hand model, once it has loaded ('procedural' is always there)
   follow: 1, // how much the arm drifts and swings towards the pointer
+  area: 0.7, // the remote area: a centred square this share of the viewport height
   size: 1,
   snap: 0.7, // how strongly the thumb settles onto the targeted button
   highlight: true,
@@ -123,14 +124,14 @@ export class ArmRig {
     this.slide = null;
   }
 
-  // Pointer in NDC (−1…1, y up). The target updates straight away, so a
-  // press right after (a tap) goes to the right button.
+  // Pointer across the remote area (−1…1 each way, y up). The target updates
+  // straight away, so a press right after (a tap) goes to the right button.
   setPointer(x, y) {
     this.pointer.set(x, y);
     this.hovered = nearestButton(pointerToField(x, y), this.hovered);
   }
 
-  // Lowered while the pointer is off the page.
+  // Lowered out of view while the pointer is outside the remote area.
   setActive(active) {
     this.active = active;
   }

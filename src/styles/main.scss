@@ -26,8 +26,9 @@ body {
   touch-action: none;
 }
 
-// From the couch your thumb is the cursor; the targeted button lights up.
-body[data-mode='seated'] #scene {
+// In the remote area your thumb is the cursor (the targeted button lights up);
+// outside it, where you look around, the ordinary cursor comes back.
+body[data-mode='seated'][data-aim='remote'] #scene {
   cursor: none;
 }
 
