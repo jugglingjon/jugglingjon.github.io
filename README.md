@@ -17,6 +17,12 @@ npm run media:test # regenerate the placeholder test videos (needs ffmpeg)
 npm run media:music # regenerate the placeholder channel music (needs ffmpeg)
 ```
 
+## Publishing to GitHub Pages
+
+`.github/workflows/pages.yml` runs the tests, builds the site and publishes `dist/` to GitHub Pages on every push to `main`. You can also run it from the **Actions** tab (**Deploy to GitHub Pages → Run workflow**).
+
+One-time setup on GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions**. The site then lives at `https://<user>.github.io/<repo>/`, and each run's deploy step links to it. The build uses relative paths, so it works in that subfolder as is. On a free GitHub plan the repository has to be public for Pages.
+
 ## Screen lab controls
 
 The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red **POWER** button (top right of the remote) and click. That first press also enables sound, since browsers block audio until you interact with the page.
