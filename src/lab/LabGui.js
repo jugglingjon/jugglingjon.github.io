@@ -5,7 +5,7 @@ import { clearSaved, lookOnly, save } from './storage.js';
 // Tuning panel for the screen lab. Every look parameter is live; changes
 // auto-save to this browser, and "Copy JSON" exports them for a preset.
 export function createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig }) {
-  const gui = new GUI({ title: 'Screen Lab' });
+  const gui = new GUI({ title: 'Screen Lab' }).close(); // collapsed until you open it
   gui.onFinishChange(() => save(params));
 
   const set = gui.addFolder('TV');

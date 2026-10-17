@@ -18,7 +18,7 @@ import { Room } from './world/Room.js';
 import { TVGlow } from './world/TVGlow.js';
 import { COUCH, EYE, FLOOR_LAMP, STAND, WINDOW } from './world/layout.js';
 import { SeatedCamera } from './camera/SeatedCamera.js';
-import { ArmRig } from './viewmodel/ArmRig.js';
+import { ArmRig, VIEWMODEL_LAYER } from './viewmodel/ArmRig.js';
 import { XRHand } from './viewmodel/XRHand.js';
 import { createTestSources, sourceFromFile } from './lab/sources.js';
 import { createLabGui } from './lab/LabGui.js';
@@ -100,6 +100,13 @@ const remote = new Remote(tv);
 // Your arm, holding the remote out towards the TV.
 const rig = new ArmRig({ remote, aimAt: screenWorld });
 room.scene.add(rig.root);
+// The arm draws in its own pass through a camera that doesn't zoom; it's lit
+// by the same lights as the room, and the orbit camera sees everything.
+seated.viewmodel.layers.set(VIEWMODEL_LAYER);
+orbitCamera.layers.enable(VIEWMODEL_LAYER);
+room.scene.traverse((o) => {
+  if (o.isLight) o.layers.enable(VIEWMODEL_LAYER);
+});
 
 // The pointer steers the thumb across the remote and nudges your arm about;
 // the camera stays still. Leaving the page lowers the arm.
@@ -224,25 +231,19 @@ async function addFiles(files) {
   tv.tune(added);
 }
 
-// Scroll wheel / trackpad: scroll up for channel up, down for channel down.
-// Deltas accumulate so a trackpad swipe surfs at a steady pace rather than
-// firing on every tiny event. Orbit view keeps the wheel for zoom.
-let wheelTravel = 0;
-let wheelLast = 0;
+// Scroll wheel / trackpad: scroll up to zoom in on the set, down to zoom back
+// out. A trackpad pinch arrives as a wheel event with Ctrl held; it zooms the
+// scene too, not the page. Orbit view keeps the wheel for its own zoom.
 canvas.addEventListener(
   'wheel',
   (e) => {
-    if (state.mode === 'orbit') return;
-    const now = performance.now();
-    if (now - wheelLast > 250) wheelTravel = 0;
-    wheelTravel += e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY; // lines → pixels
-    if (Math.abs(wheelTravel) >= 60 && now - wheelLast > 110) {
-      remote.press(wheelTravel < 0 ? 'ch+' : 'ch-'); // deltaY < 0 is scrolling up
-      wheelTravel = 0;
-      wheelLast = now;
-    }
+    if (state.mode !== 'seated') return;
+    e.preventDefault();
+    let pixels = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY; // lines → pixels; up is negative
+    if (e.ctrlKey) pixels *= 6; // pinches move in small steps
+    seated.zoomBy(Math.exp(pixels * 0.0012));
   },
-  { passive: true },
+  { passive: false },
 );
 
 const fileInput = document.querySelector('#file');
@@ -306,7 +307,7 @@ const KEY_BUTTONS = {
   m: 'mute',
   r: 'recall',
   backspace: 'recall',
-  // Page Up is channel up, matching the scroll wheel.
+  // Page Up is channel up.
   pageup: 'ch+',
   pagedown: 'ch-',
 };
@@ -394,7 +395,7 @@ renderer.setAnimationLoop(() => {
   } else {
     const seatedView = state.mode === 'seated';
     const camera = seatedView ? seated.camera : orbitCamera;
-    if (seatedView) seated.update(clock);
+    if (seatedView) seated.update(clock, realDt);
     else controls.update();
     rig.update(dt, seated.camera, clock, { reducedMotion });
     glow.update(signal.texture, fx.power * params.display.emission, realDt);
@@ -404,6 +405,20 @@ renderer.setAnimationLoop(() => {
       pixelScale: renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))),
     });
     renderer.render(room.scene, camera);
+    if (seatedView) {
+      // The arm and remote, over the room, through the camera that doesn't zoom.
+      // It reuses the room's shadow map (blind stripes across the hand), and the
+      // background colour is lifted so the pass doesn't clear the room away.
+      const background = room.scene.background;
+      room.scene.background = null;
+      renderer.autoClear = false;
+      renderer.shadowMap.autoUpdate = false;
+      renderer.clearDepth();
+      renderer.render(room.scene, seated.viewmodel);
+      renderer.shadowMap.autoUpdate = true;
+      renderer.autoClear = true;
+      room.scene.background = background;
+    }
     if (seatedView && state.overlay) overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight);
     else overlay.hide();
   }

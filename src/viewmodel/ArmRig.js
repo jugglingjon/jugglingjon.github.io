@@ -17,18 +17,26 @@ export const ARM_DEFAULTS = {
   highlight: true,
 };
 
+// The arm and remote render on their own layer, through a camera that doesn't
+// zoom (see SeatedCamera), so they stay put while the room zooms.
+export const VIEWMODEL_LAYER = 1;
+
 const HOVER = 0.007; // gap between the thumb pad and the targeted button
 // Your right shoulder and the elbow's pull, in camera space, and arm bone lengths.
 const SHOULDER = new THREE.Vector3(0.17, -0.22, 0.06);
 const ELBOW_POLE = new THREE.Vector3(0.55, -0.6, -0.1);
 const UPPER_ARM = 0.3;
 const FOREARM = 0.27;
+const WRIST_SKIN = 0.045; // bare wrist before the cuff, for a hand that doesn't say…
+const CUFF = 0.03; // …and the cuff, along the forearm from where it leaves the hand
 const PRESS = { down: 0.06, hold: 0.06, up: 0.1 };
 const PRESS_LENGTH = PRESS.down + PRESS.hold + PRESS.up;
 const Y = new THREE.Vector3(0, 1, 0);
 const dir = new THREE.Vector3();
 const right = new THREE.Vector3();
 const up = new THREE.Vector3();
+const axis = new THREE.Vector3();
+const heldTurn = new THREE.Quaternion();
 
 // Stretch a unit-height mesh between two points.
 function span(mesh, a, b) {
@@ -36,6 +44,15 @@ function span(mesh, a, b) {
   mesh.position.addVectors(a, b).multiplyScalar(0.5);
   mesh.scale.y = dir.length();
   mesh.quaternion.setFromUnitVectors(Y, dir.normalize());
+}
+
+// Fit a unit cylinder along a frame's +Y, from `from` to `to` metres out,
+// with an oval section of half-sizes `sx` (across) and `sz`.
+function along(mesh, frame, from, to, sx, sz) {
+  axis.set(0, 1, 0).applyQuaternion(frame.quaternion);
+  mesh.quaternion.copy(frame.quaternion);
+  mesh.position.copy(frame.position).addScaledVector(axis, (from + to) / 2);
+  mesh.scale.set(sx, to - from, sz);
 }
 
 // Your arm, outstretched, pointing the remote at the TV. The pointer steers
@@ -55,11 +72,12 @@ export class ArmRig {
     this.root.add(this.held);
 
     const sleeveMaterial = new THREE.MeshStandardMaterial({ map: createFlannelTexture(), roughness: 0.9, side: THREE.DoubleSide });
-    this.sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.056, 1, 24, 1, true), sleeveMaterial);
+    // Unit sections, scaled to the wrist each frame; the sleeve widens 45% to the elbow.
+    this.sleeve = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1, 1, 24, 1, true), sleeveMaterial);
     this.upperSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.064, 1, 24, 1, true), sleeveMaterial);
     this.elbowJoint = new THREE.Mesh(new THREE.SphereGeometry(0.057, 20, 12), sleeveMaterial);
-    this.cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1, 24), new THREE.MeshStandardMaterial({ color: '#5a1410', roughness: 0.9 }));
-    this.wristSkin = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.029, 1, 16), this.hand.skin);
+    this.cuff = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 24), new THREE.MeshStandardMaterial({ color: '#5a1410', roughness: 0.9 }));
+    this.wristSkin = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 20), this.hand.skin);
     this.root.add(this.sleeve, this.upperSleeve, this.elbowJoint, this.cuff, this.wristSkin);
     this.root.traverse((o) => {
       if (o.isMesh) o.receiveShadow = true;
@@ -68,6 +86,7 @@ export class ArmRig {
     // A little warm fill so the hand reads against the dark room.
     this.fill = new THREE.PointLight('#ffd6b8', 0.35, 1.2, 2);
     this.root.add(this.fill);
+    this.root.traverse((o) => o.layers.set(VIEWMODEL_LAYER));
 
     // Rest the thumb over CH ▲ until the pointer arrives.
     this.pointer = new THREE.Vector2(0.41, -0.45);
@@ -83,18 +102,18 @@ export class ArmRig {
     this.slide = null;
     this.offset = new THREE.Vector3();
     this.wrist = new THREE.Vector3();
-    this.cuffStart = new THREE.Vector3();
-    this.cuffEnd = new THREE.Vector3();
     this.elbow = new THREE.Vector3();
     this.shoulder = new THREE.Vector3();
     this.pole = new THREE.Vector3();
     this.reached = new THREE.Vector3();
+    this.forearmFrame = { position: new THREE.Vector3(), quaternion: new THREE.Quaternion(), halfWidth: 0, halfThickness: 0, cuffAt: 0 };
 
     remote.addEventListener('press', (e) => this.animatePress(e.detail.button));
   }
 
   // Make another hand available (the WebXR model, once it has loaded).
   addHand(name, hand) {
+    hand.group.traverse((o) => o.layers.set(VIEWMODEL_LAYER));
     this.hands[name] = hand;
     this.syncHand();
   }
@@ -192,16 +211,35 @@ export class ArmRig {
     this.model.setHighlight(s.highlight && this.raise > 0.5 ? aim : null);
     this.model.update(dt);
 
-    // The arm, shoulder to wrist, with the elbow dropping out to the right.
-    this.wrist.copy(this.hand.wrist).applyMatrix4(this.held.matrixWorld);
+    // The arm. The forearm leaves the hand along the wrist's own axis with the
+    // same oval section, so they meet without a seam or a kink; the elbow is at
+    // its far end, and the upper arm runs from there up to the shoulder.
+    const fa = this.forearmFrame;
+    const k = this.held.scale.x;
     this.shoulder.copy(SHOULDER).applyMatrix4(camera.matrixWorld);
-    this.pole.copy(ELBOW_POLE).applyMatrix4(camera.matrixWorld);
-    solveTwoBone(this.shoulder, this.wrist, UPPER_ARM, FOREARM, this.pole, this.elbow, this.reached);
-    this.cuffStart.subVectors(this.elbow, this.wrist).setLength(0.045).add(this.wrist);
-    this.cuffEnd.subVectors(this.elbow, this.wrist).setLength(0.075).add(this.wrist);
-    span(this.wristSkin, this.wrist, this.cuffStart);
-    span(this.cuff, this.cuffStart, this.cuffEnd);
-    span(this.sleeve, this.cuffEnd, this.elbow);
+    if (this.hand.forearm) {
+      this.hand.forearm(fa);
+      fa.position.applyMatrix4(this.held.matrixWorld);
+      fa.quaternion.premultiply(this.held.getWorldQuaternion(heldTurn));
+      fa.halfWidth *= k;
+      fa.halfThickness *= k;
+      fa.cuffAt *= k;
+    } else {
+      // The built-in hand has no wrist frame: aim at the elbow the arm's IK picks.
+      this.wrist.copy(this.hand.wrist).applyMatrix4(this.held.matrixWorld);
+      this.pole.copy(ELBOW_POLE).applyMatrix4(camera.matrixWorld);
+      solveTwoBone(this.shoulder, this.wrist, UPPER_ARM, FOREARM, this.pole, this.elbow, this.reached);
+      fa.position.copy(this.wrist);
+      fa.quaternion.setFromUnitVectors(Y, dir.subVectors(this.elbow, this.wrist).normalize());
+      fa.halfWidth = fa.halfThickness = 0.0265 * k;
+      fa.cuffAt = WRIST_SKIN * k;
+    }
+    this.wrist.copy(fa.position);
+    this.elbow.copy(fa.position).addScaledVector(axis.set(0, 1, 0).applyQuaternion(fa.quaternion), FOREARM * k);
+    const { halfWidth: w, halfThickness: t, cuffAt } = fa;
+    along(this.wristSkin, fa, 0, cuffAt, w * 0.97, t * 0.97);
+    along(this.cuff, fa, cuffAt, cuffAt + CUFF * k, w + 0.008 * k, t + 0.008 * k);
+    along(this.sleeve, fa, cuffAt + CUFF * k, FOREARM * k, w + 0.01 * k, t + 0.011 * k);
     span(this.upperSleeve, this.elbow, this.shoulder);
     this.elbowJoint.position.copy(this.elbow);
 

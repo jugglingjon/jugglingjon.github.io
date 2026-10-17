@@ -58,6 +58,13 @@ const THUMB = {
   pole: new THREE.Vector3(-0.01, 0.054, -0.01),
 };
 
+// Where the forearm leaves the model. The wrist joint's +Z runs back up the
+// arm (X across the wrist, Y out of the back of the hand); the mesh carries on
+// 2.2 cm past the joint, with an oval section about 5.2 × 2.9 cm. The forearm
+// starts a little inside it, and the shirt cuff begins just before the mesh
+// ends (`cuffAt` along the forearm), so the cuff wraps over the join.
+const WRIST_SECTION = { back: 0.008, halfWidth: 0.026, halfThickness: 0.0145, cuffAt: 0.012 };
+
 // The thumb-tip joint sits at the very end of the thumb; this is how far above
 // a button it rests when touching it (ArmRig adds its hover gap on top).
 const TIP_ABOVE = 0.006;
@@ -139,6 +146,15 @@ export class XRHand {
     palm.addScaledVector(toMiddle, -palm.dot(toMiddle)).normalize();
     this.restFrame = { wrist: wrist.clone(), forward: toMiddle, palm, side: new THREE.Vector3().crossVectors(toMiddle, palm) };
 
+    // The forearm's start and frame at rest: +Y up the arm, X across the
+    // wrist, Z out of the palm.
+    const wristBone = this.rest.get(this.bones.wrist);
+    const across = new THREE.Vector3(1, 0, 0).applyQuaternion(wristBone.q);
+    const upArm = new THREE.Vector3(0, 0, 1).applyQuaternion(wristBone.q);
+    const outOfPalm = new THREE.Vector3(0, -1, 0).applyQuaternion(wristBone.q);
+    this.forearmOrigin = wristBone.p.clone().addScaledVector(upArm, WRIST_SECTION.back);
+    this.forearmRest = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(across, upArm, outOfPalm));
+
     this.knuckle = new THREE.Vector3(); // MCP, moved by the CMC
     this.joint = new THREE.Vector3(); // IP
     this.tip = new THREE.Vector3();
@@ -197,6 +213,19 @@ export class XRHand {
   // `target`: part of the way, the thumb stretching or folding for the rest.
   slideFor(target) {
     return THREE.MathUtils.clamp((target.z - HOME_Z) * this.settings.slideFollow, -0.03, 0.09);
+  }
+
+  // Where the forearm leaves the hand, in remote space: the centre of the
+  // wrist's oval section, a frame whose +Y runs up the arm (X across the
+  // wrist), the section's half-width and half-thickness, and how far along
+  // the forearm the cuff should start.
+  forearm(out) {
+    out.position.copy(this.forearmOrigin).applyMatrix4(this.placement.matrix).add(this.group.position);
+    out.quaternion.copy(this.placement.quaternion).multiply(this.forearmRest);
+    out.halfWidth = WRIST_SECTION.halfWidth * this.settings.scale;
+    out.halfThickness = WRIST_SECTION.halfThickness * this.settings.scale;
+    out.cuffAt = WRIST_SECTION.cuffAt * this.settings.scale;
+    return out;
   }
 
   // Shift the whole grip along the remote.

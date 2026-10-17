@@ -33,7 +33,8 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 | Click | the lit one | Press it with your thumb; hold CH or VOL to repeat |
 | <kbd>P</kbd> | POWER | Power on/off (warm-up, degauss, collapse to a dot) |
 | <kbd>↑</kbd> <kbd>→</kbd> / <kbd>↓</kbd> <kbd>←</kbd> | CH ▲ / ▼ | Channel up/down; skips unprogrammed numbers; hold to surf |
-| Scroll up / down, <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | CH ▲ / ▼ | Channel up / down (orbit view keeps the wheel for zoom) |
+| <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | CH ▲ / ▼ | Channel up / down |
+| Scroll up / down, or pinch | | Zoom in on the set / back out; your arm and the remote stay put (orbit view keeps the wheel for its own zoom) |
 | <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> | 1–9, 0 | Tune straight to channel 1–9; 0 is channel 10 |
 | <kbd>R</kbd> / <kbd>Backspace</kbd> | RCL | Recall the previous channel |
 | <kbd>+</kbd> / <kbd>−</kbd> | VOL + / − | Volume, with the OSD bar; hold to repeat |
@@ -43,6 +44,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 | <kbd>H</kbd> | | Hide the panels |
 
 - In the seated view the camera stays still; the pointer moves your arm a little as well as your thumb. In orbit view, drag to move the camera.
+- The **Screen Lab** panel starts collapsed: click its title bar (top right) to open it.
 - Every key, scroll and on-screen remote press plays out with your thumb too, so you always see which button went down.
 - Drop any image or video onto the page (or use **Source → Load image / video…**) to add it as the next channel. Dropped videos play their soundtrack through the TV speaker.
 - Channels start at 1, so the number keys reach the first ten. Tuning a number with nothing on it gives dead air: snow and hiss.
@@ -63,8 +65,9 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - **Layout:** everything is placed from `src/world/layout.js`. The room, the seated camera and the painted glass reflections all read from it, so moving the lamp moves its reflection too.
 - **Light:** the TV (its picture's average colour, see `TVGlow`), two warm lamps, the hallway bulb, and a pink neon sign across the street. The neon is the one shadow-casting light, and the blinds are real slats, so it throws genuine stripes across the floor, table and TV. **Room → Blind tilt** changes them.
 - **Tuning:** the Room panel sets lamps, neon, blind tilt, dust brightness and size, and the coffee table's varnish. **Table reflectivity** is how strongly it reflects the TV and lamps; **Table gloss** is how sharp those reflections are.
-- **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon buzzes and stutters, rain runs down the window, and the VCR blinks 12:00.
+- **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon can buzz and stutter (**Room → Neon flicker**, off by default), rain runs down the window, and the VCR blinks 12:00.
 - **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath (**Camera → Breathing**, 0 for a dead-still camera); the pointer moves your arm, not your head. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and the remote.
+- **Zoom:** scrolling narrows the field of view, from 0.3× (the TV fills the screen) to 1.25× the framed view, and eases there. The arm and remote are on their own layer and draw in a second pass through `seated.viewmodel`, a twin camera that never zooms. They stay the same size while the room zooms, lit by the same lights and reusing the room's shadow map, so the blinds still stripe the hand.
 - **Screen rect:** `seated.screenRect(tv.screen)` gives the TV glass's on-screen bounds in normalised coordinates every frame, for anything that has to line up with the picture. **Camera → Show screen rect** draws it, with the engage zone around it.
 - **Reduced motion:** with `prefers-reduced-motion`, breathing stops and the arm follows the pointer half as much.
 
@@ -72,7 +75,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 
 - **The mapping:** the middle 80% of the screen maps onto the remote's face, the way you see it. Up is towards the tip (POWER, then the number pad), down is the VOL and CH rockers, and left and right go across. The nearest button is the target, with a little hysteresis so the thumb doesn't flicker on a boundary (`src/viewmodel/thumbing.js`). The middle of the screen is **8**, and the bottom right is **CH ▲ / ▼**.
 - **The hand** is the WebXR generic hand model (`public/models/hand/right.glb`, 94 KB). Its joints follow the WebXR Hand Input names, so the thumb's `thumb-metacarpal`, `thumb-phalanx-proximal` and `thumb-phalanx-distal` are our CMC, MCP and IP. The grip was fitted numerically. The hand lies along the remote, which crosses the palm diagonally. With the thumb on CH ▲, the wrist sits just behind the remote's tail, so the forearm carries straight on back towards you with less than 20° of sideways wrist bend. No skin goes more than a couple of millimetres into the remote, and the fingertips wrap its left edge. For the far buttons the hand shifts 40% of the way up the remote and the thumb stretches for the rest. The model's thumb is short for a remote this wide, so the grip stretches it by 20%. Until the model loads, or if it fails to, the built-in hand made from capsules stands in.
-- **The thumb** is three bones, solved every frame. First the CMC joint by the wrist swings the metacarpal: as you reach across the remote it carries the big knuckle up and over the face, and the fleshy pad at the base of the thumb stretches with it. Then the MCP and IP joints bend (two-bone IK) to put the pad on the button. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The arm also drifts a few centimetres after the pointer, and the remote's tip swings that way a little while it stays aimed at the set. The flannel sleeve comes in from the bottom-right corner.
+- **The thumb** is three bones, solved every frame. First the CMC joint by the wrist swings the metacarpal: as you reach across the remote it carries the big knuckle up and over the face, and the fleshy pad at the base of the thumb stretches with it. Then the MCP and IP joints bend (two-bone IK) to put the pad on the button. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The arm also drifts a few centimetres after the pointer, and the remote's tip swings that way a little while it stays aimed at the set. The forearm leaves the hand along the wrist's own axis, with the same oval section as the hand model's wrist. The flannel cuff starts just before the hand mesh ends, so the two meet with no seam or kink. The elbow sits at the far end of the forearm, and the upper arm runs from there up to the shoulder.
 - **Presses:** a click goes to `Remote.hold`. The remote fires `press` immediately, and `ArmRig` plays the thumb press: down 60 ms, hold, up 100 ms. The button sinks, the IR LED blinks, and the TV reacts after the IR latency. Keys, scroll and the lab remote go through the same `Remote`, so the thumb presses for those too.
 - **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, and scales it. It also sets how far the arm follows the pointer (**Follow pointer**) and how firmly the thumb settles onto the target. You can also switch the highlight off there, and switch between the WebXR and built-in hands (**Hand**). **Grip (WebXR hand)** has every grip setting: wrist position, hand heading, tilt and roll, size, finger bends, the wrap of each finger, thumb length and swing, and how far the grip follows the thumb up the remote. **Copy grip JSON** copies the result, ready to paste into `GRIP_DEFAULTS` in `src/viewmodel/XRHand.js`.
 - When the pointer leaves the page, the arm lowers; it comes back up when the pointer returns. On touch screens a tap aims and presses in one go.
@@ -149,7 +152,7 @@ src/
     Hand.js                built-in fallback hand: palm, curled fingers, three-joint thumb (CMC swing + IK), grip slide
     thumbing.js            button layout, pointer → button, two-bone IK, bone swing (+ thumbing.test.js, Hand.test.js)
   camera/
-    SeatedCamera.js        the viewer: seat, framing, breathing, screen rect
+    SeatedCamera.js        the viewer: seat, framing, breathing, zoom, arm camera, screen rect (+ SeatedCamera.test.js)
     framing.js             fitVerticalFov, projectBounds (+ framing.test.js)
   world/                   procedural stand-ins until the Blender art pass
     layout.js              where everything is

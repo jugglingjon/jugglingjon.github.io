@@ -18,7 +18,7 @@ export const ROOM_DEFAULTS = {
   lamps: true,
   lampLevel: 1,
   neon: 1,
-  flicker: true,
+  flicker: false, // the sign's buzz and stutter (Room → Neon flicker)
   blinds: -0.9, // slats tipped down into the room, letting the street light in
   dust: 1,
   dustSize: 1,

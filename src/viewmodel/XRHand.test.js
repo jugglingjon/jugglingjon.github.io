@@ -87,6 +87,23 @@ describe('XRHand', () => {
     expect(hand.group.position.z - homeSlide).toBeLessThan((top.z - home.z) * 0.5);
   });
 
+  it('hands the forearm off along the wrist, from inside the end of the mesh', () => {
+    rest(REMOTE_BUTTONS.find((b) => b.button === 'ch+'));
+    const frame = hand.forearm({ position: new THREE.Vector3(), quaternion: new THREE.Quaternion() });
+    const upArm = new THREE.Vector3(0, 1, 0).applyQuaternion(frame.quaternion);
+    const wristJoint = world(hand.bones.wrist);
+    // Up the arm is the way the wrist joint points back (its +Z)…
+    const wristBack = new THREE.Vector3(0, 0, 1).applyQuaternion(hand.bones.wrist.getWorldQuaternion(new THREE.Quaternion()));
+    expect(upArm.dot(wristBack)).toBeGreaterThan(0.999);
+    // …and away from the knuckles.
+    expect(upArm.dot(wristJoint.clone().sub(world(hand.fingers[1][1])).normalize())).toBeGreaterThan(0.95);
+    // It starts just behind the joint, and the cuff begins before the mesh ends (2.2 cm × scale).
+    const along = frame.position.clone().sub(wristJoint).dot(upArm);
+    expect(along).toBeGreaterThan(0);
+    expect(along + frame.cuffAt).toBeLessThan(0.0224 * hand.settings.scale);
+    expect(frame.halfWidth).toBeGreaterThan(frame.halfThickness);
+  });
+
   it('re-fits when the grip settings change', () => {
     const before = hand.wrist.clone();
     hand.settings.wristX += 0.01;
