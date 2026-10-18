@@ -14,6 +14,18 @@ describe('pointer zones', () => {
     expect(remoteArea(W, H, 0.7, 0.5)).toEqual({ left: 625, top: 150, width: 350, height: 700 });
   });
 
+  it('stretches it to the right only, the left edge staying put', () => {
+    expect(remoteArea(W, H, 0.7, 0.5, 0.14)).toEqual({ left: 625, top: 150, width: 448, height: 700 });
+    expect(locatePointer(1073, 500, W, H, 0.7, 0.5, 0.14)).toMatchObject({ inside: true, u: 1 });
+    expect(locatePointer(1074, 500, W, H, 0.7, 0.5, 0.14).inside).toBe(false);
+  });
+
+  it('keeps a stretched box on a narrow screen', () => {
+    const area = remoteArea(300, 900, 0.7, 0.5, 0.14);
+    expect(area.left).toBeGreaterThanOrEqual(0);
+    expect(area.left + area.width).toBeCloseTo(300, 6);
+  });
+
   it('caps it at the width on a tall screen, keeping its shape', () => {
     expect(remoteArea(400, 900, 0.7)).toMatchObject({ width: 400, height: 400 });
     expect(remoteArea(300, 900, 0.7, 0.5)).toMatchObject({ width: 300, height: 600 });

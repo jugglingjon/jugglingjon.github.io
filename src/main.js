@@ -207,7 +207,7 @@ function aim(e) {
     document.body.dataset.aim = 'look';
     return { inside: false, reading: true };
   }
-  const where = locatePointer(e.clientX, e.clientY, window.innerWidth, window.innerHeight, rig.settings.area, rig.settings.areaWidth);
+  const where = locatePointer(e.clientX, e.clientY, window.innerWidth, window.innerHeight, rig.settings.area, rig.settings.areaWidth, rig.settings.areaRight);
   if (where.inside) rig.setPointer(where.u, where.v);
   rig.setActive(where.inside);
   seated.setLook(where.lookX, where.lookY);
@@ -576,7 +576,7 @@ renderer.setAnimationLoop(() => {
     post.render(room.scene, camera, clock);
     post.track(frameTime);
     if (seatedView && state.overlay) {
-      overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight, remoteArea(window.innerWidth, window.innerHeight, rig.settings.area, rig.settings.areaWidth));
+      overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight, remoteArea(window.innerWidth, window.innerHeight, rig.settings.area, rig.settings.areaWidth, rig.settings.areaRight));
     }
     else overlay.hide();
   }

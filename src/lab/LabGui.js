@@ -49,6 +49,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   arm.add(a, 'follow', 0, 3, 0.05).name('Follow pointer');
   arm.add(a, 'area', 0.3, 1, 0.01).name('Remote area (× height)');
   arm.add(a, 'areaWidth', 0.3, 1.5, 0.01).name('Remote area width (× its height)');
+  arm.add(a, 'areaRight', 0, 0.6, 0.01).name('Remote area: extra on the right');
   arm.add(a, 'size', 0.6, 1.6, 0.01).name('Size');
   arm.add(a, 'snap', 0, 1, 0.01).name('Thumb snap');
   arm.add(a, 'highlight').name('Highlight target');

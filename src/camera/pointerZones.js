@@ -1,12 +1,14 @@
 // Where the pointer is on the page decides what it does. In the remote area,
-// a centred box `size` of the viewport height tall and `aspect` times that
-// wide (no bigger than the viewport), it works your thumb; outside it, the arm
-// drops away and you look around.
+// a box `size` of the viewport height tall and `aspect` times that wide,
+// centred, then stretched `stretch` times its height further to the right (no
+// bigger than the viewport), it works your thumb; outside it, the arm drops
+// away and you look around.
 
-export function remoteArea(width, height, size, aspect = 1) {
-  const tall = Math.min(height * size, width / aspect);
-  const wide = tall * aspect;
-  return { left: (width - wide) / 2, top: (height - tall) / 2, width: wide, height: tall };
+export function remoteArea(width, height, size, aspect = 1, stretch = 0) {
+  const tall = Math.min(height * size, width / (aspect + stretch));
+  const wide = tall * (aspect + stretch);
+  const left = Math.min((width - tall * aspect) / 2, width - wide);
+  return { left, top: (height - tall) / 2, width: wide, height: tall };
 }
 
 // Past an edge of the box: how far towards that screen edge, 0 at the box,
@@ -22,8 +24,8 @@ const clamp = (n) => Math.max(-1, Math.min(1, n)) || 0; // || 0: no −0
 // A pointer in page pixels → whether it's in the remote area, where in it
 // (u, v: −1…1 across the box, y up), and how far it reaches towards each
 // screen edge outside it (lookX, lookY: −1…1, y up; 0 inside).
-export function locatePointer(x, y, width, height, size, aspect = 1) {
-  const area = remoteArea(width, height, size, aspect);
+export function locatePointer(x, y, width, height, size, aspect = 1, stretch = 0) {
+  const area = remoteArea(width, height, size, aspect, stretch);
   const right = area.left + area.width;
   const bottom = area.top + area.height;
   return {
