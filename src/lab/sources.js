@@ -64,13 +64,14 @@ const music = (name) => `${import.meta.env.BASE_URL}media/music/${name}.mp3`;
 
 export function createTestSources() {
   return [
-    { ...canvasSource('Neon Burger Co.', drawNeonBurger()), music: music('neon-burger') },
-    { ...animatedSource('Field Notes', createScrollRecording()), music: music('field-notes') },
-    { ...canvasSource('Orbit Analytics', drawDashboard()), music: music('orbit-analytics') },
-    Object.assign(videoSource('Game of Life', testMedia('life')), { music: music('game-of-life') }),
-    Object.assign(videoSource('Gradient Reel', testMedia('gradient-reel')), { music: music('gradient-reel') }),
-    { ...canvasSource('Colour Bars', drawColorBars()), tone: 1000 }, // the classic 1 kHz line-up tone
-    { ...canvasSource('Resolution Chart', drawResolutionChart()), music: music('forecast') },
+    // `blurb` is the line under each show in the listings magazine.
+    { ...canvasSource('Neon Burger Co.', drawNeonBurger()), music: music('neon-burger'), blurb: 'Burger joint site · branding and web' },
+    { ...animatedSource('Field Notes', createScrollRecording()), music: music('field-notes'), blurb: 'Editorial blog · long-read layouts' },
+    { ...canvasSource('Orbit Analytics', drawDashboard()), music: music('orbit-analytics'), blurb: 'Dashboard UI · charts and data' },
+    Object.assign(videoSource('Game of Life', testMedia('life')), { music: music('game-of-life'), blurb: 'Generative loop · video' }),
+    Object.assign(videoSource('Gradient Reel', testMedia('gradient-reel')), { music: music('gradient-reel'), blurb: 'Motion reel · video' }),
+    { ...canvasSource('Colour Bars', drawColorBars()), tone: 1000, blurb: 'Test card · the 1 kHz line-up tone' }, // the classic 1 kHz line-up tone
+    { ...canvasSource('Resolution Chart', drawResolutionChart()), music: music('forecast'), blurb: 'Test card · check your focus' },
   ];
 }
 

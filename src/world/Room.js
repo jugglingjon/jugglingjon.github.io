@@ -14,6 +14,18 @@ import { createCarpetTexture, createCeilingTexture, createPanelingTexture, creat
 import { createWindow, neonFlicker } from './windowView.js';
 import { COFFEE_TABLE, COUCH, DOOR, END_TABLE, EYE, FLOOR_LAMP, NEON, PLANT, PRINT, ROOM, RUG, STAND, TABLE_LAMP, WINDOW } from './layout.js';
 
+// The table lamp's switch, 0 (off) … 1 (on), `t` seconds after it was flicked:
+// coming on, the bulb catches with a quick stutter; going off, the filament
+// fades in a moment.
+export function lampLevel(on, t) {
+  if (on) {
+    if (t >= 0.2) return 1;
+    const ramp = THREE.MathUtils.smoothstep(t, 0, 0.14);
+    return t > 0.05 && t < 0.085 ? ramp * 0.35 : ramp;
+  }
+  return Math.max(0, 1 - t / 0.12) ** 2;
+}
+
 export const ROOM_DEFAULTS = {
   lamps: true,
   lampLevel: 1,
@@ -209,7 +221,14 @@ export class Room {
     const floorLamp = createFloorLamp();
     floorLamp.group.position.copy(FLOOR_LAMP.position);
     scene.add(floorLamp.group);
-    this.shades = [tableLamp.shadeMaterial, floorLamp.shadeMaterial];
+    this.tableLamp = tableLamp.group; // click it to switch it (see toggleTableLamp)
+    this.lampGlow = [
+      { shade: tableLamp.shadeMaterial, fringe: tableLamp.fringeMaterial },
+      { shade: floorLamp.shadeMaterial, fringe: floorLamp.fringeMaterial },
+    ];
+    this.tableLampOn = true;
+    this.tableLampFlicked = -Infinity;
+    this.time = 0;
 
     const print = createPrint(PRINT);
     print.group.position.copy(PRINT.position);
@@ -258,8 +277,16 @@ export class Room {
     this.dust.material.uniforms.uBeamDir.value.copy(EYE).sub(origin).normalize();
   }
 
+  // Flick the table lamp's switch; returns whether it's now on.
+  toggleTableLamp() {
+    this.tableLampOn = !this.tableLampOn;
+    this.tableLampFlicked = this.time;
+    return this.tableLampOn;
+  }
+
   update(time, { tvColor, tvLevel, pixelScale }) {
     const s = this.settings;
+    this.time = time;
 
     const level = s.flicker ? neonFlicker(time) : 1;
     this.neon.intensity = this.neonIntensity * s.neon * level;
@@ -270,9 +297,13 @@ export class Room {
     this.window.setTilt(s.blinds);
 
     const lamp = s.lamps ? s.lampLevel : 0;
-    this.tableLight.intensity = 1.6 * lamp;
+    const tableLamp = lamp * lampLevel(this.tableLampOn, time - this.tableLampFlicked);
+    this.tableLight.intensity = 1.6 * tableLamp;
     this.floorLight.intensity = 1.2 * lamp;
-    this.shades.forEach((m) => (m.emissiveIntensity = 1.6 * lamp));
+    [tableLamp, lamp].forEach((level, i) => {
+      this.lampGlow[i].shade.emissiveIntensity = 1.6 * level;
+      this.lampGlow[i].fringe.emissiveIntensity = 0.6 * level;
+    });
 
     this.vcrDisplay.visible = time % 1 < 0.5;
     this.dust.update(time, { tvColor, tvLevel, pixelScale, opacity: s.dust, size: s.dustSize });

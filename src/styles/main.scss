@@ -32,6 +32,11 @@ body[data-mode='seated'][data-aim='remote'] #scene {
   cursor: none;
 }
 
+// Something you can click, outlined in the room, or a listing in the magazine.
+body[data-mode='seated'][data-hover='true'] #scene {
+  cursor: pointer;
+}
+
 body[data-mode='orbit'] #scene {
   cursor: grab;
 

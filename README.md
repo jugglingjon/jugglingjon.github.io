@@ -32,6 +32,9 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 | Move the mouse, middle of the screen | | Your thumb glides over the remote; the button it's over lights green |
 | Move the mouse towards the edges | | Your arm drops out of view and you look around a little |
 | Click, middle of the screen | the lit one | Press it with your thumb; hold CH or VOL to repeat |
+| Point at something towards the edges | | If it glows with an outline, it's clickable: the table lamp switches on and off, the listings magazine opens |
+| Click a listing in the open magazine | | Tune to that show (switching the set on if it's off) |
+| <kbd>Esc</kbd>, or click off the magazine | | Put the magazine back down |
 | <kbd>P</kbd> | POWER | Power on/off (warm-up, degauss, collapse to a dot) |
 | <kbd>↑</kbd> <kbd>→</kbd> / <kbd>↓</kbd> <kbd>←</kbd> | CH ▲ / ▼ | Channel up/down; skips unprogrammed numbers; hold to surf |
 | <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | CH ▲ / ▼ | Channel up / down |
@@ -80,6 +83,16 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - **Presses:** a click goes to `Remote.hold`. The remote fires `press` immediately, and `ArmRig` plays the thumb press: down 60 ms, hold, up 100 ms. The button sinks, the IR LED blinks, and the TV reacts after the IR latency. Keys, scroll and the lab remote go through the same `Remote`, so the thumb presses for those too.
 - **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, and scales it. It also sets how far the arm follows the pointer (**Follow pointer**) and how firmly the thumb settles onto the target. You can also switch the highlight off there, and switch between the WebXR and built-in hands (**Hand**). **Grip (WebXR hand)** has every grip setting: wrist position, hand heading, tilt and roll, size, finger bends, the wrap of each finger, thumb length and swing, and how far the grip follows the thumb up the remote. **Copy grip JSON** copies the result, ready to paste into `GRIP_DEFAULTS` in `src/viewmodel/XRHand.js`.
 - When the pointer leaves the remote area or the page, the arm lowers out of view; it comes back up when the pointer returns. Inside the square, the square itself maps onto the remote's buttons, so every button is in reach without leaving it. **Arm & remote → Remote area** sets its size. On touch screens a tap in the square aims and presses in one go.
+
+## Things you can click
+
+Outside the remote area, pointing at the room finds the first visible surface under the pointer, so you can't click through the furniture. If that surface belongs to something interactive, it glows with an outline, the cursor becomes a pointer, and a click does something (`src/world/Interactions.js`).
+
+- **The outline** (`src/world/HoverOutline.js`) is drawn in screen space. The hovered object is drawn as a white silhouette into an offscreen mask on its own layer, then a full-screen pass traces the mask's edge over the finished frame with a gentle pulse. The line is the same width whatever the object's shape, and nothing extra is drawn when nothing is hovered.
+- **The table lamp** switches its light, shade and fringe glow. Coming on, the bulb catches with a quick stutter; going off, the filament fades. A synthesized switch click plays (`lampLevel` in `Room.js`, `lampSwitch` in the audio engine).
+- **The listings magazine** (`src/world/Magazine.js`) lifts off the coffee table to a reading spot in front of you, sized to fill most of the view at any zoom. Its cover swings open on a hinge, with a paper rustle. The inside spread is drawn on canvases (`src/world/listings.js`). The left page is a welcome and how-to-watch guide; the right page lists every channel with a time slot and a one-line blurb (`blurb` on each source in `src/lab/sources.js`), and marks the show on now. The row under the pointer lights up. Clicking a listing tunes the set to it (switching it on if need be) and puts the magazine back down, exactly where it was. Esc or a click off the magazine also puts it down.
+- **Adding more:** call `interactions.add(object, { name, onClick, enabled })` in `main.js` for anything in the room.
+- **Baked lighting later:** if the room's lighting is baked, switchable lights like the table lamp need their own per-light map, blended at runtime (like the TV-light channel), so they keep switching.
 
 ## How the screen works
 
@@ -160,6 +173,10 @@ src/
     Room.js                walls, floor, ceiling, door, lights; assembles the rest
     furniture.js           TV stand + VCR + tapes, coffee table, couch, end table, lamps
     props.js               beer can, magazines, plant, framed print
+    Magazine.js            the listings magazine: hinged cover, lifts to you, picks a listing
+    listings.js            its inside pages, drawn on canvases; row hit-testing (+ listings.test.js)
+    Interactions.js        what's clickable and under the pointer, with occlusion (+ Interactions.test.js)
+    HoverOutline.js        screen-space outline round the hovered thing
     windowView.js          window, real blind slats, rain glass, the street and its neon
     atmosphere.js          dust motes, rain shader
     TV.js                  ~20" woodgrain set: fascia, dials, rabbit ears

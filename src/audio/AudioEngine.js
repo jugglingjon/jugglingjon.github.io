@@ -181,6 +181,27 @@ export class AudioEngine {
     this.tone(t, { freq: 170 * pitch, to: 120 * pitch, duration: 0.05, level: 0.45 });
   }
 
+  // A lamp's switch: a sharp snap and a little knock through the base.
+  lampSwitch(on) {
+    const t = this.ctx.currentTime;
+    this.noiseBurst(t, { duration: 0.012, level: 0.8, type: 'bandpass', freq: on ? 4200 : 3600, q: 1.4 });
+    this.tone(t, { freq: 230, to: 150, duration: 0.045, level: 0.22, type: 'triangle' });
+  }
+
+  // Paper: a magazine picked up and its cover turned, or put back down.
+  rustle() {
+    const t = this.ctx.currentTime;
+    for (let i = 0; i < 6; i++) {
+      this.noiseBurst(t + i * 0.05 + Math.random() * 0.025, {
+        duration: 0.05 + Math.random() * 0.04,
+        level: 0.1 + Math.random() * 0.06,
+        type: 'bandpass',
+        freq: 1600 + Math.random() * 3000,
+        q: 0.7,
+      });
+    }
+  }
+
   // The tuner's relay clicking over inside the set.
   relay() {
     const t = this.ctx.currentTime;

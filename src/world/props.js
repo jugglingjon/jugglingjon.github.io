@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { place } from './furniture.js';
+import { ListingsMagazine } from './Magazine.js';
 import { createCanTexture, createMagazineTexture, createPrintTexture, seededRandom } from './textures.js';
 
 // Small set dressing. Each builder returns a group at the origin (sitting on
@@ -13,19 +14,19 @@ export function createBeerCan() {
   return { group };
 }
 
-// A couple of listings magazines. In Phase 6 this becomes the hotspot that
-// opens the current project's case study.
+// A couple of listings magazines. The top one opens (see ListingsMagazine);
+// the one under it is just last week's.
 export function createMagazines() {
   const group = new THREE.Group();
-  const cover = createMagazineTexture();
   const pages = new THREE.MeshStandardMaterial({ color: '#e8e0cc', roughness: 0.9 });
-  const front = new THREE.MeshStandardMaterial({ map: cover, roughness: 0.6 });
+  const front = new THREE.MeshStandardMaterial({ map: createMagazineTexture(), roughness: 0.6 });
   const back = new THREE.MeshStandardMaterial({ color: '#d4cbb5', roughness: 0.6 });
-  const mats = [pages, pages, front, back, pages, pages];
-  const top = place(group, new THREE.BoxGeometry(0.135, 0.004, 0.19), mats, 0, 0.006, 0);
-  const under = place(group, new THREE.BoxGeometry(0.135, 0.004, 0.19), mats, 0.02, 0.002, 0.015);
+  const under = place(group, new THREE.BoxGeometry(0.135, 0.004, 0.19), [pages, pages, front, back, pages, pages], 0.02, 0.002, 0.015);
   under.rotation.y = -0.35;
-  return { group, cover: top };
+  const listings = new ListingsMagazine();
+  listings.group.position.y = 0.004;
+  group.add(listings.group);
+  return { group, listings };
 }
 
 // Snake plant in a terracotta pot.

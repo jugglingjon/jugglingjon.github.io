@@ -21,6 +21,8 @@ import { SeatedCamera } from './camera/SeatedCamera.js';
 import { ArmRig } from './viewmodel/ArmRig.js';
 import { XRHand } from './viewmodel/XRHand.js';
 import { locatePointer, remoteArea } from './camera/pointerZones.js';
+import { Interactions } from './world/Interactions.js';
+import { HoverOutline } from './world/HoverOutline.js';
 import { createTestSources, sourceFromFile } from './lab/sources.js';
 import { createLabGui } from './lab/LabGui.js';
 import { createRemotePad } from './lab/RemotePad.js';
@@ -102,16 +104,66 @@ const remote = new Remote(tv);
 const rig = new ArmRig({ remote, aimAt: screenWorld });
 room.scene.add(rig.root);
 
+// Things in the room you can click, outlined while you point at them: the
+// table lamp switches on and off, and the listings magazine lifts into your
+// hands, opens, and tunes the set to whichever show you pick.
+const interactions = new Interactions();
+const outline = new HoverOutline(renderer);
+const magazine = room.magazines.listings;
+interactions.add(room.tableLamp, {
+  name: 'Table lamp',
+  onClick: () => audio?.lampSwitch(room.toggleTableLamp()),
+});
+interactions.add(magazine.group, { name: 'Listings magazine', onClick: openMagazine, enabled: () => magazine.atRest });
+interactions.setOccluders(room.scene, [rig.root]);
+
+function openMagazine() {
+  magazine.setListings(tv.lineup, tv.number);
+  magazine.open(room.scene);
+  audio?.rustle();
+  rig.setActive(false);
+  seated.setLook(0, 0);
+}
+
+function closeMagazine() {
+  if (!magazine.isOpen) return;
+  magazine.close();
+  audio?.rustle();
+}
+
+// Tune to a show picked from the listings (switching the set on if need be),
+// then put the magazine down so you can watch.
+function watch(row) {
+  const channel = magazine.lineup[row];
+  if (!channel) return;
+  tv.tune(channel.number);
+  if (!tv.on) remote.press('power');
+  audio?.click();
+  closeMagazine();
+}
+
 // In the remote area (a centred square), the pointer steers your thumb across
 // the remote and nudges your arm about, and the view stays still. Outside it,
-// the arm drops out of view and you look around a little instead; the cursor
-// shows there, so you can see where you're pointing. Leaving the page lowers
-// the arm and faces the set again.
+// the arm drops out of view and you look around a little instead, pointing at
+// things in the room; the cursor shows there, so you can see where you're
+// pointing. With the magazine open, the pointer reads the listings instead.
+// Leaving the page lowers the arm and faces the set again.
+const pointer = new THREE.Vector2();
 function aim(e) {
+  pointer.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  if (magazine.isOpen) {
+    rig.setActive(false);
+    seated.setLook(0, 0);
+    interactions.clearPointer();
+    document.body.dataset.aim = 'look';
+    return { inside: false, reading: true };
+  }
   const where = locatePointer(e.clientX, e.clientY, window.innerWidth, window.innerHeight, rig.settings.area);
   if (where.inside) rig.setPointer(where.u, where.v);
   rig.setActive(where.inside);
   seated.setLook(where.lookX, where.lookY);
+  if (where.inside) interactions.clearPointer();
+  else interactions.setPointer(pointer.x, pointer.y);
   document.body.dataset.aim = where.inside ? 'remote' : 'look';
   return where;
 }
@@ -119,14 +171,26 @@ window.addEventListener('pointermove', aim);
 document.documentElement.addEventListener('pointerleave', () => {
   rig.setActive(false);
   seated.setLook(0, 0);
+  interactions.clearPointer();
 });
 
 // Click presses whichever button the thumb is over; holding CH or VOL repeats.
-// Aim first: a tap on a touch screen arrives without a hover. Clicks outside
-// the remote area, where the arm is down, press nothing.
+// Aim first: a tap on a touch screen arrives without a hover. Outside the
+// remote area a click works whatever you're pointing at; with the magazine
+// open it picks a show, and a click off the magazine puts it down.
 canvas.addEventListener('pointerdown', (e) => {
   if (state.mode !== 'seated' || e.button !== 0) return;
-  if (!aim(e).inside) return;
+  const where = aim(e);
+  if (where.reading) {
+    const row = magazine.rowAtPointer(pointer, seated.camera);
+    if (row >= 0) watch(row);
+    else if (!magazine.isUnder(pointer, seated.camera)) closeMagazine();
+    return;
+  }
+  if (!where.inside) {
+    interactions.pick(seated.camera)?.onClick();
+    return;
+  }
   canvas.setPointerCapture(e.pointerId);
   remote.hold(rig.target);
 });
@@ -211,6 +275,7 @@ document.body.append(createRemotePad(remote));
 const MODES = ['seated', 'orbit', 'flat'];
 
 function setMode(mode) {
+  if (mode !== 'seated') closeMagazine();
   state.mode = mode;
   controls.enabled = mode === 'orbit';
   document.body.dataset.mode = mode;
@@ -330,6 +395,9 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.repeat) return;
   switch (key) {
+    case 'escape':
+      closeMagazine();
+      break;
     case 'd':
       degauss(fx);
       break;
@@ -404,6 +472,14 @@ renderer.setAnimationLoop(() => {
     if (seatedView) seated.update(clock, realDt);
     else controls.update();
     rig.update(dt, seated.camera, clock, { reducedMotion });
+    magazine.update(dt, seated.camera);
+    // What the pointer's over: a listing while you read, otherwise something
+    // in the room (outlined).
+    const reading = seatedView && magazine.isOpen;
+    magazine.setHover(reading ? magazine.rowAtPointer(pointer, seated.camera) : -1);
+    const hovered = seatedView && !reading ? interactions.update(seated.camera) : null;
+    outline.setTarget(hovered?.object ?? null);
+    document.body.dataset.hover = String(Boolean(hovered) || magazine.hover >= 0);
     glow.update(signal.texture, fx.power * params.display.emission, realDt);
     room.update(clock, {
       tvColor: glow.light.color,
@@ -411,6 +487,7 @@ renderer.setAnimationLoop(() => {
       pixelScale: renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))),
     });
     renderer.render(room.scene, camera);
+    outline.render(room.scene, camera, clock);
     if (seatedView && state.overlay) {
       overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight, remoteArea(window.innerWidth, window.innerHeight, rig.settings.area));
     }

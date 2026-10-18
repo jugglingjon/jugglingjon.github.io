@@ -128,7 +128,7 @@ function lampShade(radiusTop, radiusBottom, height) {
     side: THREE.DoubleSide,
   });
   place(group, new THREE.CylinderGeometry(radiusBottom + 0.003, radiusBottom + 0.006, 0.05, 28, 1, true), fringe, 0, -height / 2 - 0.022, 0, { cast: false });
-  return { group, shadeMaterial };
+  return { group, shadeMaterial, fringeMaterial: fringe };
 }
 
 export function createTableLamp() {
@@ -141,7 +141,7 @@ export function createTableLamp() {
   const shade = lampShade(0.11, 0.17, 0.2);
   shade.group.position.y = 0.43;
   group.add(shade.group);
-  return { group, shadeMaterial: shade.shadeMaterial, shadeHeight: 0.43 };
+  return { group, shadeMaterial: shade.shadeMaterial, fringeMaterial: shade.fringeMaterial, shadeHeight: 0.43 };
 }
 
 export function createFloorLamp() {
@@ -152,5 +152,5 @@ export function createFloorLamp() {
   const shade = lampShade(0.16, 0.24, 0.28);
   shade.group.position.y = 1.5;
   group.add(shade.group);
-  return { group, shadeMaterial: shade.shadeMaterial };
+  return { group, shadeMaterial: shade.shadeMaterial, fringeMaterial: shade.fringeMaterial };
 }
