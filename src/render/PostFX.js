@@ -30,10 +30,10 @@ export const POST_DEFAULTS = {
   quality: 'auto', // or a tier; auto starts high (medium on touch devices) and steps down if frames drop
   ao: 0.7, // ambient occlusion strength
   aoRadius: 0.3, // metres
-  bloom: 0.38,
-  bloomRadius: 0.35,
-  bloomThreshold: 0.6, // how bright (0–1) a glowing thing has to be to bloom
-  screenGlow: 0.3, // how much of that bloom the TV picture gets
+  bloom: 0.05,
+  bloomRadius: 0.11,
+  bloomThreshold: 0.79, // how bright (0–1) a glowing thing has to be to bloom
+  screenGlow: 0, // how much of that bloom the TV picture gets (none: it stays sharp)
   grain: 0.035,
   vignette: 0.3,
   saturation: 1.06,
