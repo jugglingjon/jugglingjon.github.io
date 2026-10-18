@@ -114,4 +114,17 @@ describe('XRHand', () => {
     hand.settings.wristX -= 0.01;
     hand.applyGrip();
   });
+  it('closes into a loose fist with nothing to hold, and back round the remote', () => {
+    const tips = () => {
+      hand.group.updateMatrixWorld(true);
+      return hand.fingers.map((chain) => world(chain[4]));
+    };
+    const wrist = () => world(hand.bones.wrist);
+    const gripped = tips();
+    hand.setFist(1);
+    const fist = tips();
+    fist.forEach((tip, n) => expect(tip.distanceTo(wrist())).toBeLessThan(gripped[n].distanceTo(wrist())));
+    hand.setFist(0);
+    tips().forEach((tip, n) => expect(tip.distanceTo(gripped[n])).toBeLessThan(1e-9));
+  });
 });

@@ -41,6 +41,10 @@ export const GRIP_DEFAULTS = {
 // it shifts up the remote (partly) for buttons further along.
 const HOME_Z = -0.024;
 
+// With nothing in the hand (the remote set aside), the fingers close up into
+// a loose fist: these bends at the knuckle, middle and end joints.
+const FIST = [1.35, 1.5, 0.8];
+
 // The thumb, in remote space. Reaching across the face, the CMC swings the big
 // knuckle up and over (`oppose`): `nearSwing` radians for the near button
 // column (`across[0]`, remote x) up to the grip's `thumbSwing` for the far one
@@ -108,6 +112,7 @@ export class XRHand {
     this.wristRest = new THREE.Vector3();
     this.wrist = new THREE.Vector3(); // where the forearm meets the hand, remote space
     this.thumbRadius = TIP_ABOVE;
+    this.fist = 0;
     this.applyGrip();
   }
 
@@ -135,9 +140,30 @@ export class XRHand {
     this.setSlide(this.group.position.z);
 
     resetPose(this.rest);
-    const wraps = [s.wrapIndex, s.wrapMiddle, s.wrapRing, s.wrapPinky];
-    this.fingers.forEach((chain, n) => bend(chain, [0, s.bendKnuckle * wraps[n], s.bendMiddle * wraps[n], s.bendEnd * wraps[n]]));
+    this.curlFingers();
     if (this.tipTarget) this.setThumbTip(this.tipTarget);
+  }
+
+  // Curl the fingers round the remote, or (`fist`, 0…1) on into a loose
+  // fist when there's nothing to hold.
+  curlFingers() {
+    const s = this.settings;
+    const wraps = [s.wrapIndex, s.wrapMiddle, s.wrapRing, s.wrapPinky];
+    const grip = [s.bendKnuckle, s.bendMiddle, s.bendEnd];
+    this.fingers.forEach((chain, n) => {
+      for (const bone of chain) {
+        const { p, q } = this.rest.get(bone);
+        bone.position.copy(p);
+        bone.quaternion.copy(q);
+      }
+      bend(chain, [0, ...grip.map((angle, i) => THREE.MathUtils.lerp(angle * wraps[n], FIST[i], this.fist))]);
+    });
+  }
+
+  setFist(amount) {
+    if (amount === this.fist) return;
+    this.fist = amount;
+    this.curlFingers();
   }
 
   // How far along the remote (z) the grip shifts for the thumb to reach

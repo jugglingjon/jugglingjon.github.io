@@ -4,8 +4,8 @@ import { CAN } from '../world/props.js';
 
 // Click the can and you have a drink. You lean in to the coffee table, your
 // left hand reaches out, picks the can up and brings it to the middle of the
-// view; the first time, your right hand comes over (remote and all) and your
-// thumb levers the tab open, with a crack and a fizz. Up to your mouth, three
+// view; the first time, your right hand comes over (setting the remote aside)
+// and your thumb levers the tab open, with a crack and a fizz. Up to your mouth, three
 // gulps, back down, "ahhh", and you lean in again to put it back exactly
 // where it was.
 //
@@ -32,8 +32,9 @@ const MOUTH = {
 };
 const REST = new THREE.Vector3(-0.3, -0.5, -0.1); // the hand, out of view
 const HOVER = new THREE.Vector3(-0.07, 0.07, 0.04); // the hand on its way in, from where it'll hold the can
-// The remote stood up beside the can, its face against the can's side, for
-// your thumb to reach over the rim: the ring sits here in remote space, a
+// Your right hand comes in beside the can as if holding the remote stood up
+// against its side (the remote itself is set aside, see ArmRig's override),
+// for your thumb to reach over the rim: the ring sits here in remote space, a
 // thumb's height over the face, level with the middle of the keypad. Your
 // thumb's middle joint bends up, towards the remote's tip, so it comes down
 // on the ring over the rim rather than through the side of the can.

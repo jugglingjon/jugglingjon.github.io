@@ -75,10 +75,13 @@ export class ArmRig {
     this.reached = new THREE.Vector3();
     this.forearmFrame = { position: new THREE.Vector3(), quaternion: new THREE.Quaternion(), halfWidth: 0, halfThickness: 0, cuffAt: 0 };
 
-    // Something else can borrow the remote hand for a moment (the drink: your
-    // thumb opens the can). `weight` (0…1) eases the remote towards `position`
-    // and `quaternion` (world), and the thumb tip towards `thumb` (world),
-    // its middle joint bending towards `bend` (remote space, from the knuckle).
+    // Something else can borrow your right hand for a moment (the drink: your
+    // thumb opens the can). The remote's set aside meanwhile, and the fingers
+    // close into a loose fist. `weight` (0…1) eases the hand (still placed as
+    // if round the remote) towards `position` and `quaternion` (world), and
+    // the thumb tip towards `thumb` (world), its middle joint bending towards
+    // `bend` (remote space, from the knuckle). It comes and goes while the arm
+    // is lowered out of view, so the remote's never seen to vanish.
     this.override = {
       weight: 0,
       position: new THREE.Vector3(),
@@ -192,6 +195,8 @@ export class ArmRig {
     this.slide = this.slide === null ? slide : THREE.MathUtils.damp(this.slide, slide, 7, dt);
     this.hand.setSlide(this.slide);
     this.hand.bendThumbTowards?.(o.bend, o.weight);
+    this.hand.setFist?.(o.weight);
+    this.model.group.visible = o.weight === 0;
     this.hand.setThumbTip(this.tip);
     this.model.setPress(pressing ? this.pressButton : null, press);
     this.model.setHighlight(s.highlight && this.raise > 0.5 && o.weight === 0 ? aim : null);
