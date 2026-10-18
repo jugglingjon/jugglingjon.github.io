@@ -27,8 +27,11 @@ export function lampLevel(on, t) {
   return Math.max(0, 1 - t / 0.12) ** 2;
 }
 
-// How far the can model turns on the table, so its logo faces the couch.
-const CAN_TURN = 0.3;
+// How far the can model turns on the table, so its logo faces the couch, and
+// where its tab points: the ring to your right and a little away (where your
+// right thumb gets at it), so the mouth faces you and your left.
+const CAN_TURN = 0.4;
+const TAB_TURN = 0.5;
 
 export const ROOM_DEFAULTS = {
   lamps: true,
@@ -210,7 +213,7 @@ export class Room {
       scene.add(object);
     };
     this.can = createBeerCan();
-    onTable(this.can.group, -0.33, -0.13);
+    onTable(this.can.group, -0.48, -0.1); // at the left end, clear of the remote area, so you can point at it
     this.magazines = createMagazines();
     onTable(this.magazines.group, -0.03, -0.04, 0.3);
 
@@ -302,7 +305,10 @@ export class Room {
 
   // The can on the coffee table, from a model (main.js loads the soda can).
   setCanModel(model) {
-    replaceCan(this.can, model, CAN_TURN);
+    const at = this.can.group.position;
+    // Facing you, +x is your right: turn the tab's ring that way, then on round.
+    const facing = Math.atan2(EYE.x - at.x, EYE.z - at.z);
+    replaceCan(this.can, model, CAN_TURN, facing + TAB_TURN);
   }
 
   // Flick the table lamp's switch; returns whether it's now on.

@@ -21,6 +21,9 @@ import { COUCH, EYE, FLOOR_LAMP, STAND, WINDOW } from './world/layout.js';
 import { SeatedCamera } from './camera/SeatedCamera.js';
 import { ArmRig } from './viewmodel/ArmRig.js';
 import { XRHand } from './viewmodel/XRHand.js';
+import { CanHand } from './viewmodel/CanHand.js';
+import { LeftArm } from './viewmodel/LeftArm.js';
+import { Drink } from './viewmodel/Drink.js';
 import { locatePointer, remoteArea } from './camera/pointerZones.js';
 import { Interactions } from './world/Interactions.js';
 import { HoverOutline } from './world/HoverOutline.js';
@@ -106,6 +109,13 @@ const remote = new Remote(tv);
 const rig = new ArmRig({ remote, aimAt: screenWorld });
 room.scene.add(rig.root);
 
+// Click the can for a drink: your left hand (once its model has loaded)
+// picks it up, your right thumb opens it, you drink and put it back.
+const drink = new Drink({ can: room.can, seated, rig, scene: room.scene, eye: EYE });
+drink.reducedMotion = reducedMotion;
+const DRINK_SOUNDS = { pick: 'canPick', open: 'canOpen', gulp: 'gulp', ahh: 'ahh', set: 'canSet' };
+drink.onEvent = (name) => audio?.[DRINK_SOUNDS[name]]();
+
 // Things in the room you can click, outlined while you point at them: the
 // table lamp switches on and off, and the listings magazine lifts into your
 // hands, opens, and tunes the set to whichever show you pick.
@@ -131,7 +141,22 @@ interactions.add(room.lava.group, {
     audio?.bloop();
   },
 });
-interactions.setOccluders(room.scene, [rig.root]);
+interactions.add(room.can.group, { name: 'Soda can', onClick: haveADrink, enabled: () => drink.ready && !drink.active });
+
+// What can block the pointer: everything but your arms. Models swap in as
+// they load, so this runs again each time.
+function refreshOccluders() {
+  interactions.setOccluders(room.scene, drink.arm ? [rig.root, drink.arm.root] : [rig.root]);
+}
+refreshOccluders();
+
+function haveADrink() {
+  if (!drink.start()) return;
+  rig.setActive(false);
+  seated.setLook(0, 0);
+  seated.setZoomed(false); // the can comes up to the normal view, not the zoomed one
+  interactions.clearPointer();
+}
 
 function openMagazine() {
   magazine.setListings(tv.lineup, tv.number);
@@ -167,6 +192,14 @@ function watch(row) {
 const pointer = new THREE.Vector2();
 function aim(e) {
   pointer.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  if (drink.active) {
+    // Hands full: the pointer waits until you've put the can down.
+    rig.setActive(false);
+    seated.setLook(0, 0);
+    interactions.clearPointer();
+    document.body.dataset.aim = 'look';
+    return { inside: false, busy: true };
+  }
   if (magazine.isOpen) {
     rig.setActive(false);
     seated.setLook(0, 0);
@@ -197,6 +230,7 @@ document.documentElement.addEventListener('pointerleave', () => {
 canvas.addEventListener('pointerdown', (e) => {
   if (state.mode !== 'seated' || e.button !== 0) return;
   const where = aim(e);
+  if (where.busy) return;
   if (where.reading) {
     const row = magazine.rowAtPointer(pointer, seated.camera);
     if (row >= 0) watch(row);
@@ -338,6 +372,7 @@ fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
 
 const actions = {
   setMode,
+  drink: () => haveADrink(),
   refit,
   resetCamera,
   press: (button) => remote.press(button),
@@ -366,12 +401,29 @@ XRHand.load(`${import.meta.env.BASE_URL}models/hand/right.glb`)
 const models = new GLTFLoader();
 models
   .loadAsync(`${import.meta.env.BASE_URL}models/plant/sansevieria.glb`)
-  .then((gltf) => room.setPlantLeaves(gltf.scene))
+  .then((gltf) => {
+    room.setPlantLeaves(gltf.scene);
+    refreshOccluders();
+  })
   .catch((err) => console.warn("Couldn't load the plant model; keeping the built-in leaves.", err));
 models
   .loadAsync(`${import.meta.env.BASE_URL}models/can/soda-can.glb`)
-  .then((gltf) => room.setCanModel(gltf.scene))
-  .catch((err) => console.warn("Couldn't load the can model; keeping the built-in can.", err));
+  .then((gltf) => {
+    room.setCanModel(gltf.scene);
+    refreshOccluders();
+  })
+  .catch((err) => console.warn("Couldn't load the can model; keeping the built-in can (and no drink).", err));
+
+// Your left hand, for the drink.
+CanHand.load(`${import.meta.env.BASE_URL}models/hand/left.glb`)
+  .then((hand) => {
+    drink.arm = new LeftArm(hand);
+    room.scene.add(drink.arm.root);
+    post.markFront(drink.arm.root);
+    refreshOccluders();
+    lab.addCanGripControls(hand);
+  })
+  .catch((err) => console.warn("Couldn't load the left hand; the can stays put.", err));
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;
@@ -501,13 +553,15 @@ renderer.setAnimationLoop(() => {
     const camera = seatedView ? seated.camera : orbitCamera;
     if (seatedView) seated.update(clock, realDt);
     else controls.update();
+    drink.update(dt, seated.camera);
     rig.update(dt, seated.camera, clock, { reducedMotion });
+    drink.arm?.update(seated.camera);
     magazine.update(dt, seated.camera);
     // What the pointer's over: a listing while you read, otherwise something
     // in the room (outlined).
     const reading = seatedView && magazine.isOpen;
     magazine.setHover(reading ? magazine.rowAtPointer(pointer, seated.camera) : -1);
-    const hovered = seatedView && !reading ? interactions.update(seated.camera) : null;
+    const hovered = seatedView && !reading && !drink.active ? interactions.update(seated.camera) : null;
     outline.setTarget(hovered?.object ?? null);
     document.body.dataset.hover = String(Boolean(hovered) || magazine.hover >= 0);
     glow.update(signal.texture, fx.power * params.display.emission, realDt);
@@ -541,7 +595,7 @@ updateHud();
 
 if (import.meta.env.DEV) {
   window.lab = {
-    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote, rig, post,
+    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote, rig, post, drink,
     gsap,
     get audio() {
       return audio;

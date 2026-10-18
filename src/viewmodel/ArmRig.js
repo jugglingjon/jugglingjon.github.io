@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Hand } from './Hand.js';
 import { RemoteModel, TRAVEL } from './RemoteModel.js';
 import { nearestButton, pointerToField, solveTwoBone } from './thumbing.js';
-import { createFlannelTexture } from '../world/textures.js';
+import { FOREARM, Sleeve } from './Sleeve.js';
 
 export const ARM_DEFAULTS = {
   x: 0.12, // where the remote is held, in camera space (metres)
@@ -23,34 +23,14 @@ const HOVER = 0.007; // gap between the thumb pad and the targeted button
 const SHOULDER = new THREE.Vector3(0.17, -0.22, 0.06);
 const ELBOW_POLE = new THREE.Vector3(0.55, -0.6, -0.1);
 const UPPER_ARM = 0.3;
-const FOREARM = 0.27;
-const WRIST_SKIN = 0.045; // bare wrist before the cuff, for a hand that doesn't say…
-const CUFF = 0.03; // …and the cuff, along the forearm from where it leaves the hand
+const WRIST_SKIN = 0.045; // bare wrist before the cuff, for a hand that doesn't say
 const PRESS = { down: 0.06, hold: 0.06, up: 0.1 };
 const PRESS_LENGTH = PRESS.down + PRESS.hold + PRESS.up;
 const Y = new THREE.Vector3(0, 1, 0);
 const dir = new THREE.Vector3();
 const right = new THREE.Vector3();
 const up = new THREE.Vector3();
-const axis = new THREE.Vector3();
 const heldTurn = new THREE.Quaternion();
-
-// Stretch a unit-height mesh between two points.
-function span(mesh, a, b) {
-  dir.subVectors(b, a);
-  mesh.position.addVectors(a, b).multiplyScalar(0.5);
-  mesh.scale.y = dir.length();
-  mesh.quaternion.setFromUnitVectors(Y, dir.normalize());
-}
-
-// Fit a unit cylinder along a frame's +Y, from `from` to `to` metres out,
-// with an oval section of half-sizes `sx` (across) and `sz`.
-function along(mesh, frame, from, to, sx, sz) {
-  axis.set(0, 1, 0).applyQuaternion(frame.quaternion);
-  mesh.quaternion.copy(frame.quaternion);
-  mesh.position.copy(frame.position).addScaledVector(axis, (from + to) / 2);
-  mesh.scale.set(sx, to - from, sz);
-}
 
 // Your arm, outstretched, pointing the remote at the TV. The pointer steers
 // your thumb across the buttons (the targeted one lights up); a press, from
@@ -68,17 +48,8 @@ export class ArmRig {
     this.held.add(this.model.group, this.hand.group);
     this.root.add(this.held);
 
-    const sleeveMaterial = new THREE.MeshStandardMaterial({ map: createFlannelTexture(), roughness: 0.9, side: THREE.DoubleSide });
-    // Unit sections, scaled to the wrist each frame; the sleeve widens 45% to the elbow.
-    this.sleeve = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1, 1, 24, 1, true), sleeveMaterial);
-    this.upperSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.064, 1, 24, 1, true), sleeveMaterial);
-    this.elbowJoint = new THREE.Mesh(new THREE.SphereGeometry(0.057, 20, 12), sleeveMaterial);
-    this.cuff = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 24), new THREE.MeshStandardMaterial({ color: '#5a1410', roughness: 0.9 }));
-    this.wristSkin = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 20), this.hand.skin);
-    this.root.add(this.sleeve, this.upperSleeve, this.elbowJoint, this.cuff, this.wristSkin);
-    this.root.traverse((o) => {
-      if (o.isMesh) o.receiveShadow = true;
-    });
+    this.sleeve = new Sleeve(this.hand.skin);
+    this.root.add(this.sleeve.group);
 
     // A little warm fill so the hand reads against the dark room.
     this.fill = new THREE.PointLight('#ffd6b8', 0.35, 1.2, 2);
@@ -104,6 +75,19 @@ export class ArmRig {
     this.reached = new THREE.Vector3();
     this.forearmFrame = { position: new THREE.Vector3(), quaternion: new THREE.Quaternion(), halfWidth: 0, halfThickness: 0, cuffAt: 0 };
 
+    // Something else can borrow the remote hand for a moment (the drink: your
+    // thumb opens the can). `weight` (0…1) eases the remote towards `position`
+    // and `quaternion` (world), and the thumb tip towards `thumb` (world),
+    // its middle joint bending towards `bend` (remote space, from the knuckle).
+    this.override = {
+      weight: 0,
+      position: new THREE.Vector3(),
+      quaternion: new THREE.Quaternion(),
+      thumb: new THREE.Vector3(),
+      bend: new THREE.Vector3(),
+    };
+    this.thumbAt = new THREE.Vector3();
+
     remote.addEventListener('press', (e) => this.animatePress(e.detail.button));
   }
 
@@ -120,7 +104,7 @@ export class ArmRig {
     this.held.remove(this.hand.group);
     this.held.add(next.group);
     this.hand = next;
-    this.wristSkin.material = next.skin;
+    this.sleeve.setSkin(next.skin);
     this.slide = null;
   }
 
@@ -177,6 +161,11 @@ export class ArmRig {
     this.held.rotateX(-s.tilt + lower * 0.9);
     this.held.rotateZ(s.roll);
     this.held.scale.setScalar(s.size);
+    const o = this.override;
+    if (o.weight > 0) {
+      this.held.position.lerp(o.position, o.weight);
+      this.held.quaternion.slerp(o.quaternion, o.weight);
+    }
     this.held.updateMatrixWorld();
 
     // Which button the thumb is after. A press in progress wins.
@@ -195,15 +184,17 @@ export class ArmRig {
       top.y - press * TRAVEL + this.hand.thumbRadius + HOVER * (1 - press),
       THREE.MathUtils.lerp(field.z, def.z, snap),
     );
+    if (o.weight > 0) this.tipTarget.lerp(this.held.worldToLocal(this.thumbAt.copy(o.thumb)), o.weight);
     if (!this.tip) this.tip = this.tipTarget.clone();
-    this.tip.lerp(this.tipTarget, 1 - Math.exp(-dt * (pressing ? 45 : 18)));
+    this.tip.lerp(this.tipTarget, 1 - Math.exp(-dt * (pressing || o.weight > 0 ? 45 : 18)));
     // The grip shuffles along the remote, more lazily than the thumb moves.
     const slide = this.hand.slideFor(this.tipTarget);
     this.slide = this.slide === null ? slide : THREE.MathUtils.damp(this.slide, slide, 7, dt);
     this.hand.setSlide(this.slide);
+    this.hand.bendThumbTowards?.(o.bend, o.weight);
     this.hand.setThumbTip(this.tip);
     this.model.setPress(pressing ? this.pressButton : null, press);
-    this.model.setHighlight(s.highlight && this.raise > 0.5 ? aim : null);
+    this.model.setHighlight(s.highlight && this.raise > 0.5 && o.weight === 0 ? aim : null);
     this.model.update(dt);
 
     // The arm. The forearm leaves the hand along the wrist's own axis with the
@@ -230,13 +221,8 @@ export class ArmRig {
       fa.cuffAt = WRIST_SKIN * k;
     }
     this.wrist.copy(fa.position);
-    this.elbow.copy(fa.position).addScaledVector(axis.set(0, 1, 0).applyQuaternion(fa.quaternion), FOREARM * k);
-    const { halfWidth: w, halfThickness: t, cuffAt } = fa;
-    along(this.wristSkin, fa, 0, cuffAt, w * 0.97, t * 0.97);
-    along(this.cuff, fa, cuffAt, cuffAt + CUFF * k, w + 0.008 * k, t + 0.008 * k);
-    along(this.sleeve, fa, cuffAt + CUFF * k, FOREARM * k, w + 0.01 * k, t + 0.011 * k);
-    span(this.upperSleeve, this.elbow, this.shoulder);
-    this.elbowJoint.position.copy(this.elbow);
+    this.sleeve.pose(fa, this.shoulder, k);
+    this.elbow.copy(this.sleeve.elbow);
 
     this.fill.position.set(0.05, 0.12, 0.08).applyMatrix4(camera.matrixWorld);
   }

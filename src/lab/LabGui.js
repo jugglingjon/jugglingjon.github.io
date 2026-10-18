@@ -83,6 +83,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   roomFolder.add(r, 'tableReflectivity', 0, 1, 0.01).name('Table reflectivity');
   roomFolder.add(r, 'tableGloss', 0, 1, 0.01).name('Table gloss');
   roomFolder.add(r, 'rain').name('Rain');
+  roomFolder.add(actions, 'drink').name('Have a drink (or click the can)');
 
   const tuner = gui.addFolder('Tuner').close();
   tuner.add(tv, 'reducedMotion').name('Reduced motion');
@@ -223,6 +224,28 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
           },
           'copy',
         )
+        .name('Copy grip JSON');
+    },
+    // How the left hand holds the can; added once the model has loaded. The
+    // fingers and thumb wrap themselves round it from wherever this puts them.
+    addCanGripControls(hand) {
+      const g = hand.settings;
+      const grip = roomFolder.addFolder('Can grip (left hand)').close();
+      const apply = () => hand.applyGrip();
+      [
+        ['wristX', -0.15, 0, 0.001, 'Wrist across'],
+        ['wristY', -0.08, 0.04, 0.001, 'Wrist height'],
+        ['wristZ', -0.02, 0.15, 0.001, 'Wrist back'],
+        ['heading', -0.8, 0.8, 0.01, 'Hand heading'],
+        ['pitch', -0.8, 0.8, 0.01, 'Hand tilt'],
+        ['roll', -0.8, 0.8, 0.01, 'Palm roll'],
+        ['scale', 0.8, 1.4, 0.01, 'Hand size'],
+        ['thumbAround', -0.8, 1.2, 0.01, 'Thumb round the can'],
+        ['thumbHeight', -0.04, 0.06, 0.001, 'Thumb height'],
+        ['thickness', 0.004, 0.014, 0.0005, 'Finger thickness'],
+      ].forEach(([key, min, max, step, name]) => grip.add(g, key, min, max, step).name(name).onChange(apply));
+      grip
+        .add({ copy: () => navigator.clipboard?.writeText(JSON.stringify(g, null, 2)).catch(() => console.log(JSON.stringify(g, null, 2))) }, 'copy')
         .name('Copy grip JSON');
     },
   };

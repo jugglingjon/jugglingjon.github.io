@@ -1,21 +1,16 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { solveTwoBone, swingBone } from './thumbing.js';
+import { bend, forearmFrame, forearmRest, orientHand, resetPose, restFrame, rigHand } from './handRig.js';
 
 // The WebXR generic right hand (public/models/hand/right.glb, MIT, from
 // @webxr-input-profiles/assets), gripping the remote. Same interface as the
 // procedural Hand, so ArmRig can use either.
 //
-// Its 25 joints follow the WebXR Hand Input names and aren't parented to each
-// other: each one is set directly. Each joint's −Z runs along its bone and +Y
-// out of the back of the hand (the nail side). The model lives in "hand
+// Its joints are set directly (see handRig.js). The model lives in "hand
 // space"; `placement` takes it into remote space (x across, +x on your left;
 // y up out of the button face; +z towards the TV), and `group` slides the
 // whole grip along the remote.
-
-const FINGERS = ['index-finger', 'middle-finger', 'ring-finger', 'pinky-finger'];
-const FINGER_PARTS = ['metacarpal', 'phalanx-proximal', 'phalanx-intermediate', 'phalanx-distal', 'tip'];
-const THUMB_PARTS = ['metacarpal', 'phalanx-proximal', 'phalanx-distal', 'tip'];
 
 // How the hand holds the remote. Angles in radians, distances in metres.
 // Fitted numerically, then tuned by eye in the lab's Grip folder: the hand lies
@@ -57,39 +52,13 @@ const THUMB = {
   pole: new THREE.Vector3(-0.01, 0.054, -0.01),
 };
 
-// Where the forearm leaves the model. The wrist joint's +Z runs back up the
-// arm (X across the wrist, Y out of the back of the hand); the mesh carries on
-// 2.2 cm past the joint, with an oval section about 5.2 × 2.9 cm. The forearm
-// starts a little inside it, and the shirt cuff begins just before the mesh
-// ends (`cuffAt` along the forearm), so the cuff wraps over the join.
-const WRIST_SECTION = { back: 0.008, halfWidth: 0.026, halfThickness: 0.0145, cuffAt: 0.012 };
-
 // The thumb-tip joint sits at the very end of the thumb; this is how far above
 // a button it rests when touching it (ArmRig adds its hover gap on top).
 const TIP_ABOVE = 0.006;
 
 const UP = new THREE.Vector3(0, 1, 0);
-const pivot = new THREE.Vector3();
-const axis = new THREE.Vector3();
 const dir = new THREE.Vector3();
 const turn = new THREE.Quaternion();
-const basis = new THREE.Matrix4();
-const restBasis = new THREE.Matrix4();
-
-// Bend a chain of independent joints at each joint in turn, about that joint's
-// own hinge (+X): positive angles curl towards the palm.
-function bend(chain, angles) {
-  angles.forEach((angle, k) => {
-    if (!angle) return;
-    pivot.copy(chain[k].position);
-    axis.set(1, 0, 0).applyQuaternion(chain[k].quaternion);
-    turn.setFromAxisAngle(axis, -angle);
-    for (let i = k; i < chain.length; i++) {
-      if (i > k) chain[i].position.sub(pivot).applyQuaternion(turn).add(pivot);
-      chain[i].quaternion.premultiply(turn);
-    }
-  });
-}
 
 export class XRHand {
   static async load(url) {
@@ -105,19 +74,7 @@ export class XRHand {
     this.placement.add(model);
 
     this.skin = new THREE.MeshStandardMaterial({ color: '#c98d6b', roughness: 0.6 });
-    this.bones = {};
-    model.traverse((o) => {
-      if (o.isSkinnedMesh) {
-        this.mesh = o;
-        o.material = this.skin;
-        o.frustumCulled = false; // its bounds don't follow the pose
-        o.receiveShadow = true;
-      }
-      if (o.isBone) this.bones[o.name] = o;
-    });
-    this.rest = new Map([...Object.values(this.bones)].map((b) => [b, { p: b.position.clone(), q: b.quaternion.clone() }]));
-    this.fingers = FINGERS.map((f) => FINGER_PARTS.map((p) => this.bones[`${f}-${p}`]));
-    this.thumb = THUMB_PARTS.map((p) => this.bones[`thumb-${p}`]);
+    Object.assign(this, rigHand(model, this.skin)); // bones, mesh, rest, fingers, thumb
 
     // The thumb's rest pose: joint positions, bone lengths and directions.
     const at = (bone) => this.rest.get(bone).p;
@@ -133,26 +90,8 @@ export class XRHand {
       new THREE.Vector3().subVectors(tip, ip).normalize(),
     ];
 
-    // The hand's own frame at rest: wrist → middle knuckle, the palm's normal
-    // (pointing out of the palm) and their cross product.
-    const wrist = at(this.bones.wrist);
-    const toMiddle = new THREE.Vector3().subVectors(at(this.fingers[1][1]), wrist).normalize();
-    const palm = new THREE.Vector3()
-      .crossVectors(new THREE.Vector3().subVectors(at(this.fingers[0][1]), wrist), new THREE.Vector3().subVectors(at(this.fingers[3][1]), wrist))
-      .normalize();
-    const back = new THREE.Vector3(0, 1, 0).applyQuaternion(this.rest.get(this.fingers[1][1]).q); // nail side
-    if (palm.dot(back) > 0) palm.negate();
-    palm.addScaledVector(toMiddle, -palm.dot(toMiddle)).normalize();
-    this.restFrame = { wrist: wrist.clone(), forward: toMiddle, palm, side: new THREE.Vector3().crossVectors(toMiddle, palm) };
-
-    // The forearm's start and frame at rest: +Y up the arm, X across the
-    // wrist, Z out of the palm.
-    const wristBone = this.rest.get(this.bones.wrist);
-    const across = new THREE.Vector3(1, 0, 0).applyQuaternion(wristBone.q);
-    const upArm = new THREE.Vector3(0, 0, 1).applyQuaternion(wristBone.q);
-    const outOfPalm = new THREE.Vector3(0, -1, 0).applyQuaternion(wristBone.q);
-    this.forearmOrigin = wristBone.p.clone().addScaledVector(upArm, WRIST_SECTION.back);
-    this.forearmRest = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(across, upArm, outOfPalm));
+    this.restFrame = restFrame(this);
+    this.forearmRest = forearmRest(this);
 
     this.knuckle = new THREE.Vector3(); // MCP, moved by the CMC
     this.joint = new THREE.Vector3(); // IP
@@ -161,6 +100,9 @@ export class XRHand {
     this.pole = new THREE.Vector3();
     this.oppose = new THREE.Vector3();
     this.poleOffset = new THREE.Vector3();
+    this.bendTowards = new THREE.Vector3(); // see bendThumbTowards
+    this.bendWeight = 0;
+    this.bendPole = new THREE.Vector3();
     this.inverse = new THREE.Matrix4();
     this.knuckleRest = new THREE.Vector3(); // big knuckle at rest, remote space (before sliding)
     this.wristRest = new THREE.Vector3();
@@ -178,15 +120,8 @@ export class XRHand {
       Math.cos(s.elevation) * Math.sin(s.heading),
     );
     const palm = UP.clone().addScaledVector(forward, -UP.dot(forward)).normalize().applyAxisAngle(forward, s.roll);
-    const side = new THREE.Vector3().crossVectors(forward, palm);
     const r = this.restFrame;
-    basis.makeBasis(r.palm, r.forward, r.side);
-    restBasis.copy(basis).transpose();
-    basis.makeBasis(palm, forward, side).multiply(restBasis);
-    this.placement.quaternion.setFromRotationMatrix(basis);
-    this.placement.scale.setScalar(s.scale);
-    this.placement.position.set(s.wristX, s.wristY, s.wristZ).sub(r.wrist.clone().multiplyScalar(s.scale).applyQuaternion(this.placement.quaternion));
-    this.placement.updateMatrix();
+    orientHand(this.placement, r, forward, palm, s.scale, new THREE.Vector3(s.wristX, s.wristY, s.wristZ));
     this.inverse.copy(this.placement.matrix).invert();
 
     // The thumb, stretched by `thumbLength`, and its directions brought into hand space.
@@ -199,10 +134,7 @@ export class XRHand {
     this.wristRest.copy(r.wrist).applyMatrix4(this.placement.matrix);
     this.setSlide(this.group.position.z);
 
-    for (const [bone, { p, q }] of this.rest) {
-      bone.position.copy(p);
-      bone.quaternion.copy(q);
-    }
+    resetPose(this.rest);
     const wraps = [s.wrapIndex, s.wrapMiddle, s.wrapRing, s.wrapPinky];
     this.fingers.forEach((chain, n) => bend(chain, [0, s.bendKnuckle * wraps[n], s.bendMiddle * wraps[n], s.bendEnd * wraps[n]]));
     if (this.tipTarget) this.setThumbTip(this.tipTarget);
@@ -219,11 +151,8 @@ export class XRHand {
   // wrist), the section's half-width and half-thickness, and how far along
   // the forearm the cuff should start.
   forearm(out) {
-    out.position.copy(this.forearmOrigin).applyMatrix4(this.placement.matrix).add(this.group.position);
-    out.quaternion.copy(this.placement.quaternion).multiply(this.forearmRest);
-    out.halfWidth = WRIST_SECTION.halfWidth * this.settings.scale;
-    out.halfThickness = WRIST_SECTION.halfThickness * this.settings.scale;
-    out.cuffAt = WRIST_SECTION.cuffAt * this.settings.scale;
+    forearmFrame(out, this.placement, this.forearmRest, this.settings.scale);
+    out.position.add(this.group.position);
     return out;
   }
 
@@ -231,6 +160,14 @@ export class XRHand {
   setSlide(z) {
     this.group.position.z = z;
     this.wrist.copy(this.wristRest).setZ(this.wristRest.z + z);
+  }
+
+  // Bend the thumb's IP joint towards `offset` from the big knuckle (remote
+  // space) instead, by `weight`: for reaching over something rather than
+  // across the remote's face.
+  bendThumbTowards(offset, weight) {
+    this.bendTowards.copy(offset).applyQuaternion(this.placement.quaternion.clone().invert()).divideScalar(this.settings.scale);
+    this.bendWeight = weight;
   }
 
   // Put the end of the thumb on `target` (remote space): swing the metacarpal
@@ -242,6 +179,7 @@ export class XRHand {
     const across = THREE.MathUtils.clamp((target.x - near) / (far - near), 0, 1);
     swingBone(this.cmc, this.mcpRest, this.oppose, THREE.MathUtils.lerp(THUMB.nearSwing, this.settings.thumbSwing, across), this.knuckle);
     this.pole.addVectors(this.knuckle, this.poleOffset);
+    if (this.bendWeight > 0) this.pole.lerp(this.bendPole.addVectors(this.knuckle, this.bendTowards), this.bendWeight);
     solveTwoBone(this.knuckle, this.local, ...this.lengths, this.pole, this.joint, this.tip);
 
     const [metacarpal, proximal, distal, end] = this.thumb;

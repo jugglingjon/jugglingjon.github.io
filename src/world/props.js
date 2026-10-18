@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { place } from './furniture.js';
+import { CanTop } from './CanTop.js';
 import { ListingsMagazine } from './Magazine.js';
 import { createCanTexture, createMagazineTexture, createPrintTexture, seededRandom } from './textures.js';
 
@@ -38,13 +39,16 @@ export function createBeerCan() {
 }
 
 // Swap the can for a model (the soda can GLB), the same size, turned `turn`
-// radians about its axis to show its label.
-export function replaceCan(can, model, turn = 0) {
+// radians about its axis to show its label. It gets a top that opens
+// (`can.top`), its tab's ring turned `tabTurn` radians from +x.
+export function replaceCan(can, model, turn = 0, tabTurn = 0) {
   const holder = new THREE.Group();
   holder.rotation.y = turn;
   holder.add(fitModel(model, CAN.height));
+  can.top = new CanTop();
+  can.top.group.rotation.y = tabTurn;
   can.group.clear();
-  can.group.add(holder);
+  can.group.add(holder, can.top.group);
 }
 
 // A couple of listings magazines. The top one opens (see ListingsMagazine);

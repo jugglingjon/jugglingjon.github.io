@@ -47,6 +47,16 @@ export class SeatedCamera {
     this.right = new THREE.Vector3();
     this.up = new THREE.Vector3();
     this.aim = new THREE.Vector3();
+    this.gaze = new THREE.Vector3();
+    this.toFocus = new THREE.Vector3();
+
+    // Leaning in to pick something up (the drink sets these): `lean` moves
+    // the head (world metres), `focus` turns the view towards a point by
+    // `focusWeight` (0…1), and `tilt` tips the head back (radians).
+    this.lean = new THREE.Vector3();
+    this.focus = new THREE.Vector3();
+    this.focusWeight = 0;
+    this.tilt = 0;
   }
 
   setAspect(aspect) {
@@ -106,7 +116,8 @@ export class SeatedCamera {
     this.camera.position
       .copy(this.eye)
       .addScaledVector(this.right, sway + this.look.x * LOOK.shift * turn)
-      .addScaledVector(this.up, breath + this.look.y * LOOK.shift * 0.5 * turn);
+      .addScaledVector(this.up, breath + this.look.y * LOOK.shift * 0.5 * turn)
+      .add(this.lean);
 
     // Aim below the screen so the TV sits a little above centre, then turn
     // towards wherever you're looking.
@@ -117,7 +128,13 @@ export class SeatedCamera {
       .addScaledVector(UP, -drop)
       .addScaledVector(this.up, breath * 0.5 + Math.tan(this.look.y * LOOK.pitch * turn) * distance)
       .addScaledVector(this.right, Math.tan(this.look.x * LOOK.yaw * turn) * distance);
+    if (this.focusWeight > 0) {
+      this.gaze.subVectors(this.aim, this.camera.position).normalize();
+      this.toFocus.subVectors(this.focus, this.camera.position).normalize();
+      this.aim.copy(this.camera.position).add(this.gaze.lerp(this.toFocus, this.focusWeight));
+    }
     this.camera.lookAt(this.aim);
+    if (this.tilt) this.camera.rotateX(this.tilt);
     this.camera.updateMatrixWorld();
   }
 

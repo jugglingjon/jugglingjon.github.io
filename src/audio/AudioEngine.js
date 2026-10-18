@@ -195,6 +195,99 @@ export class AudioEngine {
     this.tone(t + 0.07, { freq: 380, to: 760, duration: 0.09, level: 0.1 });
   }
 
+  // The can, lifted off the table: a light tink of aluminium on wood.
+  canPick() {
+    const t = this.ctx.currentTime;
+    this.noiseBurst(t, { duration: 0.03, level: 1, type: 'bandpass', freq: 2600, q: 2 });
+    this.tone(t, { freq: 2350, to: 2300, duration: 0.12, level: 0.1 });
+  }
+
+  // …and put back down: a hollow tok.
+  canSet() {
+    const t = this.ctx.currentTime;
+    this.tone(t, { freq: 420, to: 260, duration: 0.07, level: 0.4, type: 'triangle' });
+    this.noiseBurst(t, { duration: 0.025, level: 0.5, type: 'bandpass', freq: 1800, q: 1.5 });
+    this.tone(t, { freq: 1900, to: 1850, duration: 0.15, level: 0.035 });
+  }
+
+  // The tab: a sharp crack as the seal breaks, then the fizz, settling into a
+  // faint crackle of bubbles.
+  canOpen() {
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    this.noiseBurst(t, { duration: 0.012, level: 0.45, type: 'highpass', freq: 2500 });
+    this.tone(t, { freq: 3200, to: 1400, duration: 0.03, level: 0.04, type: 'triangle' });
+    const fizz = ctx.createBufferSource();
+    fizz.buffer = this.noise;
+    const band = biquad(ctx, 'bandpass', 6500, 0.9);
+    band.frequency.setValueAtTime(6500, t);
+    band.frequency.exponentialRampToValueAtTime(4200, t + 0.9);
+    const env = gain(ctx, 0);
+    env.gain.setValueAtTime(0, t + 0.008);
+    env.gain.linearRampToValueAtTime(0.32, t + 0.02);
+    env.gain.exponentialRampToValueAtTime(0.045, t + 0.35);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    chain(fizz, biquad(ctx, 'highpass', 2500), band, env, this.hardware);
+    fizz.start(t, Math.random() * 1.5);
+    fizz.stop(t + 1.15);
+    for (let i = 0; i < 14; i++) {
+      this.noiseBurst(t + 0.2 + Math.random() * 1.1, { duration: 0.004, level: 0.04 + Math.random() * 0.05, type: 'highpass', freq: 5000 });
+    }
+  }
+
+  // A swallow: a soft glug in the throat.
+  gulp() {
+    const t = this.ctx.currentTime;
+    const pitch = 0.9 + Math.random() * 0.2;
+    this.tone(t, { freq: 190 * pitch, to: 85 * pitch, duration: 0.14, level: 0.5 });
+    this.noiseBurst(t + 0.02, { duration: 0.09, level: 0.3, type: 'bandpass', freq: 420 * pitch, q: 4 });
+    this.tone(t + 0.05, { freq: 640 * pitch, to: 980 * pitch, duration: 0.05, level: 0.05 });
+  }
+
+  // A satisfied "ahhh": a voice falling in pitch through the formants of the
+  // vowel, breathy as it starts and as it trails off.
+  ahh() {
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const length = 1.2;
+    const voice = ctx.createOscillator();
+    voice.type = 'sawtooth';
+    voice.frequency.setValueAtTime(185, t);
+    voice.frequency.linearRampToValueAtTime(160, t + 0.25);
+    voice.frequency.exponentialRampToValueAtTime(105, t + length);
+    const wobble = ctx.createOscillator();
+    wobble.frequency.value = 5.2;
+    wobble.connect(gain(ctx, 2)).connect(voice.frequency);
+    const voiced = gain(ctx, 0);
+    voiced.gain.setValueAtTime(0, t);
+    voiced.gain.linearRampToValueAtTime(0.55, t + 0.14);
+    voiced.gain.setValueAtTime(0.55, t + 0.55);
+    voiced.gain.exponentialRampToValueAtTime(0.0001, t + length);
+    voice.connect(voiced);
+
+    const breath = ctx.createBufferSource();
+    breath.buffer = this.noise;
+    const breathy = gain(ctx, 0);
+    breathy.gain.setValueAtTime(0, t);
+    breathy.gain.linearRampToValueAtTime(0.5, t + 0.06);
+    breathy.gain.exponentialRampToValueAtTime(0.06, t + 0.35);
+    breathy.gain.linearRampToValueAtTime(0.12, t + length - 0.2);
+    breathy.gain.exponentialRampToValueAtTime(0.0001, t + length + 0.15);
+    breath.connect(breathy);
+
+    // "ah": the first three formants of the vowel, summed.
+    const mouth = gain(ctx, 1);
+    for (const [freq, q, level] of [[780, 7, 1], [1180, 9, 0.5], [2600, 12, 0.16]]) {
+      voiced.connect(biquad(ctx, 'bandpass', freq, q)).connect(gain(ctx, level)).connect(mouth);
+      breathy.connect(biquad(ctx, 'bandpass', freq, q / 2)).connect(gain(ctx, level * 0.6)).connect(mouth);
+    }
+    mouth.connect(biquad(ctx, 'lowpass', 3800)).connect(this.hardware);
+    for (const source of [voice, wobble, breath]) {
+      source.start(t);
+      source.stop(t + length + 0.2);
+    }
+  }
+
   // Paper: a magazine picked up and its cover turned, or put back down.
   rustle() {
     const t = this.ctx.currentTime;

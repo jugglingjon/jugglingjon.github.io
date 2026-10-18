@@ -69,7 +69,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - **Layout:** everything is placed from `src/world/layout.js`. The room, the seated camera and the painted glass reflections all read from it, so moving the lamp moves its reflection too.
 - **Light:** the TV (its picture's average colour, see `TVGlow`), two warm lamps, the hallway bulb, and a pink neon sign across the street. The neon is the one shadow-casting light, and the blinds are real slats, so it throws genuine stripes across the floor, table and TV. **Room → Blind tilt** changes them.
 - **The corner right of the TV** has a small three-shelf bookcase (`src/world/bookshelf.js`): a lava lamp glowing on top, a stuffed panda, and a few books. The lava lamp (`src/world/LavaLamp.js`) is a single shader that raymarches the inside of the glass bulb: five wax blobs rise and sink on their own slow cycles, merging smoothly with each other and with the pool at the bottom, in a softly glowing liquid. A small light inside it tints the corner in the lamp's colours. **Room → Bookshelf + lava lamp** takes the bookcase away, and **Lava lamp light** sets how much it lights the corner.
-- **The can on the coffee table** is a soda can model (`public/models/can/soda-can.glb`, from Sketchfab, see [Credits](#credits)), sized to a real 12 oz can and turned so its logo faces the couch. Its metal picks up the room's reflections. Its textures were cut from 1024 to 512 px (256 for the metal/roughness map), taking the file from 460 KB to 96 KB with no visible difference; its tangents stay, because without them three.js shades the can differently. `fitModel` in `props.js` sizes and stands any model like this; the procedural lager can stands in until it loads.
+- **The can on the coffee table** (click it for a drink) is a soda can model (`public/models/can/soda-can.glb`, from Sketchfab, see [Credits](#credits)), sized to a real 12 oz can and turned so its logo faces the couch. Its metal picks up the room's reflections. Its textures were cut from 1024 to 512 px (256 for the metal/roughness map), taking the file from 460 KB to 96 KB with no visible difference; its tangents stay, because without them three.js shades the can differently. `fitModel` in `props.js` sizes and stands any model like this; the procedural lager can stands in until it loads.
 - **The snake plant** stands in the far left corner, beside the end table, where the table lamp lights it. Its leaves are a low-poly Sansevieria model (`public/models/plant/sansevieria.glb`, 1,100 triangles, coloured from a gradient palette texture), standing 0.72 m out of the procedural terracotta pot, with a little soil showing round the rim. `replaceLeaves` in `props.js` sizes it to the pot and makes it matte. Until the model loads, or if it fails to, simple procedural blades stand in.
 - **Tuning:** the Room panel sets lamps, neon, blind tilt, dust brightness and size, and the coffee table's varnish. **Table reflectivity** is how strongly it reflects the TV and lamps; **Table gloss** is how sharp those reflections are.
 - **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon can buzz and stutter (**Room → Neon flicker**, off by default), rain runs down the window, and the VCR blinks 12:00.
@@ -95,7 +95,13 @@ Outside the remote area, pointing at the room finds the first visible surface un
 - **The table lamp** switches its light, shade and fringe glow. Coming on, the bulb catches with a quick stutter; going off, the filament fades. A synthesized switch click plays (`lampLevel` in `Room.js`, `lampSwitch` in the audio engine).
 - **The listings magazine** (`src/world/Magazine.js`) lifts off the coffee table to a reading spot in front of you, sized to fill most of the view at any zoom. Its cover swings open on a hinge, with a paper rustle. The inside spread is drawn on canvases (`src/world/listings.js`). The left page is a welcome and how-to-watch guide; the right page lists every channel with a time slot and a one-line blurb (`blurb` on each source in `src/lab/sources.js`), and marks the show on now. The row under the pointer lights up. Clicking a listing tunes the set to it (switching it on if need be) and puts the magazine back down, exactly where it was. Esc or a click off the magazine also puts it down.
 - **The lava lamp** on the bookshelf changes colour, with a bubbly bloop. Each click picks a random wax hue at least 54° round the colour wheel from the last, in a darker, softer liquid 40–130° away from it (`lavaColours` in `LavaLamp.js`). The wax, the liquid and the light the lamp casts on the corner all fade to the new scheme over about half a second. Click again mid-fade and it heads straight for the newer colours.
-- **Adding more:** call `interactions.add(object, { name, onClick, enabled })` in `main.js` for anything in the room.
+- **The soda can** gets drunk (`src/viewmodel/Drink.js`, about 12 seconds the first time). It stands at the left end of the coffee table, outside the remote area, so you can point at it. You lean in towards the coffee table and your left arm reaches out, picks the can up with a tink and brings it to the middle of the view. The first time, your right hand comes over with the remote stood up beside the can, and your thumb reaches over the rim and levers the tab up, with a crack and a fizz. Up to your mouth: you turn the can in your hand to bring the opening to your lips, your head tips back, three gulps. Back down, a satisfied "ahhh", then you lean in again and put it back exactly where it was, with a tok. After that the can stays open, so later drinks skip the tab. The pointer and clicks wait while your hands are full; the remote's keys still work.
+  - **How it runs:** one clock drives tracks of keyframes, eased between: the left hand's pose, how closed it is, how far you lean and tip your head back, the right hand borrowing the remote, the tab, and the sound cues. The hand's poses are either at the table (world space) or in front of you (camera space, so they move with your head). The can sits in the hand in the same pose it had when the hand closed round it on the table, so putting it back returns it exactly.
+  - **Your left hand** is the WebXR generic left hand (`public/models/hand/left.glb`) on a flannel sleeve shared with the right arm (`Sleeve.js`). `CanHand` places it against the can and curls each finger, joint by joint, just far enough to meet the can (`wrapAngles`), then swings the thumb round the near side and wraps that too. Its placement was fitted numerically: no skin inside the can or below its base (the table, when it's standing there), fingertips resting on it, and the wrist in line with the forearm. The arm follows from your left shoulder (two-bone IK); when the can's out of reach, the upper arm, mostly out of view, stretches rather than leave the hand behind. **Room → Can grip (left hand)** tunes the placement; the fingers re-wrap to fit.
+  - **Opening the can:** the model's tab is only painted into its normal map, so `CanTop` (`src/world/CanTop.js`) covers the lid with a plain one carrying a real pull tab on a rivet, and the mouth it opens. While the tab opens, `ArmRig`'s `override` takes the remote to a pose beside the can and puts the thumb tip on the tab's ring, its middle joint bent up so it comes down over the rim.
+  - **Sounds:** the tink, the crack and fizz, the gulps, the "ahhh" (a sawtooth voice falling in pitch through the formants of the vowel, breathy at each end) and the tok are all synthesized in `AudioEngine`.
+  - **Room → Have a drink** plays it from the lab, and `lab.drink.seek(seconds)` jumps to any moment of it.
+- **Adding more:** call `interactions.add(object, { name, onClick, enabled })` in `main.js` for anything in the room. Models that load later are added to what can block the pointer as they arrive.
 - **Baked lighting later:** if the room's lighting is baked, switchable lights like the table lamp need their own per-light map, blended at runtime (like the TV-light channel), so they keep switching.
 
 ## Post-processing
@@ -164,7 +170,7 @@ src/
     Remote.js              buttons, with infrared latency
     Television.test.js     state machine tests
   audio/
-    AudioEngine.js         synthesized sound: speaker chain, static, clicks, relay, degauss, whine
+    AudioEngine.js         synthesized sound: speaker chain, static, clicks, relay, degauss, whine, the drink
     synth.js               noise buffers, room impulse response, saturation curve
   screen/
     SignalPass.js          Stage A render pass
@@ -177,6 +183,11 @@ src/
     ArmRig.js              places the remote, targets buttons, plays presses, arm IK and sleeve
     RemoteModel.js         the remote: body, buttons with labels, highlight, press travel, IR LED
     XRHand.js              the WebXR hand model gripping the remote: grip fit, finger curls, thumb IK (+ XRHand.test.js)
+    handRig.js             what both WebXR hands share: joints, rest frames, bending, placing, the wrist's section
+    Sleeve.js              the flannel sleeve from wrist to shoulder, for either arm
+    CanHand.js             your left hand round the can: fingers and thumb wrapped to fit (+ CanHand.test.js)
+    LeftArm.js             your left arm: the can hand on the end of a sleeve, IK from the shoulder
+    Drink.js               the drink: timeline, poses, the can in hand, the right thumb on the tab (+ Drink.test.js)
     Hand.js                built-in fallback hand: palm, curled fingers, three-joint thumb (CMC swing + IK), grip slide
     thumbing.js            button layout, pointer → button, two-bone IK, bone swing (+ thumbing.test.js, Hand.test.js)
   render/
@@ -189,6 +200,7 @@ src/
     Room.js                walls, floor, ceiling, door, lights; assembles the rest
     furniture.js           TV stand + VCR + tapes, coffee table, couch, end table, lamps
     props.js               can, magazines, plant, framed print; fitting models in their place (+ props.test.js)
+    CanTop.js              the can's lid: a pull tab that levers up, and the mouth it opens (+ CanTop.test.js)
     bookshelf.js           three-shelf bookcase: books, a stuffed panda, the lava lamp
     LavaLamp.js            lava lamp: raymarched wax blobs in the bulb, its light, random colours (+ LavaLamp.test.js)
     Magazine.js            the listings magazine: hinged cover, lifts to you, picks a listing
@@ -206,7 +218,7 @@ src/
   styles/                  main.scss, _tokens.scss, _remote.scss
 public/media/test/         placeholder videos (MP4 + WebM)
 public/media/music/        placeholder channel music (MP3 loops)
-public/models/hand/        WebXR generic right hand (.glb) and its MIT licence
+public/models/hand/        WebXR generic left and right hands (.glb) and their MIT licence
 public/models/plant/       Sansevieria leaves for the snake plant (.glb)
 public/models/can/         soda can on the coffee table (.glb) and its CC BY licence
 scripts/
@@ -252,7 +264,7 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 
 - **Soda can model:** ["Soda Can"](https://sketchfab.com/3d-models/soda-can-1b63dd4832144e89955ecf2f70e8af4b) by [junhyde](https://sketchfab.com/junhyde), [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/), with its textures downsized for the web; the notice is in `public/models/can/LICENSE.md`. The Pepsi logo on its label is a trademark of PepsiCo, Inc.
 - **Plant model:** the Sansevieria (`public/models/plant/sansevieria.glb`), supplied by the site owner; its texture is from a "tiny treats" palette.
-- **Hand model:** the generic hand from [WebXR Input Profiles](https://github.com/immersive-web/webxr-input-profiles) (`@webxr-input-profiles/assets` 1.0.20). MIT licence, © 2019 Amazon; the full notice is in `public/models/hand/LICENSE.md`.
+- **Hand models:** the generic left and right hands from [WebXR Input Profiles](https://github.com/immersive-web/webxr-input-profiles) (`@webxr-input-profiles/assets` 1.0.20). MIT licence, © 2019 Amazon; the full notice is in `public/models/hand/LICENSE.md`.
 
 ## Roadmap
 
