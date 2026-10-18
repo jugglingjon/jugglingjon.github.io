@@ -5,8 +5,8 @@ import { place } from './furniture.js';
 // sink again in glowing liquid. The glass is a single shader that raymarches
 // the inside of the bulb: a handful of spheres drifting up and down, blended
 // smoothly into each other and into the pool at the bottom. A small light
-// inside tints the shelf and wall around it. Click it to switch it off; the
-// wax cools, slows and dims.
+// inside tints the shelf and wall around it. Click it for a new colour: the
+// wax, the liquid and the light it casts all fade to a random new scheme.
 
 // The bulb's outline (radius at height), shared by the lathe and the shader.
 const BULB = [
@@ -29,6 +29,27 @@ const BLOBS = [
   [33, 0.8, 0.015, 0.005],
   [24, 0.15, 0.01, 0.012],
 ];
+
+// How quickly a new colour scheme fades in (seconds; mostly there in three times this).
+const FADE = 0.2;
+
+// A random colour scheme: wax of any hue at least 54° round the colour wheel
+// from `lastHue` (if given), in a darker, softer liquid 40–130° from the wax,
+// and the colour of the light they cast together, mostly the wax's. Hues and
+// lightness are as you see them (sRGB); the colours come back linear.
+export function lavaColours(random = Math.random, lastHue) {
+  const hue = lastHue === undefined ? random() : (lastHue + 0.15 + random() * 0.7) % 1;
+  const offset = (0.12 + random() * 0.25) * (random() < 0.5 ? -1 : 1);
+  const wax = new THREE.Color().setHSL(hue, 1, 0.58, THREE.SRGBColorSpace);
+  const liquid = new THREE.Color().setHSL((hue + offset + 1) % 1, 0.6, 0.46, THREE.SRGBColorSpace);
+  return { hue, wax, liquid, light: lightColour(wax, liquid) };
+}
+
+// The light from inside: mostly the wax's colour, at full strength.
+function lightColour(wax, liquid) {
+  const light = new THREE.Color().lerpColors(liquid, wax, 0.7);
+  return light.multiplyScalar(1 / Math.max(light.r, light.g, light.b, 1e-4));
+}
 
 const glsl = (n) => n.toFixed(4);
 
@@ -65,8 +86,7 @@ const fragmentShader = /* glsl */ `
   #define BOTTOM ${glsl(BOTTOM)}
   #define TOP ${glsl(TOP)}
   uniform vec3 uCamera; // camera position, in the bulb's own space
-  uniform float uFlow; // the wax's own clock (slows to a stop when it's off)
-  uniform float uOn; // 0 off … 1 on
+  uniform float uFlow; // the wax's own clock
   uniform vec3 uWax;
   uniform vec3 uLiquid;
   varying vec3 vObject;
@@ -115,21 +135,22 @@ const fragmentShader = /* glsl */ `
     }
 
     // Heat comes from the bulb in the base: everything glows more low down.
+    // Kept under the tone mapper's shoulder, so any colour stays that colour
+    // rather than burning out to white.
     float heat = clamp(1.0 - (p.y - BOTTOM) / (TOP - BOTTOM), 0.0, 1.0);
     vec3 colour;
     if (hit) {
       vec3 n = waxNormal(p);
       float rim = pow(1.0 - abs(dot(n, -ray)), 2.0);
-      colour = uWax * (0.7 + 0.6 * heat + 0.5 * rim);
+      colour = uWax * (0.4 + 0.35 * heat + 0.3 * rim);
     } else {
-      colour = uLiquid * (0.35 + 0.65 * heat);
+      colour = uLiquid * (0.12 + 0.3 * heat);
     }
-    colour *= mix(0.12, 1.6, uOn);
 
     // A glint on the glass.
     vec3 n = normalize(vNormalObject);
     float fresnel = pow(1.0 - abs(dot(n, -ray)), 3.0);
-    colour += vec3(0.9, 0.85, 1.0) * fresnel * 0.35;
+    colour += vec3(0.9, 0.85, 1.0) * fresnel * 0.2;
 
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>
@@ -138,7 +159,7 @@ const fragmentShader = /* glsl */ `
 `;
 
 export class LavaLamp {
-  constructor({ wax = '#ff5a2a', liquid = '#c2307a', light = '#ff6a3c' } = {}) {
+  constructor({ wax = '#ff5a2a', liquid = '#c2307a' } = {}) {
     this.group = new THREE.Group();
     const metal = new THREE.MeshStandardMaterial({ color: '#a9a2b2', metalness: 0.85, roughness: 0.35 });
     const lathe = (points) => new THREE.LatheGeometry(points.map(([r, y]) => new THREE.Vector2(r, y)), 32);
@@ -149,7 +170,6 @@ export class LavaLamp {
       uniforms: {
         uCamera: { value: new THREE.Vector3() },
         uFlow: { value: 0 },
-        uOn: { value: 1 },
         uWax: { value: new THREE.Color(wax) },
         uLiquid: { value: new THREE.Color(liquid) },
       },
@@ -159,34 +179,38 @@ export class LavaLamp {
     this.bulb = place(this.group, lathe(BULB), this.material, 0, 0, 0, { cast: false, receive: false });
     place(this.group, lathe([[0, 0.36], [0.026, 0.36], [0.02, 0.4], [0.015, 0.42], [0, 0.42]]), metal);
 
-    this.light = new THREE.PointLight(light, 0, 2.2, 2);
+    const u = this.material.uniforms;
+    this.target = { wax: u.uWax.value.clone(), liquid: u.uLiquid.value.clone(), light: lightColour(u.uWax.value, u.uLiquid.value) };
+    this.hue = u.uWax.value.getHSL({}, THREE.SRGBColorSpace).h;
+    this.light = new THREE.PointLight(this.target.light, 0, 2.2, 2);
     this.light.position.set(0, 0.22, 0.06);
     this.group.add(this.light);
-    this.brightness = 0.45; // the light's intensity when on
+    this.brightness = 0.45; // the light's intensity
 
-    this.on = true;
-    this.level = 1; // eases towards on (1) or off (0)
     this.flow = Math.random() * 60;
     this.camera = new THREE.Vector3();
   }
 
-  // Click: switch it. Returns whether it's now on.
-  toggle() {
-    this.on = !this.on;
-    return this.on;
+  // Click: a new colour scheme, faded in over the next half second or so.
+  // Returns the colours it's heading for.
+  recolor(random = Math.random) {
+    const { hue, wax, liquid, light } = lavaColours(random, this.hue);
+    this.hue = hue;
+    this.target = { wax, liquid, light };
+    return this.target;
   }
 
   update(dt, camera, visible = true) {
-    // Warming up takes a while, cooling down a little less.
-    const rate = this.on ? 0.6 : 0.9;
-    this.level = THREE.MathUtils.clamp(this.level + (this.on ? 1 : -1) * dt * rate, 0, 1);
-    this.flow += dt * this.level;
+    this.flow += dt;
     const u = this.material.uniforms;
     u.uFlow.value = this.flow;
-    u.uOn.value = this.level;
+    const fade = 1 - Math.exp(-dt / FADE);
+    u.uWax.value.lerp(this.target.wax, fade);
+    u.uLiquid.value.lerp(this.target.liquid, fade);
+    this.light.color.lerp(this.target.light, fade);
     this.bulb.updateMatrixWorld();
     u.uCamera.value.copy(this.bulb.worldToLocal(camera.getWorldPosition(this.camera)));
     // The light wavers a little as the wax moves past it.
-    this.light.intensity = visible ? this.brightness * this.level * (0.92 + 0.08 * Math.sin(this.flow * 1.7)) : 0;
+    this.light.intensity = visible ? this.brightness * (0.92 + 0.08 * Math.sin(this.flow * 1.7)) : 0;
   }
 }

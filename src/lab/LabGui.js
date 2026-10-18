@@ -75,7 +75,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   roomFolder.add(r, 'lampLevel', 0, 3, 0.05).name('Lamp brightness');
   roomFolder.add(r, 'neon', 0, 3, 0.05).name('Neon sign');
   roomFolder.add(r, 'flicker').name('Neon flicker');
-  roomFolder.add(r, 'corner', { 'Bookshelf + lava lamp': 'bookshelf', Plant: 'plant' }).name('Right of the TV');
+  roomFolder.add(r, 'bookshelf').name('Bookshelf + lava lamp');
   roomFolder.add(r, 'lavaLight', 0, 2, 0.01).name('Lava lamp light');
   roomFolder.add(r, 'blinds', -1.5, 1.5, 0.01).name('Blind tilt');
   roomFolder.add(r, 'dust', 0, 3, 0.05).name('Dust brightness');

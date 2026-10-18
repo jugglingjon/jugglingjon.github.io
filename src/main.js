@@ -123,7 +123,13 @@ interactions.add(room.tableLamp, {
   onClick: () => audio?.lampSwitch(room.toggleTableLamp()),
 });
 interactions.add(magazine.group, { name: 'Listings magazine', onClick: openMagazine, enabled: () => magazine.atRest });
-interactions.add(room.lava.group, { name: 'Lava lamp', onClick: () => audio?.lampSwitch(room.lava.toggle()) });
+interactions.add(room.lava.group, {
+  name: 'Lava lamp',
+  onClick: () => {
+    room.lava.recolor();
+    audio?.bloop();
+  },
+});
 interactions.setOccluders(room.scene, [rig.root]);
 
 function openMagazine() {

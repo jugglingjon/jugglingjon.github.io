@@ -32,7 +32,7 @@ export const ROOM_DEFAULTS = {
   lampLevel: 1,
   neon: 1,
   flicker: false, // the sign's buzz and stutter (Room → Neon flicker)
-  corner: 'bookshelf', // right of the TV: 'bookshelf' (with the lava lamp) or 'plant'
+  bookshelf: true, // the bookcase right of the TV, with the lava lamp (off leaves the corner empty)
   lavaLight: 0.45, // how much the lava lamp lights its corner
   blinds: -0.9, // slats tipped down into the room, letting the street light in
   dust: 1,
@@ -239,13 +239,14 @@ export class Room {
     print.group.position.copy(PRINT.position);
     scene.add(print.group);
 
+    // The snake plant, in the far left corner where the table lamp lights it.
     const plant = createPlant();
     plant.group.position.copy(PLANT);
     scene.add(plant.group);
     this.plant = plant.group;
 
-    // Or, in the same corner, a bookshelf with a lava lamp (click it), a
-    // stuffed panda and a few books. Settings choose which (`corner`).
+    // Right of the TV, a bookshelf with a lava lamp (click it for a new
+    // colour), a stuffed panda and a few books.
     this.bookshelf = createBookshelf();
     this.bookshelf.group.position.copy(BOOKSHELF_AT);
     scene.add(this.bookshelf.group);
@@ -303,11 +304,9 @@ export class Room {
     const dt = Math.max(0, time - this.time);
     this.time = time;
 
-    const shelf = s.corner === 'bookshelf';
-    this.bookshelf.group.visible = shelf;
-    this.plant.visible = !shelf;
+    this.bookshelf.group.visible = s.bookshelf;
     this.lava.brightness = s.lavaLight;
-    this.lava.update(dt, camera, shelf);
+    this.lava.update(dt, camera, s.bookshelf);
 
     const level = s.flicker ? neonFlicker(time) : 1;
     this.neon.intensity = this.neonIntensity * s.neon * level;

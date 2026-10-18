@@ -188,6 +188,13 @@ export class AudioEngine {
     this.tone(t, { freq: 230, to: 150, duration: 0.045, level: 0.22, type: 'triangle' });
   }
 
+  // Wax: the lava lamp changing colour, a couple of rising bubbles.
+  bloop() {
+    const t = this.ctx.currentTime;
+    this.tone(t, { freq: 260, to: 520, duration: 0.11, level: 0.16 });
+    this.tone(t + 0.07, { freq: 380, to: 760, duration: 0.09, level: 0.1 });
+  }
+
   // Paper: a magazine picked up and its cover turned, or put back down.
   rustle() {
     const t = this.ctx.currentTime;
