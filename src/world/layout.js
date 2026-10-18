@@ -24,6 +24,7 @@ export const FLOOR_LAMP = { position: v(-1.9, 0, 3.2), shade: v(-1.9, 1.5, 3.2) 
 
 export const PRINT = { position: v(-1.02, 1.62, ROOM.minZ + 0.02), width: 0.6, height: 0.8 };
 export const PLANT = v(1.45, 0, -0.42);
+export const BOOKSHELF_AT = v(1.42, 0, -0.65); // the alternative for that corner, back to the wall
 
 // Window in the right wall; a neon sign across the street shines in through the blinds.
 export const WINDOW = { x: ROOM.maxX, z: 1.4, y: 1.35, width: 1.3, height: 1.1 };

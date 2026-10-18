@@ -59,7 +59,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 ## The apartment
 
 ```
-            TV wall (paneling) ── print · lamp on end table · TV on stand · plant
+            TV wall (paneling) ── print · lamp on end table · TV on stand · bookshelf
    door ▏                                                                 ▕ window + blinds
  (ajar,  ▏                    rug · coffee table                          ▕  ← neon sign
   hall)  ▏                                                                ▕    across the street
@@ -68,6 +68,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 
 - **Layout:** everything is placed from `src/world/layout.js`. The room, the seated camera and the painted glass reflections all read from it, so moving the lamp moves its reflection too.
 - **Light:** the TV (its picture's average colour, see `TVGlow`), two warm lamps, the hallway bulb, and a pink neon sign across the street. The neon is the one shadow-casting light, and the blinds are real slats, so it throws genuine stripes across the floor, table and TV. **Room → Blind tilt** changes them.
+- **The corner right of the TV** has a small three-shelf bookcase (`src/world/bookshelf.js`): a lava lamp glowing on top, a stuffed panda, and a few books. The lava lamp (`src/world/LavaLamp.js`) is a single shader that raymarches the inside of the glass bulb: five wax blobs rise and sink on their own slow cycles, merging smoothly with each other and with the pool at the bottom, in a softly glowing liquid. A small light inside it warms the corner. **Room → Right of the TV** switches back to the old snake plant, and **Lava lamp light** sets how much it lights the corner.
 - **Tuning:** the Room panel sets lamps, neon, blind tilt, dust brightness and size, and the coffee table's varnish. **Table reflectivity** is how strongly it reflects the TV and lamps; **Table gloss** is how sharp those reflections are.
 - **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon can buzz and stutter (**Room → Neon flicker**, off by default), rain runs down the window, and the VCR blinks 12:00.
 - **Seated camera** (`src/camera/SeatedCamera.js`): a fixed seat with a slow breath (**Camera → Breathing**, 0 for a dead-still camera). Over the remote area the pointer moves your arm, not your head; outside it, the head turns a little towards the pointer (**Camera → Look around** scales it, 0 turns it off; reduced motion halves it). `src/camera/pointerZones.js` works out which zone the pointer is in. `fitVerticalFov` keeps a box around the TV in frame at any aspect ratio. Wide screens get the preferred 42° with more room either side; tall phones zoom out until the TV fits across. The TV sits a little above centre, leaving the bottom of the frame for the coffee table and the remote.
@@ -91,6 +92,7 @@ Outside the remote area, pointing at the room finds the first visible surface un
 - **The outline** (`src/world/HoverOutline.js`) is drawn in screen space. The hovered object is drawn as a white silhouette into an offscreen mask on its own layer, then a full-screen pass traces the mask's edge over the finished frame with a gentle pulse. The line is the same width whatever the object's shape, and nothing extra is drawn when nothing is hovered.
 - **The table lamp** switches its light, shade and fringe glow. Coming on, the bulb catches with a quick stutter; going off, the filament fades. A synthesized switch click plays (`lampLevel` in `Room.js`, `lampSwitch` in the audio engine).
 - **The listings magazine** (`src/world/Magazine.js`) lifts off the coffee table to a reading spot in front of you, sized to fill most of the view at any zoom. Its cover swings open on a hinge, with a paper rustle. The inside spread is drawn on canvases (`src/world/listings.js`). The left page is a welcome and how-to-watch guide; the right page lists every channel with a time slot and a one-line blurb (`blurb` on each source in `src/lab/sources.js`), and marks the show on now. The row under the pointer lights up. Clicking a listing tunes the set to it (switching it on if need be) and puts the magazine back down, exactly where it was. Esc or a click off the magazine also puts it down.
+- **The lava lamp** on the bookshelf switches off and on too. Switched off, the wax cools, slows to a stop and dims over a second or two; switched back on, it warms up and gets moving again.
 - **Adding more:** call `interactions.add(object, { name, onClick, enabled })` in `main.js` for anything in the room.
 - **Baked lighting later:** if the room's lighting is baked, switchable lights like the table lamp need their own per-light map, blended at runtime (like the TV-light channel), so they keep switching.
 
@@ -185,6 +187,8 @@ src/
     Room.js                walls, floor, ceiling, door, lights; assembles the rest
     furniture.js           TV stand + VCR + tapes, coffee table, couch, end table, lamps
     props.js               beer can, magazines, plant, framed print
+    bookshelf.js           three-shelf bookcase: books, a stuffed panda, the lava lamp
+    LavaLamp.js            lava lamp: raymarched wax blobs in the bulb, its light, on/off (+ LavaLamp.test.js)
     Magazine.js            the listings magazine: hinged cover, lifts to you, picks a listing
     listings.js            its inside pages, drawn on canvases; row hit-testing (+ listings.test.js)
     Interactions.js        what's clickable and under the pointer, with occlusion (+ Interactions.test.js)

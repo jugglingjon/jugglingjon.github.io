@@ -10,9 +10,10 @@ import {
   place,
 } from './furniture.js';
 import { createBeerCan, createMagazines, createPlant, createPrint } from './props.js';
+import { createBookshelf } from './bookshelf.js';
 import { createCarpetTexture, createCeilingTexture, createPanelingTexture, createRugTexture, createWallpaperTexture } from './textures.js';
 import { createWindow, neonFlicker } from './windowView.js';
-import { COFFEE_TABLE, COUCH, DOOR, END_TABLE, EYE, FLOOR_LAMP, NEON, PLANT, PRINT, ROOM, RUG, STAND, TABLE_LAMP, WINDOW } from './layout.js';
+import { BOOKSHELF_AT, COFFEE_TABLE, COUCH, DOOR, END_TABLE, EYE, FLOOR_LAMP, NEON, PLANT, PRINT, ROOM, RUG, STAND, TABLE_LAMP, WINDOW } from './layout.js';
 
 // The table lamp's switch, 0 (off) … 1 (on), `t` seconds after it was flicked:
 // coming on, the bulb catches with a quick stutter; going off, the filament
@@ -31,6 +32,8 @@ export const ROOM_DEFAULTS = {
   lampLevel: 1,
   neon: 1,
   flicker: false, // the sign's buzz and stutter (Room → Neon flicker)
+  corner: 'bookshelf', // right of the TV: 'bookshelf' (with the lava lamp) or 'plant'
+  lavaLight: 0.45, // how much the lava lamp lights its corner
   blinds: -0.9, // slats tipped down into the room, letting the street light in
   dust: 1,
   dustSize: 1,
@@ -239,6 +242,15 @@ export class Room {
     const plant = createPlant();
     plant.group.position.copy(PLANT);
     scene.add(plant.group);
+    this.plant = plant.group;
+
+    // Or, in the same corner, a bookshelf with a lava lamp (click it), a
+    // stuffed panda and a few books. Settings choose which (`corner`).
+    this.bookshelf = createBookshelf();
+    this.bookshelf.group.position.copy(BOOKSHELF_AT);
+    scene.add(this.bookshelf.group);
+    this.lava = this.bookshelf.lava;
+    this.glowing.push(this.lava.bulb);
   }
 
   buildLights() {
@@ -286,9 +298,16 @@ export class Room {
     return this.tableLampOn;
   }
 
-  update(time, { tvColor, tvLevel, pixelScale }) {
+  update(time, { tvColor, tvLevel, pixelScale, camera }) {
     const s = this.settings;
+    const dt = Math.max(0, time - this.time);
     this.time = time;
+
+    const shelf = s.corner === 'bookshelf';
+    this.bookshelf.group.visible = shelf;
+    this.plant.visible = !shelf;
+    this.lava.brightness = s.lavaLight;
+    this.lava.update(dt, camera, shelf);
 
     const level = s.flicker ? neonFlicker(time) : 1;
     this.neon.intensity = this.neonIntensity * s.neon * level;

@@ -123,6 +123,7 @@ interactions.add(room.tableLamp, {
   onClick: () => audio?.lampSwitch(room.toggleTableLamp()),
 });
 interactions.add(magazine.group, { name: 'Listings magazine', onClick: openMagazine, enabled: () => magazine.atRest });
+interactions.add(room.lava.group, { name: 'Lava lamp', onClick: () => audio?.lampSwitch(room.lava.toggle()) });
 interactions.setOccluders(room.scene, [rig.root]);
 
 function openMagazine() {
@@ -496,6 +497,7 @@ renderer.setAnimationLoop(() => {
       tvColor: glow.light.color,
       tvLevel: glow.level,
       pixelScale: renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))),
+      camera,
     });
     renderer.render(room.scene, camera);
     outline.render(room.scene, camera, clock);
