@@ -4,7 +4,7 @@ import { clearSaved, lookOnly, save } from './storage.js';
 
 // Tuning panel for the screen lab. Every look parameter is live; changes
 // auto-save to this browser, and "Copy JSON" exports them for a preset.
-export function createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig }) {
+export function createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig, post }) {
   const gui = new GUI({ title: 'Screen Lab' }).close(); // collapsed until you open it
   gui.onFinishChange(() => save(params));
 
@@ -51,6 +51,23 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   arm.add(a, 'size', 0.6, 1.6, 0.01).name('Size');
   arm.add(a, 'snap', 0, 1, 0.01).name('Thumb snap');
   arm.add(a, 'highlight').name('Highlight target');
+
+  const p = post.settings;
+  const postFolder = gui.addFolder('Post-processing').close();
+  postFolder.add(p, 'quality', { Auto: 'auto', High: 'high', 'Medium (no AO)': 'medium', 'Low (off)': 'low' }).name('Quality');
+  postFolder.add({ get inUse() { return post.tier; } }, 'inUse').name('In use').listen().disable();
+  postFolder.add(p, 'ao', 0, 2, 0.05).name('Ambient occlusion');
+  postFolder.add(p, 'aoRadius', 0.05, 1, 0.01).name('AO radius (m)');
+  postFolder.add(p, 'bloom', 0, 2, 0.01).name('Bloom');
+  postFolder.add(p, 'bloomRadius', 0, 1, 0.01).name('Bloom spread');
+  postFolder.add(p, 'bloomThreshold', 0, 1, 0.01).name('Bloom threshold');
+  postFolder.add(p, 'screenGlow', 0, 1, 0.01).name('Screen glow');
+  postFolder.add(p, 'grain', 0, 0.2, 0.005).name('Grain');
+  postFolder.add(p, 'vignette', 0, 1, 0.01).name('Vignette');
+  postFolder.add(p, 'saturation', 0, 2, 0.01).name('Saturation');
+  postFolder.add(p, 'contrast', 0.5, 1.5, 0.01).name('Contrast');
+  postFolder.addColor(p, 'shadowTint').name('Shadow tint');
+  postFolder.add(p, 'tint', 0, 0.3, 0.005).name('Shadow tint amount');
 
   const r = room.settings;
   const roomFolder = gui.addFolder('Room').close();

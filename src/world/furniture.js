@@ -141,7 +141,7 @@ export function createTableLamp() {
   const shade = lampShade(0.11, 0.17, 0.2);
   shade.group.position.y = 0.43;
   group.add(shade.group);
-  return { group, shadeMaterial: shade.shadeMaterial, fringeMaterial: shade.fringeMaterial, shadeHeight: 0.43 };
+  return { group, shade: shade.group, shadeMaterial: shade.shadeMaterial, fringeMaterial: shade.fringeMaterial, shadeHeight: 0.43 };
 }
 
 export function createFloorLamp() {
@@ -152,5 +152,5 @@ export function createFloorLamp() {
   const shade = lampShade(0.16, 0.24, 0.28);
   shade.group.position.y = 1.5;
   group.add(shade.group);
-  return { group, shadeMaterial: shade.shadeMaterial, fringeMaterial: shade.fringeMaterial };
+  return { group, shade: shade.group, shadeMaterial: shade.shadeMaterial, fringeMaterial: shade.fringeMaterial };
 }

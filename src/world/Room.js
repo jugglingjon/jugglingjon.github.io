@@ -222,6 +222,8 @@ export class Room {
     floorLamp.group.position.copy(FLOOR_LAMP.position);
     scene.add(floorLamp.group);
     this.tableLamp = tableLamp.group; // click it to switch it (see toggleTableLamp)
+    // Things that give off light, for the bloom: the lamp shades, the VCR clock, the neon sign.
+    this.glowing = [tableLamp.shade, floorLamp.shade, this.vcrDisplay, this.window.sign];
     this.lampGlow = [
       { shade: tableLamp.shadeMaterial, fringe: tableLamp.fringeMaterial },
       { shade: floorLamp.shadeMaterial, fringe: floorLamp.fringeMaterial },

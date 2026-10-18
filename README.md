@@ -94,6 +94,16 @@ Outside the remote area, pointing at the room finds the first visible surface un
 - **Adding more:** call `interactions.add(object, { name, onClick, enabled })` in `main.js` for anything in the room.
 - **Baked lighting later:** if the room's lighting is baked, switchable lights like the table lamp need their own per-light map, blended at runtime (like the TV-light channel), so they keep switching.
 
+## Post-processing
+
+`src/render/PostFX.js` polishes each finished frame. The room still renders straight to the screen first, exactly as before: the CRT, the neon sign and the VCR clock skip tone mapping on purpose, which an offscreen render would undo. That frame is copied into a texture and run through three steps:
+
+- **Ambient occlusion** (three's GTAO): soft darkening in corners, under shelves and where objects touch. It draws the scene once more for depth and normals, so it's the most expensive step and only runs on High.
+- **Bloom, but only from things that give off light**: the lamp shades, the neon, the VCR clock, the remote's lit button, and more gently the TV picture, so its text stays sharp (**Screen glow**). Each frame these are drawn white into a small glow mask (the TV in grey), with your arm and the magazine in your hands drawn first in black so they block what's behind them. The bloom only takes bright pixels inside the mask, so the shiny coffee table and white magazine pages don't glow.
+- **Film**: subtle grain (still, with reduced motion), a vignette, and a light grade: a touch more saturation and contrast, with shadows leaning slightly purple.
+
+**Quality tiers:** High has everything; Medium has no ambient occlusion; Low has no post-processing at all. On **Auto** (the default), it starts on High (Medium on touch screens), and if a few seconds after load average under 40 fps it steps down a tier. It never steps back up during a visit. **Post-processing** in the lab panel sets the tier, shows the one in use, and has a slider for every effect.
+
 ## How the screen works
 
 ```
@@ -165,6 +175,8 @@ src/
     XRHand.js              the WebXR hand model gripping the remote: grip fit, finger curls, thumb IK (+ XRHand.test.js)
     Hand.js                built-in fallback hand: palm, curled fingers, three-joint thumb (CMC swing + IK), grip slide
     thumbing.js            button layout, pointer → button, two-bone IK, bone swing (+ thumbing.test.js, Hand.test.js)
+  render/
+    PostFX.js              post-processing: copy the frame, AO, glow-masked bloom, film grade; quality tiers (+ QualityWatch.test.js)
   camera/
     SeatedCamera.js        the viewer: seat, framing, breathing, zoom, screen rect (+ SeatedCamera.test.js)
     framing.js             fitVerticalFov, projectBounds (+ framing.test.js)
@@ -237,6 +249,6 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 2. ~~Channel engine: tuner state machine, remote with IR latency, number entry, volume, synthesized audio~~
 3. ~~Greybox apartment, seated camera, framing per aspect ratio, screen rect~~
 4. ~~Arm and remote: viewmodel pass, pointer → thumb mapping over every button, highlight, thumb presses~~ (this phase)
-5. Art pass: rigged hand (done: the WebXR hand), Blender models, baked lightmaps with a TV light channel, post-processing (this phase)
+5. Art pass: rigged hand (done: the WebXR hand), clickable room (done: lamp, listings magazine), post-processing (done), baked lightmaps with per-light channels (optional) (this phase)
 6. Content: project data, PHP-rendered routes and fallback, TV Guide case-study overlay
 7. Polish: power-on intro, mobile, accessibility (reduced motion, keyboard), quality tiers

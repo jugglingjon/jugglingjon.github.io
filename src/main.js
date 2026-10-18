@@ -23,6 +23,7 @@ import { XRHand } from './viewmodel/XRHand.js';
 import { locatePointer, remoteArea } from './camera/pointerZones.js';
 import { Interactions } from './world/Interactions.js';
 import { HoverOutline } from './world/HoverOutline.js';
+import { PostFX } from './render/PostFX.js';
 import { createTestSources, sourceFromFile } from './lab/sources.js';
 import { createLabGui } from './lab/LabGui.js';
 import { createRemotePad } from './lab/RemotePad.js';
@@ -109,6 +110,13 @@ room.scene.add(rig.root);
 // hands, opens, and tunes the set to whichever show you pick.
 const interactions = new Interactions();
 const outline = new HoverOutline(renderer);
+
+// Bloom, ambient occlusion, grain, vignette and a grade over the finished frame.
+const post = new PostFX(renderer, { scene: room.scene, camera: seated.camera });
+post.reducedMotion = reducedMotion;
+post.markGlowing(...room.glowing, rig.model.group);
+post.markScreen(tvModel.screen);
+post.markFront(rig.root, room.magazines.listings.group);
 const magazine = room.magazines.listings;
 interactions.add(room.tableLamp, {
   name: 'Table lamp',
@@ -335,12 +343,13 @@ const actions = {
   },
 };
 
-const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig });
+const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig, post });
 
 // The WebXR hand model replaces the built-in hand once it has loaded.
 XRHand.load(`${import.meta.env.BASE_URL}models/hand/right.glb`)
   .then((hand) => {
     rig.addHand('webxr', hand);
+    post.markFront(hand.group); // it can block the TV's glow, like the rest of your arm
     lab.addGripControls(hand);
   })
   .catch((err) => console.warn("Couldn't load the hand model; keeping the built-in hand.", err));
@@ -419,6 +428,7 @@ function resize() {
   const width = window.innerWidth;
   const height = window.innerHeight;
   renderer.setSize(width, height);
+  post.setSize(width, height);
   seated.setAspect(width / height);
   orbitCamera.aspect = width / height;
   orbitCamera.updateProjectionMatrix();
@@ -450,7 +460,8 @@ let frame = 0;
 
 renderer.setAnimationLoop(() => {
   const now = performance.now() / 1000;
-  const realDt = Math.min(now - last, 0.1);
+  const frameTime = now - last; // uncapped, for judging the frame rate
+  const realDt = Math.min(frameTime, 0.1);
   const dt = realDt * state.timeScale;
   last = now;
   clock += dt;
@@ -488,6 +499,8 @@ renderer.setAnimationLoop(() => {
     });
     renderer.render(room.scene, camera);
     outline.render(room.scene, camera, clock);
+    post.render(room.scene, camera, clock);
+    post.track(frameTime);
     if (seatedView && state.overlay) {
       overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight, remoteArea(window.innerWidth, window.innerHeight, rig.settings.area));
     }
@@ -495,7 +508,7 @@ renderer.setAnimationLoop(() => {
   }
 
   fpsFrames++;
-  fpsTime += realDt;
+  fpsTime += Math.min(frameTime, 5);
   if (fpsTime >= 0.5) {
     fpsLabel.textContent = `${Math.round(fpsFrames / fpsTime)} fps`;
     fpsFrames = 0;
@@ -508,7 +521,7 @@ updateHud();
 
 if (import.meta.env.DEV) {
   window.lab = {
-    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote, rig,
+    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote, rig, post,
     gsap,
     get audio() {
       return audio;

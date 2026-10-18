@@ -48,6 +48,7 @@ export function createWindow({ width, height }) {
     group,
     slats,
     rain,
+    sign,
     signMaterial,
     // Tilt in radians: 0 is shut (slats flat against the glass), ±π/2 wide open.
     // Negative tips the slats down into the room, the way the street light falls.
