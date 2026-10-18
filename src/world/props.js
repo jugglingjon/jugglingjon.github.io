@@ -4,14 +4,47 @@ import { ListingsMagazine } from './Magazine.js';
 import { createCanTexture, createMagazineTexture, createPrintTexture, seededRandom } from './textures.js';
 
 // Small set dressing. Each builder returns a group at the origin (sitting on
-// y = 0), plus any anchor points other systems need.
+// y = 0), plus any anchor points other systems need. Some have a model that
+// replaces their procedural stand-in once it loads.
+
+// Scale a model to `height` and stand it on y = 0 at the origin: centred on
+// its bounding box, or, `rooted`, on its own origin (a plant's base). It casts
+// and catches shadows like the rest of the room.
+export function fitModel(model, height, { rooted = false } = {}) {
+  const box = new THREE.Box3().setFromObject(model);
+  const scale = height / (box.max.y - box.min.y);
+  model.scale.multiplyScalar(scale);
+  if (!rooted) {
+    const centre = box.getCenter(new THREE.Vector3());
+    model.position.set(-centre.x, -box.min.y, -centre.z).multiplyScalar(scale);
+  }
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    o.castShadow = true;
+    o.receiveShadow = true;
+  });
+  return model;
+}
+
+// A 12 oz can, 12.2 cm tall.
+export const CAN = { radius: 0.033, height: 0.122 };
 
 export function createBeerCan() {
   const group = new THREE.Group();
   const label = new THREE.MeshStandardMaterial({ map: createCanTexture(), metalness: 0.7, roughness: 0.35 });
   const lid = new THREE.MeshStandardMaterial({ color: '#c9c9c9', metalness: 0.9, roughness: 0.3 });
-  place(group, new THREE.CylinderGeometry(0.033, 0.033, 0.122, 28), [label, lid, lid], 0, 0.061, 0);
+  place(group, new THREE.CylinderGeometry(CAN.radius, CAN.radius, CAN.height, 28), [label, lid, lid], 0, CAN.height / 2, 0);
   return { group };
+}
+
+// Swap the can for a model (the soda can GLB), the same size, turned `turn`
+// radians about its axis to show its label.
+export function replaceCan(can, model, turn = 0) {
+  const holder = new THREE.Group();
+  holder.rotation.y = turn;
+  holder.add(fitModel(model, CAN.height));
+  can.group.clear();
+  can.group.add(holder);
 }
 
 // A couple of listings magazines. The top one opens (see ListingsMagazine);
@@ -56,15 +89,11 @@ export function createPlant() {
 }
 
 // Swap the plant's leaves for a model, rooted at its origin (as the
-// Sansevieria GLB is): scaled to `height` above the soil, matte, and casting
-// and catching shadows like the rest of the room.
+// Sansevieria GLB is): scaled to `height` above the soil, and matte.
 export function replaceLeaves(plant, model, height = PLANT_HEIGHT) {
-  const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
-  model.scale.multiplyScalar(height / size.y);
+  fitModel(model, height, { rooted: true });
   model.traverse((o) => {
     if (!o.isMesh) return;
-    o.castShadow = true;
-    o.receiveShadow = true;
     o.material.metalness = 0;
     o.material.roughness = 0.7;
   });

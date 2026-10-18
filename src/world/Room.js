@@ -9,7 +9,7 @@ import {
   createTVStand,
   place,
 } from './furniture.js';
-import { createBeerCan, createMagazines, createPlant, createPrint, replaceLeaves } from './props.js';
+import { createBeerCan, createMagazines, createPlant, createPrint, replaceCan, replaceLeaves } from './props.js';
 import { createBookshelf } from './bookshelf.js';
 import { createCarpetTexture, createCeilingTexture, createPanelingTexture, createRugTexture, createWallpaperTexture } from './textures.js';
 import { createWindow, neonFlicker } from './windowView.js';
@@ -26,6 +26,9 @@ export function lampLevel(on, t) {
   }
   return Math.max(0, 1 - t / 0.12) ** 2;
 }
+
+// How far the can model turns on the table, so its logo faces the couch.
+const CAN_TURN = 0.3;
 
 export const ROOM_DEFAULTS = {
   lamps: true,
@@ -206,7 +209,8 @@ export class Room {
       object.rotation.y = rotation;
       scene.add(object);
     };
-    onTable(createBeerCan().group, -0.33, -0.13);
+    this.can = createBeerCan();
+    onTable(this.can.group, -0.33, -0.13);
     this.magazines = createMagazines();
     onTable(this.magazines.group, -0.03, -0.04, 0.3);
 
@@ -294,6 +298,11 @@ export class Room {
   // The snake plant's leaves, from a model (main.js loads the Sansevieria).
   setPlantLeaves(model) {
     replaceLeaves(this.plant, model);
+  }
+
+  // The can on the coffee table, from a model (main.js loads the soda can).
+  setCanModel(model) {
+    replaceCan(this.can, model, CAN_TURN);
   }
 
   // Flick the table lamp's switch; returns whether it's now on.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { createPlant, PLANT_HEIGHT, replaceLeaves } from './props.js';
+import { CAN, createPlant, fitModel, PLANT_HEIGHT, replaceCan, replaceLeaves } from './props.js';
 
 describe('createPlant', () => {
   it('stands built-in leaves on the soil until a model replaces them', () => {
@@ -21,5 +21,41 @@ describe('createPlant', () => {
     expect(box.min.y).toBeCloseTo(plant.leaves.position.y, 5); // rooted in the soil
     expect(leaf.material.metalness).toBe(0);
     expect(leaf.castShadow && leaf.receiveShadow).toBe(true);
+  });
+});
+
+describe('fitModel', () => {
+  // Like the soda can GLB: off-centre, below its origin, and scaled in a node.
+  const tallBox = () => {
+    const model = new THREE.Group();
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 2).translate(0.5, -0.2, -0.4), new THREE.MeshStandardMaterial());
+    mesh.scale.set(2.3, 2.9, 2.3);
+    model.add(mesh);
+    return { model, mesh };
+  };
+
+  it('stands a model on the origin at the height asked for', () => {
+    const { model, mesh } = tallBox();
+    fitModel(model, CAN.height);
+    const box = new THREE.Box3().setFromObject(model);
+    expect(box.max.y - box.min.y).toBeCloseTo(CAN.height, 6);
+    expect(box.min.y).toBeCloseTo(0, 6);
+    const centre = box.getCenter(new THREE.Vector3());
+    expect(centre.x).toBeCloseTo(0, 6);
+    expect(centre.z).toBeCloseTo(0, 6);
+    expect(mesh.castShadow && mesh.receiveShadow).toBe(true);
+  });
+
+  it('swaps the can for a model the same size, keeping its place', () => {
+    const can = { group: new THREE.Group() }; // the built-in can paints its label on a canvas, which needs a browser
+    can.group.add(new THREE.Mesh(new THREE.CylinderGeometry(CAN.radius, CAN.radius, CAN.height)));
+    can.group.position.set(1, 0.4, 2);
+    const { model } = tallBox();
+    replaceCan(can, model, 0.5);
+    can.group.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(can.group);
+    expect(box.min.y).toBeCloseTo(0.4, 6);
+    expect(box.max.y - box.min.y).toBeCloseTo(CAN.height, 6);
+    expect(can.group.children[0].rotation.y).toBe(0.5);
   });
 });

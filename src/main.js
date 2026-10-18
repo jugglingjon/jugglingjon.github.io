@@ -362,11 +362,16 @@ XRHand.load(`${import.meta.env.BASE_URL}models/hand/right.glb`)
   })
   .catch((err) => console.warn("Couldn't load the hand model; keeping the built-in hand.", err));
 
-// The Sansevieria model replaces the plant's built-in leaves once it has loaded.
-new GLTFLoader()
+// Models for the plant's leaves and the can replace their built-in stand-ins once they've loaded.
+const models = new GLTFLoader();
+models
   .loadAsync(`${import.meta.env.BASE_URL}models/plant/sansevieria.glb`)
   .then((gltf) => room.setPlantLeaves(gltf.scene))
   .catch((err) => console.warn("Couldn't load the plant model; keeping the built-in leaves.", err));
+models
+  .loadAsync(`${import.meta.env.BASE_URL}models/can/soda-can.glb`)
+  .then((gltf) => room.setCanModel(gltf.scene))
+  .catch((err) => console.warn("Couldn't load the can model; keeping the built-in can.", err));
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;

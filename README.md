@@ -69,6 +69,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - **Layout:** everything is placed from `src/world/layout.js`. The room, the seated camera and the painted glass reflections all read from it, so moving the lamp moves its reflection too.
 - **Light:** the TV (its picture's average colour, see `TVGlow`), two warm lamps, the hallway bulb, and a pink neon sign across the street. The neon is the one shadow-casting light, and the blinds are real slats, so it throws genuine stripes across the floor, table and TV. **Room → Blind tilt** changes them.
 - **The corner right of the TV** has a small three-shelf bookcase (`src/world/bookshelf.js`): a lava lamp glowing on top, a stuffed panda, and a few books. The lava lamp (`src/world/LavaLamp.js`) is a single shader that raymarches the inside of the glass bulb: five wax blobs rise and sink on their own slow cycles, merging smoothly with each other and with the pool at the bottom, in a softly glowing liquid. A small light inside it tints the corner in the lamp's colours. **Room → Bookshelf + lava lamp** takes the bookcase away, and **Lava lamp light** sets how much it lights the corner.
+- **The can on the coffee table** is a soda can model (`public/models/can/soda-can.glb`, from Sketchfab, see [Credits](#credits)), sized to a real 12 oz can and turned so its logo faces the couch. Its metal picks up the room's reflections. `fitModel` in `props.js` sizes and stands any model like this; the procedural lager can stands in until it loads.
 - **The snake plant** stands in the far left corner, beside the end table, where the table lamp lights it. Its leaves are a low-poly Sansevieria model (`public/models/plant/sansevieria.glb`, 1,100 triangles, coloured from a gradient palette texture), standing 0.72 m out of the procedural terracotta pot, with a little soil showing round the rim. `replaceLeaves` in `props.js` sizes it to the pot and makes it matte. Until the model loads, or if it fails to, simple procedural blades stand in.
 - **Tuning:** the Room panel sets lamps, neon, blind tilt, dust brightness and size, and the coffee table's varnish. **Table reflectivity** is how strongly it reflects the TV and lamps; **Table gloss** is how sharp those reflections are.
 - **Ambient motion:** dust motes sparkle in the TV's beam and take on the picture's colour, the neon can buzz and stutter (**Room → Neon flicker**, off by default), rain runs down the window, and the VCR blinks 12:00.
@@ -187,7 +188,7 @@ src/
     layout.js              where everything is
     Room.js                walls, floor, ceiling, door, lights; assembles the rest
     furniture.js           TV stand + VCR + tapes, coffee table, couch, end table, lamps
-    props.js               beer can, magazines, plant (and its model leaves), framed print (+ props.test.js)
+    props.js               can, magazines, plant, framed print; fitting models in their place (+ props.test.js)
     bookshelf.js           three-shelf bookcase: books, a stuffed panda, the lava lamp
     LavaLamp.js            lava lamp: raymarched wax blobs in the bulb, its light, random colours (+ LavaLamp.test.js)
     Magazine.js            the listings magazine: hinged cover, lifts to you, picks a listing
@@ -207,6 +208,7 @@ public/media/test/         placeholder videos (MP4 + WebM)
 public/media/music/        placeholder channel music (MP3 loops)
 public/models/hand/        WebXR generic right hand (.glb) and its MIT licence
 public/models/plant/       Sansevieria leaves for the snake plant (.glb)
+public/models/can/         soda can on the coffee table (.glb) and its CC BY licence
 scripts/
   make-test-media.sh       renders the test videos
   make-placeholder-music.mjs  synthesizes the music loops from note data
@@ -247,6 +249,7 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 
 ## Credits
 
+- **Soda can model:** ["Soda Can"](https://sketchfab.com/3d-models/soda-can-1b63dd4832144e89955ecf2f70e8af4b) by [junhyde](https://sketchfab.com/junhyde), [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/), used unmodified; the notice is in `public/models/can/LICENSE.md`. The Pepsi logo on its label is a trademark of PepsiCo, Inc.
 - **Plant model:** the Sansevieria (`public/models/plant/sansevieria.glb`), supplied by the site owner; its texture is from a "tiny treats" palette.
 - **Hand model:** the generic hand from [WebXR Input Profiles](https://github.com/immersive-web/webxr-input-profiles) (`@webxr-input-profiles/assets` 1.0.20). MIT licence, © 2019 Amazon; the full notice is in `public/models/hand/LICENSE.md`.
 
