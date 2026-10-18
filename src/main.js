@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import './styles/main.scss';
 import { cloneDefaults, createFx } from './screen/params.js';
@@ -360,6 +361,12 @@ XRHand.load(`${import.meta.env.BASE_URL}models/hand/right.glb`)
     lab.addGripControls(hand);
   })
   .catch((err) => console.warn("Couldn't load the hand model; keeping the built-in hand.", err));
+
+// The Sansevieria model replaces the plant's built-in leaves once it has loaded.
+new GLTFLoader()
+  .loadAsync(`${import.meta.env.BASE_URL}models/plant/sansevieria.glb`)
+  .then((gltf) => room.setPlantLeaves(gltf.scene))
+  .catch((err) => console.warn("Couldn't load the plant model; keeping the built-in leaves.", err));
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;

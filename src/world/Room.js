@@ -9,7 +9,7 @@ import {
   createTVStand,
   place,
 } from './furniture.js';
-import { createBeerCan, createMagazines, createPlant, createPrint } from './props.js';
+import { createBeerCan, createMagazines, createPlant, createPrint, replaceLeaves } from './props.js';
 import { createBookshelf } from './bookshelf.js';
 import { createCarpetTexture, createCeilingTexture, createPanelingTexture, createRugTexture, createWallpaperTexture } from './textures.js';
 import { createWindow, neonFlicker } from './windowView.js';
@@ -240,10 +240,9 @@ export class Room {
     scene.add(print.group);
 
     // The snake plant, in the far left corner where the table lamp lights it.
-    const plant = createPlant();
-    plant.group.position.copy(PLANT);
-    scene.add(plant.group);
-    this.plant = plant.group;
+    this.plant = createPlant();
+    this.plant.group.position.copy(PLANT);
+    scene.add(this.plant.group);
 
     // Right of the TV, a bookshelf with a lava lamp (click it for a new
     // colour), a stuffed panda and a few books.
@@ -290,6 +289,11 @@ export class Room {
     const origin = tv.group.localToWorld(tv.screenCenter);
     this.dust.material.uniforms.uBeamOrigin.value.copy(origin);
     this.dust.material.uniforms.uBeamDir.value.copy(EYE).sub(origin).normalize();
+  }
+
+  // The snake plant's leaves, from a model (main.js loads the Sansevieria).
+  setPlantLeaves(model) {
+    replaceLeaves(this.plant, model);
   }
 
   // Flick the table lamp's switch; returns whether it's now on.

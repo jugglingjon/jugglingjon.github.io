@@ -29,23 +29,47 @@ export function createMagazines() {
   return { group, listings };
 }
 
-// Snake plant in a terracotta pot.
+// Snake plant in a terracotta pot. Its leaves are a group of their own
+// standing on the soil, so a model can replace them (replaceLeaves).
+const SOIL = 0.31;
+export const PLANT_HEIGHT = 0.9; // a leaf model's height above the soil, in metres
+
 export function createPlant() {
   const group = new THREE.Group();
   const pot = new THREE.MeshStandardMaterial({ color: '#9a4f2a', roughness: 0.85 });
   const soil = new THREE.MeshStandardMaterial({ color: '#1f140c', roughness: 1 });
   const leaf = new THREE.MeshStandardMaterial({ color: '#2f5a2c', roughness: 0.6 });
   place(group, new THREE.CylinderGeometry(0.17, 0.13, 0.32, 24), pot, 0, 0.16, 0);
-  place(group, new THREE.CylinderGeometry(0.155, 0.155, 0.01, 24), soil, 0, 0.31, 0);
+  place(group, new THREE.CylinderGeometry(0.155, 0.155, 0.01, 24), soil, 0, SOIL, 0);
+  const leaves = new THREE.Group();
+  leaves.position.y = SOIL;
+  group.add(leaves);
   const rand = seededRandom(61);
   const blade = new THREE.SphereGeometry(1, 12, 10);
   for (let i = 0; i < 9; i++) {
     const height = 0.35 + rand() * 0.35;
-    const mesh = place(group, blade, leaf, (rand() - 0.5) * 0.12, 0.31 + height, (rand() - 0.5) * 0.12);
+    const mesh = place(leaves, blade, leaf, (rand() - 0.5) * 0.12, height, (rand() - 0.5) * 0.12);
     mesh.scale.set(0.045, height, 0.012);
     mesh.rotation.set((rand() - 0.5) * 0.4, rand() * Math.PI, (rand() - 0.5) * 0.4);
   }
-  return { group };
+  return { group, leaves };
+}
+
+// Swap the plant's leaves for a model, rooted at its origin (as the
+// Sansevieria GLB is): scaled to `height` above the soil, matte, and casting
+// and catching shadows like the rest of the room.
+export function replaceLeaves(plant, model, height = PLANT_HEIGHT) {
+  const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+  model.scale.multiplyScalar(height / size.y);
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    o.castShadow = true;
+    o.receiveShadow = true;
+    o.material.metalness = 0;
+    o.material.roughness = 0.7;
+  });
+  plant.leaves.clear();
+  plant.leaves.add(model);
 }
 
 export function createPrint({ width, height }) {
