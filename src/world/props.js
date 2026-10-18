@@ -32,7 +32,7 @@ export function createMagazines() {
 // Snake plant in a terracotta pot. Its leaves are a group of their own
 // standing on the soil, so a model can replace them (replaceLeaves).
 const SOIL = 0.31;
-export const PLANT_HEIGHT = 0.9; // a leaf model's height above the soil, in metres
+export const PLANT_HEIGHT = 0.72; // a leaf model's height above the soil, in metres
 
 export function createPlant() {
   const group = new THREE.Group();
