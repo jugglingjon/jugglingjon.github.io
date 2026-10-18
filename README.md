@@ -2,7 +2,7 @@
 
 A web and design portfolio set in a dingy 1980s apartment. You stare at an old CRT TV, raise a chunky remote, and every channel is a project.
 
-**Status: Phase 5 under way, starting with the hand.** Your right arm is held out towards the TV with a chunky remote in your hand. Moving the mouse glides your thumb over the buttons, and the one it's over lights up. Clicking presses it with your thumb. The hand is now a real rigged model, the WebXR generic hand. The room, the TV and the remote are still the procedural greybox from Phases 1–4.
+**Status: Phase 6 under way: the content pipeline is in, with placeholder projects.** Your work lives in `content/projects.js`: each project gets a channel (a still, a slideshow, a scrolling page or a video), a story you bring up with **INFO** on the remote, and a plain page of its own at `work/<slug>/` for search engines, link previews and browsers without WebGL. Swap in your own projects (see [Your work](#your-work)) and the TV, the listings magazine and the pages all follow.
 
 ## Getting started
 
@@ -43,6 +43,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 | <kbd>R</kbd> / <kbd>Backspace</kbd> | RCL | Recall the previous channel |
 | <kbd>+</kbd> / <kbd>−</kbd> | VOL + / − | Volume, with the OSD bar; hold to repeat |
 | <kbd>M</kbd> | MUTE | Mute |
+| <kbd>I</kbd> | INFO | The story behind the show on now, as a page from a TV listings magazine; <kbd>Esc</kbd>, <kbd>I</kbd> or a click outside puts it away |
 | <kbd>D</kbd> | | Degauss |
 | <kbd>V</kbd> | | Cycle views: seated (you, on the couch), orbit (free debug camera), flat screen |
 | <kbd>H</kbd> | | Hide the panels |
@@ -55,6 +56,27 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - **TV → Speed (slow-mo)** runs the lab clock down to 2% speed, so you can study a channel change frame by frame.
 - **Tuner** sets reduced motion, rough-change odds, IR latency and the snow/surf timings. **Sound** sets the volume and mix.
 - Every slider in **Signal**, **Tube** and **Glass** is live. Changes auto-save to this browser. **Presets → Copy JSON** exports the current look; paste it into `PRESETS` in `src/screen/params.js` to make it permanent.
+
+## Your work
+
+Every project is an entry in **`content/projects.js`**, in channel order (the number keys tune straight to the first nine), with its media in **`public/work/<slug>/`**. The comment at the top of that file lists every field. The test cards come on the channels after your work. `content/site.js` holds the site's title, description and published URL.
+
+**Adding a project:** make the folder `public/work/<slug>/`, put the media in it, add an entry to `content/projects.js`, and run `npm test`. The content tests check what the TV and the pages can show: a URL-safe slug, a channel name of at most 18 characters in the on-screen display's font (A–Z, 0–9, space and `- . , : · / & ! ? +`), a blurb of at most 32 characters and a summary of at most 155, a valid TV type, every named file present, and alt text for every picture. Remove `placeholder: true` once it's yours; until then the story and the page say it's a placeholder.
+
+**What plays on the channel** (`tv`). The set draws every channel into a 640×480 picture, so stills, slideshows and pages are drawn into a 4:3 frame first. Media loads the first time you tune in, behind a PLEASE STAND BY card, and the rest load in the background a few seconds after the page opens. Channels air on the clock, so tune away and back and the show has moved on.
+
+| Type | Media | Notes |
+|---|---|---|
+| `image` | One still, 4:3, **1280×960** (1024×768 at least). PNG for flat UI, JPEG/WebP (quality 85) for photos. | `fit: 'contain'` letterboxes instead of cropping to 4:3; `focus: [x, y]` (0–1) picks the crop's centre. |
+| `slideshow` | 3–8 stills as above, in `slides`. | `seconds` per slide (5 by default; twice that with reduced motion). |
+| `scroll` | A full-page capture **1024 px wide, up to 4096 tall**, JPEG/WebP (quality 80), taken at 1× in a 1024–1280 px window. | Shown in a browser window that holds, scrolls down, holds and scrolls back up; `url` is the address in its bar. With reduced motion it steps down a screen at a time. |
+| `video` | A loop, **960×720** (or 640×480), 24–30 fps, 10–30 s, H.264 MP4 (yuv420p, faststart) plus a VP9 WebM, no audio track unless it should be heard; and a `poster`, 1280×960. | It has to loop without a seam: you tune in mid-loop. The poster shows while it loads, and instead of it with reduced motion. |
+
+On the CRT, keep what matters in the middle 80% of the frame (the channel number sits top right and the name along the bottom as you tune in), headings at least 30 px tall at 960 px, and off-white (#f2ede4) rather than pure white for big bright areas. `music` is an optional MP3 loop for the channel (128–192 kbps, 30–90 s, about −16 LUFS).
+
+**The story** (INFO, `src/content/StoryOverlay.js`) and **the project's page** share one article (`renderCaseStudy` in `src/content/caseStudy.js`) and one stylesheet (`src/content/story.css`), laid out like a TV listings magazine: channel and time slot, title, summary, `hero` (16:9, **1600×900**, WebP or JPEG, ≤ 250 KB), the facts (role, client, year, credits, tech), the `story` (paragraphs separated by blank lines), an optional `video` (**1280×720** MP4 with a poster), the `gallery` (desktop screenshots **1600×1000**, phone screens **750×1624**, each with alt text and an optional caption) and the `links`. `share` is a **1200×630** image for link previews (the hero stands in otherwise). The story is a modal dialog: focus moves into it and stays there, the arrow keys scroll it, and it hands focus back when it closes.
+
+**The pages** (`src/content/pages.js`, written by the Vite plugin in `src/content/vitePlugin.js`): `npm run build` writes `work/<slug>/index.html` for each project (next to its media), `work/index.html` listing them all, `sitemap.xml` and `robots.txt`, and fills in the TV page's title, description and link previews from `content/site.js`. The dev server serves the same pages straight from the content, so an edit shows up on a refresh. Each page has absolute link-preview URLs, the credits, and a **Watch it on the TV** link to `?channel=<slug>`, which switches the set on tuned to that show. The TV page also carries plain links to every project, hidden until a keyboard reaches them, and browsers without WebGL 2 go straight to `work/`.
 
 ## The apartment
 
@@ -82,6 +104,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 
 - **The mapping:** the middle 80% of the screen maps onto the remote's face, the way you see it. Up is towards the tip (POWER, then the number pad), down is the VOL and CH rockers, and left and right go across. The nearest button is the target, with a little hysteresis so the thumb doesn't flicker on a boundary (`src/viewmodel/thumbing.js`). The middle of the screen is **8**, and the bottom right is **CH ▲ / ▼**.
 - **The hand** is the WebXR generic hand model (`public/models/hand/right.glb`, 94 KB). Its joints follow the WebXR Hand Input names, so the thumb's `thumb-metacarpal`, `thumb-phalanx-proximal` and `thumb-phalanx-distal` are our CMC, MCP and IP. The grip was fitted numerically. The hand lies along the remote, which crosses the palm diagonally. With the thumb on CH ▲, the wrist sits just behind the remote's tail, so the forearm carries straight on back towards you with less than 20° of sideways wrist bend. No skin goes more than a couple of millimetres into the remote, and the fingertips wrap its left edge. For the far buttons the hand shifts 40% of the way up the remote and the thumb stretches for the rest. The model's thumb is short for a remote this wide, so the grip stretches it by 20%. Until the model loads, or if it fails to, the built-in hand made from capsules stands in.
+- **INFO** sits top left on the remote, opposite POWER; both are a little down from the tip, where the thumb reaches them comfortably.
 - **The thumb** is three bones, solved every frame. First the CMC joint by the wrist swings the metacarpal: as you reach across the remote it carries the big knuckle up and over the face, and the fleshy pad at the base of the thumb stretches with it. Then the MCP and IP joints bend (two-bone IK) to put the pad on the button. It hovers just above the targeted button, then sinks with it on a press. The whole grip shuffles along the remote to reach the far buttons, the way you would, and the arm (shoulder → elbow → wrist, also IK) follows. The arm also drifts a few centimetres after the pointer, and the remote's tip swings that way a little while it stays aimed at the set. The forearm leaves the hand along the wrist's own axis, with the same oval section as the hand model's wrist. The flannel cuff starts just before the hand mesh ends, so the two meet with no seam or kink. The elbow sits at the far end of the forearm, and the upper arm runs from there up to the shoulder.
 - **Presses:** a click goes to `Remote.hold`. The remote fires `press` immediately, and `ArmRig` plays the thumb press: down 60 ms, hold, up 100 ms. The button sinks, the IR LED blinks, and the TV reacts after the IR latency. Keys, scroll and the lab remote go through the same `Remote`, so the thumb presses for those too.
 - **Tuning:** the **Arm & remote** panel moves the remote around (across, height, reach), tilts and rolls it, and scales it. It also sets how far the arm follows the pointer (**Follow pointer**) and how firmly the thumb settles onto the target. You can also switch the highlight off there, and switch between the WebXR and built-in hands (**Hand**). **Grip (WebXR hand)** has every grip setting: wrist position, hand heading, tilt and roll, size, finger bends, the wrap of each finger, thumb length and swing, and how far the grip follows the thumb up the remote. **Copy grip JSON** copies the result, ready to paste into `GRIP_DEFAULTS` in `src/viewmodel/XRHand.js`.
@@ -162,9 +185,20 @@ Television.receive(button)
 ## Project structure
 
 ```
-index.html                 lab page
+index.html                 the TV's page (the build adds its title, link previews and plain links)
+content/
+  projects.js              your work: one entry per channel (+ the content tests in src/content/)
+  site.js                  the site's title, description, published URL and credits
 src/
   main.js                  wiring: renderer, views, channels, input, render loop
+  content/                 from content/ to the TV and the pages
+    channels.js            each project's channel: still, slideshow, scrolling page or video (+ channels.test.js)
+    caseStudy.js           the story behind a show, as an article (+ pages.test.js)
+    StoryOverlay.js        the story over the TV (INFO): a modal dialog
+    pages.js               the static pages, work index, sitemap and robots.txt (+ pages.test.js)
+    vitePlugin.js          writes those at build time, and serves them in dev
+    media.js               where a project's media lives, for the app and for its page
+    story.css              the article, the pages and the overlay, styled like a listings magazine
   tv/
     Television.js          the set: power, tuner state machine, number entry, volume, OSD
     Remote.js              buttons, with infrared latency
@@ -216,6 +250,7 @@ src/
   lab/                     screen-lab-only tooling
     LabGui.js · RemotePad.js · ScreenRectOverlay.js · sources.js · testCards.js · storage.js
   styles/                  main.scss, _tokens.scss, _remote.scss
+public/work/<slug>/        each project's media (its page is written next to it at build time)
 public/media/test/         placeholder videos (MP4 + WebM)
 public/media/music/        placeholder channel music (MP3 loops)
 public/models/hand/        WebXR generic left and right hands (.glb) and their MIT licence
@@ -254,7 +289,7 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 ## Placeholders to replace
 
 - **TV, furniture, props and room:** procedural geometry and canvas textures, laid out in `layout.js`. They get replaced by Blender models with baked lightmaps (including a TV-light channel) in Phase 5.
-- **Projects:** canvas-drawn mock sites (Neon Burger Co., Field Notes, Orbit Analytics), test patterns and two ffmpeg-generated loops. Real screenshots and recordings arrive in Phase 6.
+- **Projects:** five placeholder projects in `content/projects.js` (Neon Burger Co., Field Notes, Orbit Analytics, Game of Life, Gradient Reel), with placeholder stories. Their pictures were exported from the canvas mock sites in `src/lab/testCards.js` into `public/work/`; the videos are the ffmpeg loops in `public/media/test/`. Replace them with your own (see [Your work](#your-work)).
 - **Channel music:** synthesized placeholder loops; see [Channel music](#channel-music).
 - **Hand:** the WebXR generic hand (see [Credits](#credits)). A more realistic rigged hand can replace it. Any model with three thumb joints and three per finger works with the same IK; only the joint names and the grip fit change.
 - **Arm and remote:** procedural cylinders and rounded boxes (`src/viewmodel/`), still to be replaced in Phase 5. The clickable DOM remote (`src/lab/RemotePad.js`) stays as a lab tool and drives the same `Remote`.
@@ -272,6 +307,6 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 2. ~~Channel engine: tuner state machine, remote with IR latency, number entry, volume, synthesized audio~~
 3. ~~Greybox apartment, seated camera, framing per aspect ratio, screen rect~~
 4. ~~Arm and remote: viewmodel pass, pointer → thumb mapping over every button, highlight, thumb presses~~ (this phase)
-5. Art pass: rigged hand (done: the WebXR hand), clickable room (done: lamp, listings magazine), post-processing (done), baked lightmaps with per-light channels (optional) (this phase)
-6. Content: project data, PHP-rendered routes and fallback, TV Guide case-study overlay
+5. ~~Art pass: rigged hands, clickable room (lamp, listings magazine, lava lamp, the drink), post-processing, models for the plant and can~~ (baked lighting skipped: the lights stay live)
+6. Content: project data, static pages per project with link previews and a sitemap, TV Guide case-study overlay (pipeline done, with placeholders; your projects next) (this phase)
 7. Polish: power-on intro, mobile, accessibility (reduced motion, keyboard), quality tiers

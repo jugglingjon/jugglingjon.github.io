@@ -3,8 +3,9 @@ import * as THREE from 'three';
 // The remote's button layout, in remote-local metres: z along the face
 // (+ = towards the TV), x across it. The remote points away from you, so its
 // +x is on *your left*: things you see on the right have negative x. Same
-// buttons and order as the lab's DOM remote, as you see them: POWER top right,
-// the number pad with RCL / 0 / MUTE, then VOL (left) and CH (right) rockers.
+// buttons and order as the lab's DOM remote, as you see them: INFO top left
+// and POWER top right, the number pad with RCL / 0 / MUTE, then VOL (left) and
+// CH (right) rockers.
 const COLS = [0.0165, 0, -0.0165]; // your left → right
 const ROWS = [0.05, 0.033, 0.016, -0.001];
 const PAD = [
@@ -13,10 +14,11 @@ const PAD = [
   ['7', '8', '9'],
   ['recall', '0', 'mute'],
 ];
-const LABELS = { recall: 'RCL', mute: 'MUTE', power: 'POWER', 'vol+': '+', 'vol-': '−', 'ch+': '▲', 'ch-': '▼' };
+const LABELS = { recall: 'RCL', mute: 'MUTE', power: 'POWER', info: 'INFO', 'vol+': '+', 'vol-': '−', 'ch+': '▲', 'ch-': '▼' };
 
 export const REMOTE_BUTTONS = [
-  { button: 'power', x: -0.012, z: 0.074, w: 0.018, d: 0.0095, kind: 'power' },
+  { button: 'info', x: 0.012, z: 0.066, w: 0.018, d: 0.0095, kind: 'info' },
+  { button: 'power', x: -0.012, z: 0.066, w: 0.018, d: 0.0095, kind: 'power' },
   ...PAD.flatMap((row, r) => row.map((button, c) => ({ button, x: COLS[c], z: ROWS[r], w: 0.0125, d: 0.0095, kind: 'key' }))),
   { button: 'vol+', x: 0.0135, z: -0.024, w: 0.017, d: 0.0155, kind: 'rocker' },
   { button: 'vol-', x: 0.0135, z: -0.043, w: 0.017, d: 0.0155, kind: 'rocker' },

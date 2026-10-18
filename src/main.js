@@ -28,7 +28,13 @@ import { locatePointer, remoteArea } from './camera/pointerZones.js';
 import { Interactions } from './world/Interactions.js';
 import { HoverOutline } from './world/HoverOutline.js';
 import { PostFX } from './render/PostFX.js';
-import { createTestSources, sourceFromFile } from './lab/sources.js';
+import { createTestCards, sourceFromFile } from './lab/sources.js';
+import { projects } from '../content/projects.js';
+import { projectChannels } from './content/channels.js';
+import { renderCaseStudy } from './content/caseStudy.js';
+import { mediaUrl } from './content/media.js';
+import { StoryOverlay } from './content/StoryOverlay.js';
+import './content/story.css';
 import { createLabGui } from './lab/LabGui.js';
 import { createRemotePad } from './lab/RemotePad.js';
 import { createScreenRectOverlay } from './lab/ScreenRectOverlay.js';
@@ -40,6 +46,12 @@ import { loadSaved } from './lab/storage.js';
 // as a flat screen.
 
 const FIRST_CHANNEL = 1; // so number keys 1–9 land on the first nine channels
+
+// No WebGL 2, no TV: the plain pages have all the work.
+if (!document.createElement('canvas').getContext('webgl2')) {
+  window.location.replace(`${import.meta.env.BASE_URL}work/`);
+  throw new Error('WebGL 2 is not available; showing the plain pages instead.');
+}
 
 const canvas = document.querySelector('#scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -99,9 +111,12 @@ resetCamera();
 const overlay = createScreenRectOverlay();
 document.body.append(overlay.el);
 
-// The set, its lineup and the remote. Every source gets a channel number;
+// The set, its lineup and the remote. Your work (content/projects.js) comes
+// first, then the test cards; every source gets a channel number, and
 // numbers without a source tune to dead air.
-const lineup = createTestSources().map((source, i) => ({ number: FIRST_CHANNEL + i, name: source.name, source }));
+const channelSettings = { reducedMotion };
+const shows = [...projectChannels(projects, { base: import.meta.env.BASE_URL, settings: channelSettings }), ...createTestCards()];
+const lineup = shows.map((source, i) => ({ number: FIRST_CHANNEL + i, name: source.name, source }));
 const tv = new Television({ fx, osd, lineup, reducedMotion });
 const remote = new Remote(tv);
 
@@ -192,8 +207,8 @@ function watch(row) {
 const pointer = new THREE.Vector2();
 function aim(e) {
   pointer.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
-  if (drink.active) {
-    // Hands full: the pointer waits until you've put the can down.
+  if (drink.active || story.isOpen) {
+    // Hands full, or reading: the pointer waits.
     rig.setActive(false);
     seated.setLook(0, 0);
     interactions.clearPointer();
@@ -248,8 +263,9 @@ for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.
 
 let current = null;
 
+// A source can carry its own fit and focus (a project's video, say).
 function refit() {
-  signal.setSource(current, params.source.fit, [params.source.focusX, params.source.focusY]);
+  signal.setSource(current, current?.fit ?? params.source.fit, current?.focus ?? [params.source.focusX, params.source.focusY]);
 }
 
 function showSource(channel) {
@@ -318,7 +334,34 @@ tv.addEventListener('volume', (e) => {
   audio?.setVolume(e.detail.level, e.detail.muted);
   updateHud();
 });
-remote.addEventListener('press', () => audio?.click());
+remote.addEventListener('press', (e) => {
+  audio?.click();
+  if (e.detail.button === 'info') toggleStory();
+});
+
+// INFO: the story behind the show on now, over the TV. The test cards (and a
+// set that's off) have none; the OSD says so.
+const story = new StoryOverlay({ onClose: () => document.body.classList.remove('is-reading') });
+function toggleStory() {
+  if (story.isOpen) return story.close();
+  if (!tv.on) return;
+  const project = tv.channel?.source?.project;
+  if (!project) {
+    osd.setCaption('NO LISTING');
+    return;
+  }
+  closeMagazine();
+  rig.setActive(false);
+  seated.setLook(0, 0);
+  interactions.clearPointer();
+  document.body.classList.add('is-reading');
+  const index = projects.indexOf(project);
+  story.open({
+    slug: project.slug,
+    html: renderCaseStudy(project, { url: (path) => mediaUrl(project, path, import.meta.env.BASE_URL), channel: tv.number, index }),
+    page: `${import.meta.env.BASE_URL}work/${project.slug}/`,
+  });
+}
 
 document.body.append(createRemotePad(remote));
 
@@ -461,10 +504,12 @@ const KEY_BUTTONS = {
   // Page Up is channel up.
   pageup: 'ch+',
   pagedown: 'ch-',
+  i: 'info',
 };
 
 window.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+  if (story.isOpen) return; // the story has the keys (arrows scroll it; Esc and I close it)
   if (e.metaKey || e.ctrlKey || e.altKey) return; // leave browser shortcuts (zoom, etc.) alone
   const key = e.key.toLowerCase();
   const button = /^\d$/.test(key) ? key : KEY_BUTTONS[key];
@@ -593,9 +638,24 @@ renderer.setAnimationLoop(() => {
 setMode(state.mode);
 updateHud();
 
+// Arriving from a project's page (?channel=<slug>): the set comes on, tuned
+// to that show.
+const linked = new URLSearchParams(window.location.search).get('channel');
+const linkedChannel = lineup.find((c) => c.source.project?.slug === linked);
+if (linkedChannel) {
+  tv.tune(linkedChannel.number);
+  tv.powerOn();
+}
+
+// Then fetch every channel's media in the background, one at a time, so
+// flicking through doesn't keep you waiting on a STAND BY card.
+setTimeout(async () => {
+  for (const { source } of lineup) await source.warm?.();
+}, 3000);
+
 if (import.meta.env.DEV) {
   window.lab = {
-    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote, rig, post, drink,
+    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote, rig, post, drink, story, projects,
     gsap,
     get audio() {
       return audio;

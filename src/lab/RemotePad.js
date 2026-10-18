@@ -14,6 +14,7 @@ export function createRemotePad(remote) {
   el.innerHTML = `
     <div class="remote__head">
       <span class="remote__led" aria-hidden="true"></span>
+      ${key('info', 'INFO', { modifier: 'info', aria: 'The story behind this show' })}
       ${key('power', 'POWER', { modifier: 'power', aria: 'Power' })}
     </div>
     <div class="remote__pad">

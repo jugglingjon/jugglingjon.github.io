@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createScrollRecording, drawColorBars, drawDashboard, drawNeonBurger, drawResolutionChart } from './testCards.js';
+import { drawColorBars, drawResolutionChart } from './testCards.js';
 
 // A source is anything the TV can show:
 //   { name, texture, width, height, update?(time), activate?(), deactivate?(), onResize?,
@@ -9,19 +9,6 @@ import { createScrollRecording, drawColorBars, drawDashboard, drawNeonBurger, dr
 
 function canvasSource(name, canvas) {
   return { name, texture: new THREE.CanvasTexture(canvas), width: canvas.width, height: canvas.height };
-}
-
-function animatedSource(name, recording) {
-  const texture = new THREE.CanvasTexture(recording.canvas);
-  return {
-    name,
-    texture,
-    width: recording.canvas.width,
-    height: recording.canvas.height,
-    update(time) {
-      if (recording.update(time)) texture.needsUpdate = true;
-    },
-  };
 }
 
 // `srcs` lists encodings in preference order; the browser plays the first it can.
@@ -58,19 +45,14 @@ function videoSource(name, srcs) {
   return source;
 }
 
-const testMedia = (name) => ['mp4', 'webm'].map((ext) => `${import.meta.env.BASE_URL}media/test/${name}.${ext}`);
-// Placeholder loops from scripts/make-placeholder-music.mjs; swap for real tracks.
+// Placeholder loop from scripts/make-placeholder-music.mjs; swap for a real track.
 const music = (name) => `${import.meta.env.BASE_URL}media/music/${name}.mp3`;
 
-export function createTestSources() {
+// Test cards, on the channels after your work (which comes from
+// content/projects.js). `blurb` is the line under each in the listings.
+export function createTestCards() {
   return [
-    // `blurb` is the line under each show in the listings magazine.
-    { ...canvasSource('Neon Burger Co.', drawNeonBurger()), music: music('neon-burger'), blurb: 'Burger joint site · branding and web' },
-    { ...animatedSource('Field Notes', createScrollRecording()), music: music('field-notes'), blurb: 'Editorial blog · long-read layouts' },
-    { ...canvasSource('Orbit Analytics', drawDashboard()), music: music('orbit-analytics'), blurb: 'Dashboard UI · charts and data' },
-    Object.assign(videoSource('Game of Life', testMedia('life')), { music: music('game-of-life'), blurb: 'Generative loop · video' }),
-    Object.assign(videoSource('Gradient Reel', testMedia('gradient-reel')), { music: music('gradient-reel'), blurb: 'Motion reel · video' }),
-    { ...canvasSource('Colour Bars', drawColorBars()), tone: 1000, blurb: 'Test card · the 1 kHz line-up tone' }, // the classic 1 kHz line-up tone
+    { ...canvasSource('Colour Bars', drawColorBars()), tone: 1000, blurb: 'Test card · line-up tone' }, // the classic 1 kHz line-up tone
     { ...canvasSource('Resolution Chart', drawResolutionChart()), music: music('forecast'), blurb: 'Test card · check your focus' },
   ];
 }

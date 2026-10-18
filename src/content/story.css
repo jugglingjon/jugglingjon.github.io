@@ -1,0 +1,443 @@
+/* The story behind a show, styled like a page from a TV listings magazine.
+   Shared by the app's INFO overlay and the static pages in work/. */
+
+.story,
+.page {
+  --paper: #f2ead8;
+  --paper-deep: #e6dcc4;
+  --ink: #1b1b1b;
+  --soft: #5f574b;
+  --red: #c8281e;
+  --gold: #ffc53d;
+  --serif: Georgia, 'Times New Roman', serif;
+  --sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --display: 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.story {
+  color: var(--ink);
+  font: 1.125rem/1.6 var(--serif);
+}
+
+.story__masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--red);
+  color: #fff;
+  font: italic 900 1.125rem/1.2 var(--display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.story__channel {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--ink);
+  font-style: normal;
+}
+
+.story__time {
+  font: 700 1rem var(--sans);
+  font-style: normal;
+}
+
+.story__placeholder {
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px dashed var(--red);
+  color: var(--red);
+  font: 700 0.875rem var(--sans);
+}
+
+.story__title {
+  margin: 0 0 0.5rem;
+  font: 700 clamp(2rem, 5vw, 3.25rem) / 1.08 var(--serif);
+  text-wrap: balance;
+}
+
+.story__summary {
+  margin: 0 0 1.5rem;
+  color: var(--soft);
+  font-size: 1.3rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.story img,
+.story video {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--paper-deep);
+}
+
+.story figure {
+  margin: 0;
+}
+
+.story__hero,
+.story__video {
+  margin: 0 0 1.5rem;
+  border: 3px solid var(--ink);
+}
+
+.story__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 0 0 1.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--paper-deep);
+  font: 1rem/1.4 var(--sans);
+}
+
+.story__facts dt {
+  color: var(--red);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.story__facts dd {
+  margin: 0.125rem 0 0;
+}
+
+.story__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.story__tags li {
+  padding: 0.125rem 0.5rem;
+  border-radius: 1rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.8125rem;
+}
+
+.story__body {
+  max-width: 38rem;
+}
+
+.story__body p {
+  margin: 0 0 1.1em;
+}
+
+.story__body p:first-child::first-letter {
+  float: left;
+  margin: 0.06em 0.08em 0 0;
+  color: var(--red);
+  font: 700 3.4em/0.8 var(--serif);
+}
+
+.story__gallery {
+  display: grid;
+  gap: 1.25rem;
+  margin: 2rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.story__gallery img {
+  border: 2px solid var(--ink);
+}
+
+.story__gallery figcaption {
+  margin-top: 0.375rem;
+  color: var(--soft);
+  font: italic 0.95rem var(--serif);
+}
+
+.story__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.story__links a,
+.page__tv {
+  display: inline-block;
+  padding: 0.625rem 1.125rem;
+  border-radius: 2rem;
+  background: var(--ink);
+  color: #fff;
+  font: 700 1rem var(--sans);
+  text-decoration: none;
+}
+
+.story__links a:hover,
+.page__tv:hover {
+  background: var(--red);
+}
+
+.story a:focus-visible,
+.page a:focus-visible,
+.story-overlay button:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* --- The static pages --- */
+
+.page {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 1rem/1.5 var(--sans);
+}
+
+.page__header,
+.page__main,
+.page__footer {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding-block: 1.25rem;
+  border-bottom: 4px solid var(--ink);
+  margin-bottom: 2rem;
+}
+
+.page__site {
+  color: var(--red);
+  font: italic 900 1.5rem var(--display);
+  text-decoration: none;
+}
+
+.page__header nav a,
+.page__pager a {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.page__watch {
+  margin: 2.5rem 0;
+}
+
+.page__tv {
+  background: var(--red);
+  font-size: 1.125rem;
+}
+
+.page__tv:hover {
+  background: var(--ink);
+}
+
+.page__pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 0;
+  border-top: 2px solid var(--ink);
+}
+
+.page__footer {
+  padding-block: 2rem 3rem;
+  color: var(--soft);
+  font-size: 0.875rem;
+}
+
+.page__footer ul {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listings {
+  margin: 2rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listing a {
+  display: grid;
+  grid-template-columns: 7rem auto 1fr;
+  grid-template-areas:
+    'thumb channel name'
+    'thumb time blurb';
+  gap: 0.25rem 1rem;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 2px solid rgba(27, 27, 27, 0.2);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.listing a:hover {
+  background: var(--gold);
+}
+
+.listing img {
+  grid-area: thumb;
+  width: 7rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 2px solid var(--ink);
+}
+
+.listing__channel {
+  grid-area: channel;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--ink);
+  color: #fff;
+  font: 700 1rem var(--sans);
+  text-align: center;
+}
+
+.listing__time {
+  grid-area: time;
+  color: var(--soft);
+  font-weight: 700;
+  text-align: center;
+}
+
+.listing__name {
+  grid-area: name;
+  font: 700 1.375rem var(--serif);
+}
+
+.listing__blurb {
+  grid-area: blurb;
+  color: var(--soft);
+  font: 1rem var(--serif);
+}
+
+@media (max-width: 34rem) {
+  .listing a {
+    grid-template-columns: 6rem 1fr;
+    grid-template-areas:
+      'thumb channel'
+      'thumb name'
+      'blurb blurb';
+  }
+
+  .listing img {
+    width: 6rem;
+  }
+
+  .listing__channel {
+    justify-self: start;
+  }
+
+  .listing__time {
+    display: none;
+  }
+}
+
+/* --- In the app: the story over the TV, as a magazine page --- */
+
+.story-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.story-overlay[hidden] {
+  display: none;
+}
+
+.story-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 4, 6, 0.72);
+}
+
+.story-overlay__sheet {
+  position: relative;
+  width: min(48rem, 100%);
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: 1.5rem clamp(1rem, 4vw, 2.5rem) 2rem;
+  background: var(--paper, #f2ead8);
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+  transform: rotate(-0.6deg);
+  --paper: #f2ead8;
+  --ink: #1b1b1b;
+  --gold: #ffc53d;
+}
+
+.story-overlay__close {
+  position: sticky;
+  top: 0;
+  float: right;
+  z-index: 1;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -0.5rem -0.75rem 0 0.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font: 700 1.5rem/1 'Helvetica Neue', Arial, sans-serif;
+  cursor: pointer;
+}
+
+.story-overlay__page {
+  display: inline-block;
+  margin-top: 1.5rem;
+  color: var(--ink);
+  font: 700 1rem 'Helvetica Neue', Arial, sans-serif;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .story-overlay:not([hidden]) .story-overlay__sheet {
+    animation: story-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  }
+}
+
+@keyframes story-in {
+  from {
+    opacity: 0;
+    transform: translateY(2rem) rotate(-3deg);
+  }
+}
+
+/* Plain links to every project on the TV's page: hidden until focused, so
+   keyboard and screen-reader users (and crawlers) can reach the pages. */
+.work-links ul {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.work-links__skip {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 30;
+  padding: 0.5rem 1rem;
+  background: #f2ead8;
+  color: #1b1b1b;
+  font: 700 1rem 'Helvetica Neue', Arial, sans-serif;
+  transform: translateY(-200%);
+}
+
+.work-links__skip:focus {
+  transform: none;
+  outline: 3px solid #ffc53d;
+}

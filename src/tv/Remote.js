@@ -1,6 +1,7 @@
 import { gsap } from 'gsap';
 
-export const BUTTONS = ['power', 'ch+', 'ch-', 'vol+', 'vol-', 'mute', 'recall', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+// INFO isn't for the set: the app listens for it (the story behind the show).
+export const BUTTONS = ['power', 'info', 'ch+', 'ch-', 'vol+', 'vol-', 'mute', 'recall', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
 // Channel and volume repeat while held, like a real IR remote.
 const REPEATING = /^(ch|vol)[+-]$/;

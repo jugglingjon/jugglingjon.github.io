@@ -4,17 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Screen Lab · Retro Portfolio</title>
-    <meta name="description" content="Phase 1 screen lab: tuning the CRT shader pipeline for the Retro Portfolio." />
+    <!-- site:head -->
   </head>
   <body data-mode="seated" data-aim="remote">
     <canvas id="scene" aria-label="A CRT television showing portfolio projects"></canvas>
 
     <div class="hud">
-      <h1 class="hud__title">Retro Portfolio <span>Screen lab · Phase 5</span></h1>
+      <h1 class="hud__title">Retro Portfolio <span>Screen lab · Phase 6</span></h1>
       <ul class="hud__keys">
         <li><kbd>P</kbd> power <kbd>↑</kbd><kbd>↓</kbd> <kbd>PgUp</kbd><kbd>PgDn</kbd> channel</li>
         <li><kbd>1</kbd>–<kbd>9</kbd> <kbd>0</kbd> CH 1–10 <kbd>R</kbd> recall</li>
-        <li><kbd>+</kbd><kbd>−</kbd> volume <kbd>M</kbd> mute</li>
+        <li><kbd>+</kbd><kbd>−</kbd> volume <kbd>M</kbd> mute <kbd>I</kbd> the story behind the show</li>
         <li><kbd>D</kbd> degauss <kbd>V</kbd> seated / orbit / flat</li>
         <li><kbd>H</kbd> hide panels</li>
         <li class="hud__hint">Middle of the screen: aim your thumb, click to press · towards the edges: look around, click anything that glows · scroll to zoom · drop an image or video to tune it in</li>
@@ -26,7 +26,8 @@
     <div class="drop" aria-hidden="true"><p>Drop to tune in</p></div>
     <input type="file" id="file" accept="image/*,video/*" multiple hidden />
 
-    <noscript>The screen lab needs JavaScript and WebGL.</noscript>
+    <!-- site:links -->
+    <noscript><p class="noscript">The TV needs JavaScript and WebGL. <a href="work/">Browse the work as plain pages.</a></p></noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

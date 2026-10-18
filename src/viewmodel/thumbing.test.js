@@ -23,7 +23,7 @@ describe('pointer → button', () => {
   const at = (x, y) => nearestButton(pointerToField(x, y));
 
   it('maps screen corners to the buttons you see in those corners', () => {
-    expect(at(-1, 1)).toBe('1');
+    expect(at(-1, 1)).toBe('info');
     expect(at(1, 1)).toBe('power');
     expect(at(-1, -1)).toBe('vol-');
     expect(at(1, -1)).toBe('ch-');

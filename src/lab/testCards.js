@@ -1,7 +1,7 @@
 import { seededRandom } from '../world/textures.js';
 
-// Placeholder "projects" drawn on canvas, so the lab works with zero assets.
-// Swap for real screenshots and screen recordings in Phase 6.
+// Test cards, and the mock sites drawn on canvas that the placeholder projects'
+// images in public/work/ were exported from (swap those for your own work).
 
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
 const SERIF = 'Georgia, "Times New Roman", serif';
@@ -349,6 +349,7 @@ export function createScrollRecording() {
 
   return {
     canvas: frame,
+    page,
     update(time) {
       // Hold, scroll down, hold, scroll back up, like someone demoing a site.
       const phase = (time % 18) / 18;

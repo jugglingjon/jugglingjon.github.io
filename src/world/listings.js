@@ -159,7 +159,7 @@ export function drawWelcome(ctx) {
   // How to watch.
   const boxTop = y + 24;
   ctx.fillStyle = '#e6dcc4';
-  ctx.fillRect(40, boxTop, W - 80, 280);
+  ctx.fillRect(40, boxTop, W - 80, 326);
   ctx.fillStyle = RED;
   ctx.font = 'bold 26px Arial, sans-serif';
   ctx.fillText('HOW TO WATCH', 64, boxTop + 48);
@@ -170,13 +170,14 @@ export function drawWelcome(ctx) {
     'Towards the edges: look around the room',
     'Scroll: lean in for a closer look',
     'Glowing outline: click it and see what happens',
+    'INFO on the remote (or I): the story behind the show',
   ].forEach((tip, i) => {
     ctx.fillText('•', 64, boxTop + 96 + i * 46);
     ctx.fillText(fit(ctx, tip, W - 160), 92, boxTop + 96 + i * 46);
   });
 
   // An ad for the set you're watching.
-  const adTop = Math.min(boxTop + 312, H - 230);
+  const adTop = Math.min(boxTop + 358, H - 230);
   ctx.strokeStyle = INK;
   ctx.lineWidth = 4;
   ctx.strokeRect(40, adTop, W - 80, 190);

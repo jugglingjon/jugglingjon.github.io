@@ -77,6 +77,14 @@
       letter-spacing: 0.04em;
     }
 
+    &--info {
+      padding: 6px 10px;
+      background: linear-gradient(180deg, #d6aa3e, #9c7420);
+      color: #2b1d10;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+    }
+
     &--power {
       padding: 6px 10px;
       background: linear-gradient(180deg, #c8372b, #8e2018);

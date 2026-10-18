@@ -96,7 +96,8 @@ export class RemoteModel {
     this.blinkTime = 0;
 
     // Buttons, each with its own material so it can light up on its own.
-    const colors = { key: '#3a312b', rocker: '#564b43', power: '#b8301f' };
+    const colors = { key: '#3a312b', rocker: '#564b43', power: '#b8301f', info: '#c99a2e' };
+    const ink = { power: '#ffe6dc', info: '#2b1d10' };
     this.buttons = new Map();
     for (const def of REMOTE_BUTTONS) {
       const material = new THREE.MeshStandardMaterial({ color: colors[def.kind], roughness: 0.75, emissive: HIGHLIGHT, emissiveIntensity: 0 });
@@ -104,7 +105,7 @@ export class RemoteModel {
       const restY = FACE_Y + 0.0008 + BUTTON_HEIGHT / 2;
       mesh.position.set(def.x, restY, def.z);
       const small = def.label.length > 2;
-      const label = printed(def.label, def.w * 0.9, def.d * 0.8, { color: def.kind === 'power' ? '#ffe6dc' : '#efe8da', weight: small ? 800 : 900 });
+      const label = printed(def.label, def.w * 0.9, def.d * 0.8, { color: ink[def.kind] ?? '#efe8da', weight: small ? 800 : 900 });
       label.position.y = BUTTON_HEIGHT / 2 + 0.0002;
       mesh.add(label);
       this.group.add(mesh);
