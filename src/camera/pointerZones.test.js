@@ -20,6 +20,15 @@ describe('pointer zones', () => {
     expect(locatePointer(1074, 500, W, H, 0.7, 0.5, 0.14).inside).toBe(false);
   });
 
+  it('raises the bottom edge only', () => {
+    expect(remoteArea(W, H, 0.7, 0.5, 0.14, 0.2)).toEqual({ left: 625, top: 150, width: 448, height: 560 });
+    const at = (y) => locatePointer(800, y, W, H, 0.7, 0.5, 0.14, 0.2);
+    expect(at(150)).toMatchObject({ inside: true, v: 1 });
+    expect(at(710)).toMatchObject({ inside: true, v: -1 });
+    expect(at(711)).toMatchObject({ inside: false, lookX: 0 });
+    expect(at(1000).lookY).toBe(-1); // looking down from the new edge to the screen's
+  });
+
   it('keeps a stretched box on a narrow screen', () => {
     const area = remoteArea(300, 900, 0.7, 0.5, 0.14);
     expect(area.left).toBeGreaterThanOrEqual(0);
