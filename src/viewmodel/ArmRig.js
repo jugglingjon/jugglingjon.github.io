@@ -12,7 +12,8 @@ export const ARM_DEFAULTS = {
   roll: -0.3,
   hand: 'webxr', // which hand model, once it has loaded ('procedural' is always there)
   follow: 1, // how much the arm drifts and swings towards the pointer
-  area: 0.7, // the remote area: a centred square this share of the viewport height
+  area: 0.7, // the remote area: a centred box this share of the viewport height…
+  areaWidth: 0.5, // …and this share of its own height wide (1 for a square)
   size: 1,
   snap: 0.7, // how strongly the thumb settles onto the targeted button
   highlight: true,

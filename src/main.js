@@ -183,7 +183,7 @@ function watch(row) {
   closeMagazine();
 }
 
-// In the remote area (a centred square), the pointer steers your thumb across
+// In the remote area (a centred box), the pointer steers your thumb across
 // the remote and nudges your arm about, and the view stays still. Outside it,
 // the arm drops out of view and you look around a little instead, pointing at
 // things in the room; the cursor shows there, so you can see where you're
@@ -207,7 +207,7 @@ function aim(e) {
     document.body.dataset.aim = 'look';
     return { inside: false, reading: true };
   }
-  const where = locatePointer(e.clientX, e.clientY, window.innerWidth, window.innerHeight, rig.settings.area);
+  const where = locatePointer(e.clientX, e.clientY, window.innerWidth, window.innerHeight, rig.settings.area, rig.settings.areaWidth);
   if (where.inside) rig.setPointer(where.u, where.v);
   rig.setActive(where.inside);
   seated.setLook(where.lookX, where.lookY);
@@ -576,7 +576,7 @@ renderer.setAnimationLoop(() => {
     post.render(room.scene, camera, clock);
     post.track(frameTime);
     if (seatedView && state.overlay) {
-      overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight, remoteArea(window.innerWidth, window.innerHeight, rig.settings.area));
+      overlay.update(seated.screenRect(tvModel.screen), window.innerWidth, window.innerHeight, remoteArea(window.innerWidth, window.innerHeight, rig.settings.area, rig.settings.areaWidth));
     }
     else overlay.hide();
   }

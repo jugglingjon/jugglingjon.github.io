@@ -1,7 +1,7 @@
 import { toPixels } from '../camera/framing.js';
 
 // Debug overlay: where the TV screen sits on the page, and the remote area,
-// the centred square where the pointer works the remote (outside it, you look
+// the centred box where the pointer works the remote (outside it, you look
 // around).
 export function createScreenRectOverlay() {
   const el = document.createElement('div');
@@ -26,7 +26,7 @@ export function createScreenRectOverlay() {
       const w = px.right - px.left;
       const h = px.bottom - px.top;
       place(screenEl, px.left, px.top, w, h);
-      place(zoneEl, area.left, area.top, area.side, area.side);
+      place(zoneEl, area.left, area.top, area.width, area.height);
     },
     hide() {
       el.hidden = true;

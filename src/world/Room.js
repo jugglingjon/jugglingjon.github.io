@@ -30,7 +30,7 @@ export function lampLevel(on, t) {
 // How far the can model turns on the table, so its logo faces the couch, and
 // where its tab points: the ring to your right and a little away (where your
 // right thumb gets at it), so the mouth faces you and your left.
-const CAN_TURN = 0.4;
+const CAN_TURN = 0.3;
 const TAB_TURN = 0.5;
 
 export const ROOM_DEFAULTS = {
@@ -213,7 +213,7 @@ export class Room {
       scene.add(object);
     };
     this.can = createBeerCan();
-    onTable(this.can.group, -0.48, -0.1); // at the left end, clear of the remote area, so you can point at it
+    onTable(this.can.group, -0.33, -0.13); // left of the remote area, so you can point at it
     this.magazines = createMagazines();
     onTable(this.magazines.group, -0.03, -0.04, 0.3);
 

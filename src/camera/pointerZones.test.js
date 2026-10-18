@@ -7,11 +7,24 @@ describe('pointer zones', () => {
   const at = (x, y) => locatePointer(x, y, W, H, 0.7);
 
   it('puts a centred square, 70% of the height, in the middle', () => {
-    expect(remoteArea(W, H, 0.7)).toEqual({ left: 450, top: 150, side: 700 });
+    expect(remoteArea(W, H, 0.7)).toEqual({ left: 450, top: 150, width: 700, height: 700 });
   });
 
-  it('caps the square at the width on a tall screen', () => {
-    expect(remoteArea(400, 900, 0.7).side).toBe(400);
+  it('narrows it to a box, as tall as before', () => {
+    expect(remoteArea(W, H, 0.7, 0.5)).toEqual({ left: 625, top: 150, width: 350, height: 700 });
+  });
+
+  it('caps it at the width on a tall screen, keeping its shape', () => {
+    expect(remoteArea(400, 900, 0.7)).toMatchObject({ width: 400, height: 400 });
+    expect(remoteArea(300, 900, 0.7, 0.5)).toMatchObject({ width: 300, height: 600 });
+  });
+
+  it('maps the narrow box corner to corner too', () => {
+    const at = (x, y) => locatePointer(x, y, W, H, 0.7, 0.5);
+    expect(at(625, 150)).toMatchObject({ inside: true, u: -1, v: 1 });
+    expect(at(975, 850)).toMatchObject({ inside: true, u: 1, v: -1 });
+    expect(at(600, 500)).toMatchObject({ inside: false, lookY: 0 });
+    expect(at(600, 500).lookX).toBeCloseTo(-0.04, 2);
   });
 
   it('works the remote inside the square, mapped corner to corner', () => {
