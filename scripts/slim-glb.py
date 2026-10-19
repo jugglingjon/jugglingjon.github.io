@@ -3,16 +3,23 @@
 vertex attributes it doesn't need, narrows 32-bit indices to 16-bit where they
 fit, and repacks the buffer. Needs Python 3 and Pillow (pip install pillow).
 
-  python3 scripts/slim-glb.py in.glb out.glb --image N:SIZE:FORMAT[:QUALITY] ... [--drop ATTRIBUTE]
+  python3 scripts/slim-glb.py in.glb out.glb --image N:SIZE:FORMAT[:QUALITY] ... [--drop ATTRIBUTE] [--emissive M:FILE]
 
 --image   texture N (its index in the file's images) to SIZE x SIZE pixels, as
           jpeg (with QUALITY, default 88) or png. Textures not listed are kept.
 --drop    a vertex attribute to leave out, e.g. TANGENT. Check the result: three
           works tangents out itself without them, but not always the same way.
+--emissive  an image (PNG or JPEG, laid out like the base colour texture) to
+          add as material M's emissive map: what glows, black elsewhere.
 
 The soda can (public/models/can/soda-can.glb, 460 KB -> 96 KB):
   python3 scripts/slim-glb.py soda_can.glb public/models/can/soda-can.glb \
     --image 0:512:jpeg:85 --image 1:256:png --image 2:512:jpeg:92
+
+The clock radio (public/models/radio/clock-radio.glb, 318 KB -> 52 KB), its
+clock digits and tuning dial lit by a hand-painted glow map:
+  python3 scripts/slim-glb.py digital_radio_clock.glb public/models/radio/clock-radio.glb \
+    --image 0:512:jpeg:88 --emissive 0:clock-glow.png
 """
 import argparse, io, json, struct
 from PIL import Image
@@ -21,6 +28,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument('src'); ap.add_argument('dst')
 ap.add_argument('--image', action='append', default=[])
 ap.add_argument('--drop', action='append', default=[])
+ap.add_argument('--emissive', action='append', default=[])
 args = ap.parse_args()
 
 data = open(args.src, 'rb').read()
@@ -53,6 +61,22 @@ for spec in args.image:
     print(f'image {i}: {len(view_bytes[img["bufferView"]])} -> {len(out.getvalue())} bytes ({size}px {fmt})')
     view_bytes[img['bufferView']] = out.getvalue()
     views[img['bufferView']].pop('name', None)
+
+# Emissive maps: a new image and texture (sampled like the base colour), glowing at full strength.
+for spec in args.emissive:
+    m, path = spec.split(':', 1)
+    mat = gltf['materials'][int(m)]
+    views.append({'buffer': 0})
+    view_bytes.append(open(path, 'rb').read())
+    gltf['images'].append({'bufferView': len(views) - 1, 'mimeType': 'image/png' if path.lower().endswith('.png') else 'image/jpeg'})
+    texture = {'source': len(gltf['images']) - 1}
+    base = mat.get('pbrMetallicRoughness', {}).get('baseColorTexture')
+    if base and 'sampler' in gltf['textures'][base['index']]:
+        texture['sampler'] = gltf['textures'][base['index']]['sampler']
+    gltf['textures'].append(texture)
+    mat['emissiveTexture'] = {'index': len(gltf['textures']) - 1}
+    mat['emissiveFactor'] = [1, 1, 1]
+    print(f'material {m}: emissive map {path} ({len(view_bytes[-1])} bytes)')
 
 # Drop vertex attributes, and narrow index buffers.
 for mesh in gltf['meshes']:

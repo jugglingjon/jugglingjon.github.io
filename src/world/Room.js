@@ -10,7 +10,7 @@ import {
   place,
 } from './furniture.js';
 import { createBeerCan, createMagazines, createPlant, createPrint, replaceCan, replaceLeaves } from './props.js';
-import { createBookshelf } from './bookshelf.js';
+import { createBookshelf, placeRadio } from './bookshelf.js';
 import { Squishy } from './Squishy.js';
 import { Twirl } from './Twirl.js';
 import { createCarpetTexture, createCeilingTexture, createPanelingTexture, createRugTexture, createWallpaperTexture } from './textures.js';
@@ -314,6 +314,11 @@ export class Room {
     // Facing you, +x is your right: turn the tab's ring that way, then on round.
     const facing = Math.atan2(EYE.x - at.x, EYE.z - at.z);
     replaceCan(this.can, model, CAN_TURN, facing + TAB_TURN);
+  }
+
+  // The clock radio on the bookshelf, from a model (main.js loads it).
+  setRadioModel(model) {
+    placeRadio(this.bookshelf, model);
   }
 
   // Flick the table lamp's switch; returns whether it's now on.

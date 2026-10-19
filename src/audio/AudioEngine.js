@@ -4,9 +4,11 @@ const FLYBACK_HZ = 15734; // NTSC line rate: the CRT's high-pitched whine
 
 export const SOUND_DEFAULTS = { master: 0.8, music: 1, static: 1, whine: 0.3, roomTone: 0.5 };
 const MUSIC_GAIN = 1.5; // music level at settings.music = 1
+const RADIO_GAIN = 0.28; // the clock radio's station is mastered loud: about as loud as the TV at its starting volume
+const RADIO_PAN = 0.4; // the bookshelf is off to your right
 
 // Everything you hear. The set's own sounds are synthesized with Web Audio;
-// only channel music and video soundtracks come from files.
+// only channel music, video soundtracks and the clock radio come from files.
 //
 //   TV speaker: channel music, soundtracks and static, through a small boxy
 //   speaker and the room, scaled by the set's volume. Static tracks the snow
@@ -14,6 +16,7 @@ const MUSIC_GAIN = 1.5; // music level at settings.music = 1
 //   Hardware: remote clicks, the tuner relay, power thunk, degauss hum and
 //   flyback whine come from the plastic and the chassis, so the volume knob
 //   doesn't touch them.
+//   Clock radio: its own speaker on the bookshelf (see toggleRadio).
 export class AudioEngine {
   constructor(ctx, settings = { ...SOUND_DEFAULTS }) {
     this.ctx = ctx;
@@ -171,6 +174,39 @@ export class AudioEngine {
     node.connect(this.musicBus);
     node.start(0, (this.ctx.currentTime + this.musicOffsets.get(source)) % buffer.duration);
     this.music = node;
+  }
+
+  // The clock radio on the bookshelf: click it on, click it off again (it
+  // picks up where it left off, or from the top once the song has ended). The
+  // station is an MP3, streamed rather than decoded up front, through a
+  // little speaker off to your right. Returns whether it's now playing.
+  toggleRadio(url) {
+    const t = this.ctx.currentTime;
+    this.noiseBurst(t, { duration: 0.018, level: 0.3, type: 'bandpass', freq: 3400, q: 1.5 }); // its switch
+    this.tone(t, { freq: 420, to: 260, duration: 0.04, level: 0.05 });
+    if (!this.radio) {
+      this.radio = new Audio(url);
+      if (this.ctx.createMediaElementSource) {
+        const out = this.ctx.createStereoPanner();
+        out.pan.value = RADIO_PAN;
+        chain(
+          this.ctx.createMediaElementSource(this.radio),
+          biquad(this.ctx, 'highpass', 150),
+          biquad(this.ctx, 'lowpass', 6500),
+          biquad(this.ctx, 'peaking', 1600, 1, 3),
+          gain(this.ctx, RADIO_GAIN),
+          out,
+        );
+        out.connect(this.master);
+        out.connect(this.room);
+      } else this.radio.volume = RADIO_GAIN;
+    }
+    if (!this.radio.paused) {
+      this.radio.pause();
+      return false;
+    }
+    this.radio.play().catch((error) => console.warn(`The radio couldn't play ${url}`, error));
+    return true;
   }
 
   // A remote button: plastic tick over a soft thock.

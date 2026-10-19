@@ -9,5 +9,6 @@ export const site = {
   credits: [
     'Hand models: WebXR Input Profiles generic hands, MIT, © 2019 Amazon.',
     'Soda can: “Soda Can” by junhyde, CC BY 4.0, textures downsized.',
+    'Clock radio: “Digital Radio Clock” by NoMoreFeelings, CC BY 4.0, texture downsized, display glow added.',
   ],
 };

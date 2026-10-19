@@ -168,6 +168,10 @@ interactions.add(room.bookshelf.panda, {
   },
 });
 interactions.add(room.can.group, { name: 'Soda can', onClick: haveADrink, enabled: () => drink.ready && !drink.active });
+interactions.add(room.bookshelf.radio, {
+  name: 'Clock radio',
+  onClick: () => audio?.toggleRadio(`${import.meta.env.BASE_URL}media/radio/station.mp3`),
+});
 
 // What can block the pointer: everything but your arms. Models swap in as
 // they load, so this runs again each time.
@@ -467,6 +471,13 @@ models
     refreshOccluders();
   })
   .catch((err) => console.warn("Couldn't load the can model; keeping the built-in can (and no drink).", err));
+models
+  .loadAsync(`${import.meta.env.BASE_URL}models/radio/clock-radio.glb`)
+  .then((gltf) => {
+    room.setRadioModel(gltf.scene);
+    refreshOccluders();
+  })
+  .catch((err) => console.warn("Couldn't load the clock radio; the shelf stays empty.", err));
 
 // Your left hand, for the drink.
 CanHand.load(`${import.meta.env.BASE_URL}models/hand/left.glb`)

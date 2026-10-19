@@ -1,14 +1,20 @@
 import * as THREE from 'three';
 import { place } from './furniture.js';
 import { LavaLamp } from './LavaLamp.js';
+import { fitModel } from './props.js';
 import { createWoodTexture, seededRandom } from './textures.js';
 
 // A small three-shelf bookcase for the corner right of the TV: a lava lamp
-// glowing on top, a stuffed panda, and a few books. Built at the origin,
-// sitting on y = 0 with its back to −z.
+// glowing on top, a stuffed panda, a few books, and a clock radio (its model
+// goes in `radio` once it's loaded). Built at the origin, sitting on y = 0
+// with its back to −z.
 
 export const BOOKSHELF = { width: 0.62, height: 0.96, depth: 0.28, board: 0.022 };
 const SHELVES = [0.06, 0.36, 0.66]; // top faces of the shelf boards
+
+// The clock radio: 7 cm tall, its clock turned a little towards the couch
+// (to your left), from the model's own front (+x, once its node is applied).
+export const RADIO = { height: 0.07, turn: -Math.PI / 2 - 0.2 };
 
 const BOOK_COLOURS = ['#b8322a', '#e0a43a', '#2f6f73', '#6b8e3a', '#3b4a7a', '#b45a2a', '#7a2f4f', '#d8c8a0'];
 const PAGES = new THREE.MeshStandardMaterial({ color: '#efe6cf', roughness: 0.9 });
@@ -24,7 +30,8 @@ function book(thickness, height, depth, colour) {
   return group;
 }
 
-// A row of books standing on a shelf from x0, the last one leaning on its neighbour.
+// A row of books standing on a shelf from x0, the last one leaning on its
+// neighbour. Returns where the row ends.
 function bookRow(parent, rand, { x0, y, count, lean = false, tall = 0.24 }) {
   let x = x0;
   for (let i = 0; i < count; i++) {
@@ -37,6 +44,7 @@ function bookRow(parent, rand, { x0, y, count, lean = false, tall = 0.24 }) {
     parent.add(b);
     x += thickness + 0.002;
   }
+  return x + (lean ? 0.08 : 0); // a leaning book reaches further
 }
 
 // A book lying flat, centred at its own origin on y = 0: spine to +z, page
@@ -120,7 +128,11 @@ export function createBookshelf() {
 
   // Bottom shelf: a stack of big atlases. Middle: a row of novels, the last one leaning.
   bookStack(group, rand, { x: 0, y: SHELVES[0], count: 3, width: 0.26 });
-  bookRow(group, rand, { x0: -inside + 0.01, y: SHELVES[1], count: 7, lean: true });
+  const novelsEnd = bookRow(group, rand, { x0: -inside + 0.01, y: SHELVES[1], count: 7, lean: true });
+  // The clock radio, right of the novels, in the middle of the space left.
+  const radio = new THREE.Group();
+  radio.position.set((novelsEnd + inside) / 2, SHELVES[1], 0.01);
+  group.add(radio);
   // Upper shelf: the panda, with a few books beside it.
   const bear = panda();
   bear.position.set(-0.12, SHELVES[2], 0.03);
@@ -134,5 +146,16 @@ export function createBookshelf() {
   group.add(lava.group);
   bookStack(group, rand, { x: 0.14, y: height, count: 2, width: 0.16 });
 
-  return { group, lava, panda: bear };
+  return { group, lava, panda: bear, radio };
+}
+
+// Put the clock radio model (main.js loads it) in its place on the shelf.
+export function placeRadio(shelf, model) {
+  fitModel(model, RADIO.height);
+  model.traverse((o) => {
+    if (o.isMesh) o.material.metalness = 0; // the model leaves it at glTF's default, fully metallic
+  });
+  shelf.radio.rotation.y = RADIO.turn;
+  shelf.radio.clear();
+  shelf.radio.add(model);
 }
