@@ -65,7 +65,8 @@ RectAreaLightUniformsLib.init();
 const params = cloneDefaults();
 loadSaved(params);
 const fx = createFx();
-const state = { mode: 'seated', overlay: false, channel: FIRST_CHANNEL, preset: '80s living room', panel: true, timeScale: 1 };
+// hud and remotePad: the lab's info/help panel and its 2D remote, both off until switched on in the lab.
+const state = { mode: 'seated', overlay: false, channel: FIRST_CHANNEL, preset: '80s living room', panel: true, timeScale: 1, hud: false, remotePad: false };
 
 // Screen pipeline: Stage A (signal) → Stage B (tube + glass).
 const osd = new OSD();
@@ -378,7 +379,16 @@ function toggleStory() {
   });
 }
 
-document.body.append(createRemotePad(remote));
+const hud = document.querySelector('.hud');
+const remotePad = createRemotePad(remote);
+document.body.append(remotePad);
+
+// Show or hide the info/help panel and the 2D remote (Screen Lab → TV).
+function showLabExtras() {
+  hud.hidden = !state.hud;
+  remotePad.hidden = !state.remotePad;
+}
+showLabExtras();
 
 const MODES = ['seated', 'orbit', 'flat'];
 
@@ -438,6 +448,7 @@ const actions = {
   channels: () => tv.lineup,
   degauss: () => degauss(fx),
   loadFile: () => fileInput.click(),
+  showLabExtras,
   setTimeScale(value) {
     // Browsers clamp playbackRate; 1/16 is the lowest Chrome allows.
     tv.lineup.forEach(({ source }) => source.video && (source.video.playbackRate = Math.max(0.0625, value)));

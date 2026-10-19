@@ -18,6 +18,8 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   set.add(state, 'timeScale', 0.02, 1, 0.01).name('Speed (slow-mo)').onChange(actions.setTimeScale);
   set.add(glow, 'strength', 0, 1000, 5).name('Room glow');
   set.add(renderer, 'toneMappingExposure', 0.2, 5, 0.05).name('Room exposure');
+  set.add(state, 'hud').name('Info & help panel').onChange(actions.showLabExtras);
+  set.add(state, 'remotePad').name('2D remote').onChange(actions.showLabExtras);
 
   const source = gui.addFolder('Source');
   const channelOptions = () => Object.fromEntries(actions.channels().map((c) => [`${c.number} · ${c.name}`, c.number]));

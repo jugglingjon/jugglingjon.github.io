@@ -63,6 +63,10 @@ body[data-mode='orbit'] #scene {
     opacity: 0;
   }
 
+  &[hidden] {
+    display: none;
+  }
+
   &__title {
     margin: 0 0 8px;
     font-size: 13px;

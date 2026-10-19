@@ -23,6 +23,10 @@
     pointer-events: none;
   }
 
+  &[hidden] {
+    display: none;
+  }
+
   &__head {
     display: flex;
     align-items: center;
