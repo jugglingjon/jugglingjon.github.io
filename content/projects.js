@@ -205,7 +205,7 @@ The rest is plain HTML, CSS and a little JavaScript: the FAQ is an accordion, th
     blurb: 'Health research agency · web',
     title: 'ARPA-H: a website for health breakthroughs',
     summary: 'The public website of the Advanced Research Projects Agency for Health: its mission, more than 40 research programs, funding, news and careers.',
-    role: 'Front-end development',
+    role: 'Lead Front-end development',
     client: 'Advanced Research Projects Agency for Health (ARPA-H)',
     tech: ['Drupal', 'U.S. Web Design System', 'JavaScript', 'GSAP', 'Swiper'],
     links: { live: 'https://arpa-h.gov/' },
@@ -214,9 +214,19 @@ The rest is plain HTML, CSS and a little JavaScript: the FAQ is an accordion, th
       slides: ['tv-home.webp', 'tv-mission.webp', 'tv-portfolio.webp', 'tv-programs.webp', 'tv-about.webp', 'tv-careers.webp', 'tv-news.webp', 'tv-spectra.webp'],
     },
     music: '/media/music/arpa-h.mp3',
-    hero: 'hero.webp',
+    hero: 'share.jpg',
     share: 'share.jpg',
     gallery: [
+      {
+        src: 'arpa-map.png',
+        alt: 'Interactive infographic with animated map',
+        caption: 'Interactive infographic with animated map',
+      },
+      {
+        src: 'arpa-swh.png',
+        alt: 'Animated carousel element',
+        caption: 'Animated carousel element',
+      },
       {
         src: 'mission.webp',
         alt: 'The mission statement in large white type over a gradient from navy to pink and violet',
