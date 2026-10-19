@@ -1,4 +1,5 @@
 import { airTime } from '../world/listings.js';
+import { slotOf } from './lineup.js';
 
 // The story behind a show: one article, used both in the app (the TV Guide
 // overlay that INFO brings up) and on the project's own page. `url` resolves
@@ -27,9 +28,8 @@ function sources(list, url) {
     .join('');
 }
 
-// `channel` is the show's channel number, `index` its place in the lineup
-// (for its time slot).
-export function renderCaseStudy(project, { url = (path) => path, channel = null, index = 0, headingId = `story-${project.slug}` } = {}) {
+// `channel` is the show's channel number (which sets its time slot too).
+export function renderCaseStudy(project, { url = (path) => path, channel = null, headingId = `story-${project.slug}` } = {}) {
   const p = project;
   const facts = [
     ['Role', p.role],
@@ -40,8 +40,8 @@ export function renderCaseStudy(project, { url = (path) => path, channel = null,
   const alt = (src) => p.alt?.[src] ?? p.gallery?.find((g) => g.src === src)?.alt ?? '';
   return `<article class="story" aria-labelledby="${headingId}">
   <header class="story__masthead">
-    ${channel ? `<span class="story__channel">CH ${String(channel).padStart(2, '0')}</span>` : ''}
-    <span class="story__time">${airTime(index)}</span>
+    ${channel ? `<span class="story__channel">CH ${String(channel).padStart(2, '0')}</span>
+    <span class="story__time">${airTime(slotOf(channel))}</span>` : ''}
     <span class="story__kicker">Tonight’s feature</span>
   </header>
   ${p.placeholder ? '<p class="story__placeholder">Placeholder content: replace it in content/projects.js</p>' : ''}

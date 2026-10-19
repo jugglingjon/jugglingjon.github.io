@@ -31,6 +31,7 @@ import { PostFX } from './render/PostFX.js';
 import { createTestCards, sourceFromFile } from './lab/sources.js';
 import { projects } from '../content/projects.js';
 import { projectChannels } from './content/channels.js';
+import { channelNumbers, FIRST_CHANNEL } from './content/lineup.js';
 import { renderCaseStudy } from './content/caseStudy.js';
 import { mediaUrl } from './content/media.js';
 import { StoryOverlay } from './content/StoryOverlay.js';
@@ -45,7 +46,6 @@ import { loadSaved } from './lab/storage.js';
 // the remote in your outstretched hand (Phase 4), or from an orbit camera, or
 // as a flat screen.
 
-const FIRST_CHANNEL = 1; // so number keys 1–9 land on the first nine channels
 
 // No WebGL 2, no TV: the plain pages have all the work.
 if (!document.createElement('canvas').getContext('webgl2')) {
@@ -116,7 +116,8 @@ document.body.append(overlay.el);
 // numbers without a source tune to dead air.
 const channelSettings = { reducedMotion };
 const shows = [...projectChannels(projects, { base: import.meta.env.BASE_URL, settings: channelSettings }), ...createTestCards()];
-const lineup = shows.map((source, i) => ({ number: FIRST_CHANNEL + i, name: source.name, source }));
+const numbers = channelNumbers(shows.map((source) => source.project?.channel));
+const lineup = shows.map((source, i) => ({ number: numbers[i], name: source.name, source }));
 const tv = new Television({ fx, osd, lineup, reducedMotion });
 const remote = new Remote(tv);
 
@@ -370,10 +371,9 @@ function toggleStory() {
   seated.setLook(0, 0);
   interactions.clearPointer();
   document.body.classList.add('is-reading');
-  const index = projects.indexOf(project);
   story.open({
     slug: project.slug,
-    html: renderCaseStudy(project, { url: (path) => mediaUrl(project, path, import.meta.env.BASE_URL), channel: tv.number, index }),
+    html: renderCaseStudy(project, { url: (path) => mediaUrl(project, path, import.meta.env.BASE_URL), channel: tv.number }),
     page: `${import.meta.env.BASE_URL}work/${project.slug}/`,
   });
 }

@@ -65,6 +65,18 @@ describe('the static pages', () => {
     expect(html).toContain('<title>two &lt;b&gt;title&lt;/b&gt; · Test Site</title>');
   });
 
+  it('number and order the work by channel, with a project that asks for one on it', () => {
+    const lineup = [project('one'), project('eight', { channel: 8 }), project('two')];
+    const page = renderProjectPage(lineup[1], { site, projects: lineup });
+    expect(page).toContain('CH 08');
+    expect(page).toContain('10:30'); // its time slot follows its number
+    expect(page).toContain('href="../two/">← TWO');
+    expect(renderProjectPage(lineup[2], { site, projects: lineup })).toContain('CH 02');
+    const index = renderWorkIndex(lineup, { site });
+    expect(index.indexOf('href="two/"')).toBeLessThan(index.indexOf('href="eight/"'));
+    expect(index).toContain('CH 08');
+  });
+
   it('list every project on the index, with thumbnails from their folders', () => {
     const html = renderWorkIndex(projects, { site });
     for (const p of projects) expect(html).toContain(`href="${p.slug}/"`);

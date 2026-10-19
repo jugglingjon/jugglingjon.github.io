@@ -36,6 +36,12 @@ describe.each(projects.map((p) => [p.slug, p]))('%s', (slug, project) => {
     expect(project.title).toBeTruthy();
   });
 
+  it('asks for a channel of its own, if it asks for one', () => {
+    if (project.channel == null) return;
+    expect(Number.isInteger(project.channel) && project.channel >= 1 && project.channel <= 99, 'channel: a whole number 1–99').toBe(true);
+    expect(projects.filter((p) => p.channel === project.channel)).toHaveLength(1);
+  });
+
   it('says what plays on its channel', () => {
     const needs = TYPES[project.tv?.type];
     expect(needs, `tv.type must be one of ${Object.keys(TYPES).join(', ')}`).toBeTruthy();

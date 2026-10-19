@@ -1,3 +1,5 @@
+import { slotOf } from '../content/lineup.js';
+
 // The listings magazine's inside spread, drawn on canvases at the magazine's
 // proportions (13.5 × 19 cm). The left page welcomes you to the week; the
 // right page lists every channel in the lineup, the one on now is marked, and
@@ -99,7 +101,7 @@ export function drawListings(ctx, { lineup, current, hover = -1 }) {
     ctx.textAlign = 'left';
     ctx.fillStyle = SOFT;
     ctx.font = 'bold 24px Arial, sans-serif';
-    ctx.fillText(airTime(i), 126, mid - 10);
+    ctx.fillText(airTime(slotOf(channel.number)), 126, mid - 10);
 
     const live = channel.number === current;
     const textX = 230;

@@ -1,9 +1,12 @@
-// Your work, one channel each, in channel order (keys 1–9 tune straight to
-// the first nine). Media sits in public/work/<slug>/ and is named here by file
-// name; a path starting with / is from public/ instead, and a full URL is used
-// as it is. See "Adding a project" in the README for sizes and formats.
+// Your work, one channel each, in channel order unless a project asks for a
+// number (keys 1–9 tune straight to the first nine). Media sits in
+// public/work/<slug>/ and is named here by file name; a path starting with /
+// is from public/ instead, and a full URL is used as it is. See "Adding a
+// project" in the README for sizes and formats.
 //
 //   slug         the project's URL: /work/<slug>/
+//   channel      the channel number it airs on, 1–99 (optional; without one it
+//                takes the lowest number still free, in the order listed here)
 //   name         channel name: ≤ 18 characters, A–Z 0–9 space - . , : · / & ! ? +
 //   blurb        the line under it in the listings: ≤ 32 characters
 //   title        full title, for the case study and the page
@@ -133,6 +136,67 @@ Charts are drawn with D3 and share one small set of colours, so a colour always 
     video: { src: ['/media/test/gradient-reel.mp4', '/media/test/gradient-reel.webm'], poster: 'poster.jpg' },
     alt: { 'poster.jpg': 'Soft bands of colour drifting across the frame' },
     story: `Placeholder story. A backdrop reel for a stage: slow gradients written as a shader, rendered out and encoded small enough to loop from a phone.`,
+    placeholder: true,
+  },
+  {
+    slug: 'reacharound',
+    channel: 8,
+    name: 'The Reacharound',
+    blurb: 'Yoga gadget infomercial · web',
+    title: 'The Reacharound: an infomercial you can spin',
+    summary: 'A late-night infomercial as a website, for a 31 cm plastic yoga tool: big promises, a countdown and a 3D model you can spin in five colors.',
+    role: 'Concept, design and front-end development',
+    year: 2026,
+    tech: ['HTML', 'CSS', 'JavaScript', 'Three.js', 'Web Components'],
+    links: { live: 'https://jugglingjon.github.io/reacharound/' },
+    tv: { type: 'slideshow', slides: ['tv-hero.webp', 'tv-colours.webp', 'tv-order.webp', 'tv-reviews.webp', 'tv-offer.webp'] },
+    music: '/media/music/reacharound.mp3',
+    hero: 'hero.webp',
+    share: 'share.jpg',
+    gallery: [
+      {
+        src: 'colours.webp',
+        alt: 'The hero with the tool in Volt Lime: REACH AROUND. GRAB ON. BIND LIKE A PRO. over a blue sunburst, with five color swatches and a $29.99 price',
+        caption: 'Pick your power color: the 3D model, the swatches and the order form change together',
+      },
+      {
+        src: 'order.webp',
+        alt: 'The order pop-up over the dimmed page: color swatches, two bundles of two, a $59.98 total and a Place order button',
+        caption: 'The order form, two bundles in',
+      },
+      {
+        src: 'reviews.webp',
+        alt: 'REAL PEOPLE. REAL BINDS. above three testimonial cards in blue, pink and cream',
+        caption: 'Testimonials: dramatized but emotionally accurate',
+      },
+      {
+        src: 'offer.webp',
+        alt: 'BUT WAIT, THERE’S MORE! over a blue sunburst, with a countdown and a 2-for-1 bundle card',
+        caption: 'The countdown starts again the moment it runs out',
+      },
+      {
+        src: 'faq.webp',
+        alt: 'QUESTIONS YOU’RE TOO SHY TO ASK, an accordion with “Is the name intentional?” open: “Yes. Next question.”',
+        caption: 'The FAQ',
+      },
+      { src: 'phone.webp', alt: 'The top of the page on a phone: the ticker, the header and the headline', caption: 'On a phone…' },
+      { src: 'phone-tool.webp', alt: 'The tool in Flamingo Pink on a phone, under the price, with a Drag to spin it! hint', caption: '…the tool, in Flamingo Pink' },
+    ],
+    alt: {
+      'tv-hero.webp': 'The Reacharound’s hero: REACH AROUND. GRAB ON. BIND LIKE A PRO. beside an orange plastic tool over a blue sunburst',
+      'tv-colours.webp': 'The same hero with the tool in Volt Lime',
+      'tv-order.webp': 'The order pop-up over the dimmed hero, with Sky Cyan picked and a $29.99 total',
+      'tv-reviews.webp': 'REAL PEOPLE. REAL BINDS. above three testimonial cards',
+      'tv-offer.webp': 'BUT WAIT, THERE’S MORE! with a countdown and a 2-for-1 bundle card',
+      'hero.webp': 'The Reacharound’s hero: REACH AROUND. GRAB ON. BIND LIKE A PRO. beside an orange plastic tool over a blue sunburst',
+    },
+    story: `The Reacharound is a 31-centimeter plastic stick for yoga binds, and its website sells it the only way it deserves: as a late-night infomercial. A ticker of promises runs across the top, a starburst shouts NOW WITH MORE REACH, the sunburst behind the hero never stops turning, and every section ends in a button that costs $29.99.
+
+The star of the page is the tool itself, a 3D model you can grab and spin. It's a small web component, <reach-viewer>, that loads the STL model and three.js on demand, turns slowly on its own with a gentle bob, carries a drag on with a little momentum, and fits its camera so the whole tool stays in frame at any screen size. It stops drawing when it scrolls out of view, and holds still for anyone who prefers reduced motion.
+
+Pick a power color and the model, the swatches and the order form change together. The order pop-up sells bundles of two, the countdown in the offer starts again the moment it runs out, and the fine print at the bottom is where most of the jokes live.
+
+The rest is plain HTML, CSS and a little JavaScript: the FAQ is an accordion, the swatches are a radio group you can work from the keyboard, and the sunbursts are CSS conic gradients, turned by an animated custom property.`,
     placeholder: true,
   },
 ];

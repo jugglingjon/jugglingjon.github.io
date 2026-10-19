@@ -1,6 +1,7 @@
 import { escapeHtml, renderCaseStudy } from './caseStudy.js';
 import { pageMediaUrl } from './media.js';
 import { airTime } from '../world/listings.js';
+import { numberedProjects, slotOf } from './lineup.js';
 
 // The static side of the site, written out at build time (see vitePlugin.js):
 // a plain page per project at work/<slug>/, an index of them all at work/, a
@@ -8,7 +9,6 @@ import { airTime } from '../world/listings.js';
 // link previews and anyone whose browser can't run the TV still get the work,
 // and each one links back into the TV, tuned to that show.
 
-const FIRST_CHANNEL = 1;
 const absolute = (site, path) => new URL(path, site.url).href;
 // A project's media, from work/index.html (one folder up from the project's).
 const fromIndex = (project, path) => {
@@ -42,13 +42,14 @@ function footer(site) {
 // work/<slug>/index.html. Media paths are relative to that folder, which is
 // where the project's media lives too.
 export function renderProjectPage(project, { site, projects }) {
-  const index = projects.indexOf(project);
-  const channel = FIRST_CHANNEL + index;
+  const listed = numberedProjects(projects);
+  const index = listed.findIndex((entry) => entry.project === project);
+  const channel = listed[index].number;
   const canonical = absolute(site, `work/${project.slug}/`);
   const share = project.share ?? project.hero;
   const image = share && absolute(site, `work/${project.slug}/${pageMediaUrl(share)}`);
-  const prev = projects[index - 1];
-  const next = projects[index + 1];
+  const prev = listed[index - 1]?.project;
+  const next = listed[index + 1]?.project;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -60,7 +61,7 @@ ${head({ site, title: `${project.title ?? project.name} · ${site.title}`, descr
   <nav aria-label="Site"><a href="../">All work</a></nav>
 </header>
 <main class="page__main">
-${renderCaseStudy(project, { url: pageMediaUrl, channel, index })}
+${renderCaseStudy(project, { url: pageMediaUrl, channel })}
 <p class="page__watch"><a class="page__tv" href="../../?channel=${encodeURIComponent(project.slug)}">Watch it on the TV · CH ${String(channel).padStart(2, '0')}</a></p>
 <nav class="page__pager" aria-label="More work">
   ${prev ? `<a rel="prev" href="../${prev.slug}/">← ${escapeHtml(prev.name)}</a>` : '<span></span>'}
@@ -76,14 +77,14 @@ ${footer(site)}
 // work/index.html: tonight's listings, as a page.
 export function renderWorkIndex(projects, { site }) {
   const canonical = absolute(site, 'work/');
-  const rows = projects
-    .map((p, i) => {
+  const rows = numberedProjects(projects)
+    .map(({ project: p, number }) => {
       const thumb = p.hero ? `<img src="${escapeHtml(fromIndex(p, p.hero))}" alt="" loading="lazy" decoding="async">` : '';
       return `  <li class="listing">
     <a href="${p.slug}/">
       ${thumb}
-      <span class="listing__channel">CH ${String(FIRST_CHANNEL + i).padStart(2, '0')}</span>
-      <span class="listing__time">${airTime(i)}</span>
+      <span class="listing__channel">CH ${String(number).padStart(2, '0')}</span>
+      <span class="listing__time">${airTime(slotOf(number))}</span>
       <span class="listing__name">${escapeHtml(p.name)}</span>
       <span class="listing__blurb">${escapeHtml(p.summary ?? p.blurb ?? '')}</span>
     </a>
