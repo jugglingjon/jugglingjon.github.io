@@ -280,4 +280,57 @@ Each of the more than 40 research programs has its own illustrated card and page
 It's built on Drupal with the U.S. Web Design System, so it has the parts every federal site shares, from the official-government banner to accessible menus and forms, with motion (GSAP and ScrollTrigger) and carousels (Swiper) layered on top.`,
     placeholder: true,
   },
+  {
+    slug: 'zones',
+    name: 'Zones',
+    blurb: 'Playlist builder app · web',
+    title: 'Zones: playlists built from timed zones of music',
+    summary: 'A mobile-first web app that builds Spotify playlists in timed zones: pick a song, a playlist or a phrase, set the minutes, and Claude fills it.',
+    role: 'Design and development',
+    year: 2026,
+    tech: ['JavaScript', 'Sass', 'Vite', 'Spotify Web API', 'Claude API', 'Cloudflare Workers', 'SortableJS'],
+    links: { live: 'https://jugglingjon.github.io/Zones/', repo: 'https://github.com/jugglingjon/Zones' },
+    tv: { type: 'slideshow', slides: ['tv-1.webp', 'tv-2.webp', 'tv-3.webp'] },
+    music: '/media/music/zones.mp3',
+    hero: 'hero.webp',
+    share: 'share.jpg',
+    gallery: [
+      { src: 'login.webp', alt: 'The Zones logo, three stacked blocks in purple, green and orange, above a Connect Spotify button', caption: 'Connect Spotify' },
+      { src: 'empty.webp', alt: 'Create your first zone: a short explanation of zones and a Create zone button', caption: 'Starting out' },
+      {
+        src: 'new-zone.webp',
+        alt: 'New zone: Song, Playlist and Phrase tabs, Cosmic Love by Florence + The Machine as the song, a 20 minute length slider and the name Introduction',
+        caption: 'A new zone, inspired by a song',
+      },
+      {
+        src: 'zone.webp',
+        alt: 'The Introduction zone: 20:00 of 20 minutes, five songs with album art, Add song and Delete zone buttons, and a toast: Created Introduction, 5 songs, 20:00',
+        caption: 'Zones fills it to length',
+      },
+      {
+        src: 'playlist.webp',
+        alt: 'My playlist: 1 h 19 m, 20 songs, 3 zones, shown as purple, green and orange blocks sized by their length',
+        caption: 'Each zone is a block, sized by its length',
+      },
+      {
+        src: 'finalize.webp',
+        alt: 'Finalize playlist: a name, a description with each zone’s start time, a public toggle, Save to Spotify, and Copy list and Share buttons',
+        caption: 'Save to Spotify, or copy it as a list',
+      },
+    ],
+    alt: {
+      'tv-1.webp': 'The Zones logo and tagline beside a phone showing a playlist of three colored zones',
+      'tv-2.webp': 'Two phones: Create your first zone, and a new zone inspired by Cosmic Love',
+      'tv-3.webp': 'Two phones: a filled zone of five songs, and the Finalize playlist sheet',
+      'hero.webp': 'The Zones logo and tagline beside three phones: a new zone, a playlist of three zones, and a filled zone',
+    },
+    story: `Zones builds Spotify playlists out of zones: stretches of music with a vibe and a length. Pick a song, a playlist or a phrase as the inspiration, set the minutes, and Zones fills the zone. Stack a few up, say a gentle introduction, a long middle and a wind-down, and save the whole thing to Spotify as one playlist.
+
+Spotify no longer gives new apps recommendations, so the suggestions come from Claude. It's asked for about 40 songs that fit the inspiration, each one is looked up with Spotify's search, duplicates go, and a small, tested fill function picks songs until the zone is within a minute of its length. The leftovers become the Add song suggestions, so topping up a zone needs no second request.
+
+On the overview each zone is a block in its own color, sized by its real length. Zones and songs drag to reorder, a tapped song plays in Spotify's player, and anything that doesn't fit can go. Finalize writes a new playlist to your account with each zone's start time in its description, or copies the whole thing as a plain list.
+
+There's no backend. It runs in the browser, logs in to Spotify with PKCE and talks to Claude directly with your own key, or through a small Cloudflare Worker that lets invited testers share one key, with a daily limit. It's plain JavaScript, Sass and Vite, mobile-first, with a light and a dark theme.`,
+    placeholder: true,
+  },
 ];
