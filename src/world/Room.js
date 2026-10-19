@@ -42,6 +42,7 @@ export const ROOM_DEFAULTS = {
   flicker: false, // the sign's buzz and stutter (Room → Neon flicker)
   bookshelf: true, // the bookcase right of the TV, with the lava lamp (off leaves the corner empty)
   lavaLight: 0.45, // how much the lava lamp lights its corner
+  radioLight: 0.03, // the clock radio's faint glow on its shelf
   blinds: -0.9, // slats tipped down into the room, letting the street light in
   dust: 1,
   dustSize: 1,
@@ -339,6 +340,7 @@ export class Room {
     this.panda.update(dt);
     this.plantTwirl.update(dt);
     this.radioMeter?.update(dt, radioOn);
+    this.bookshelf.radioLight.intensity = this.radioMeter ? s.radioLight : 0; // once the radio's there
 
     const level = s.flicker ? neonFlicker(time) : 1;
     this.neon.intensity = this.neonIntensity * s.neon * level;

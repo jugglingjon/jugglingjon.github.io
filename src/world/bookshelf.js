@@ -138,6 +138,13 @@ export function createBookshelf() {
   const radio = new THREE.Group();
   radio.position.set((novelsEnd + inside) / 2, SHELVES[1], 0.01);
   group.add(radio);
+  // A faint glow from its displays (the clock's red and the meter's green
+  // make amber), just in front of it, so you can make it out in the dark.
+  // It's here from the start, so the scene's lighting doesn't change (and
+  // every material recompile) when the model arrives.
+  const radioLight = new THREE.PointLight('#ffb36b', 0, 0.5, 2);
+  radioLight.position.set(radio.position.x - 0.03, SHELVES[1] + 0.1, 0.16);
+  group.add(radioLight);
   // Upper shelf: the panda, with a few books beside it.
   const bear = panda();
   bear.position.set(-0.12, SHELVES[2], 0.03);
@@ -151,7 +158,7 @@ export function createBookshelf() {
   group.add(lava.group);
   bookStack(group, rand, { x: 0.14, y: height, count: 2, width: 0.16 });
 
-  return { group, lava, panda: bear, radio };
+  return { group, lava, panda: bear, radio, radioLight };
 }
 
 // Put the clock radio model (main.js loads it) in its place on the shelf,

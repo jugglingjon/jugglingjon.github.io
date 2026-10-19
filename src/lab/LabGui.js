@@ -80,6 +80,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   roomFolder.add(r, 'flicker').name('Neon flicker');
   roomFolder.add(r, 'bookshelf').name('Bookshelf + lava lamp');
   roomFolder.add(r, 'lavaLight', 0, 2, 0.01).name('Lava lamp light');
+  roomFolder.add(r, 'radioLight', 0, 0.3, 0.005).name('Clock radio glow');
   roomFolder.add(r, 'blinds', -1.5, 1.5, 0.01).name('Blind tilt');
   roomFolder.add(r, 'dust', 0, 3, 0.05).name('Dust brightness');
   roomFolder.add(r, 'dustSize', 0.2, 5, 0.05).name('Dust size');
