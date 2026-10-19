@@ -492,6 +492,12 @@ models
   })
   .catch((err) => console.warn("Couldn't load the clock radio; the shelf stays empty.", err));
 
+// The listings magazine's cover (27:38 portrait); the drawn one stays if it can't load.
+new THREE.TextureLoader()
+  .loadAsync(`${import.meta.env.BASE_URL}media/listings/cover.webp`)
+  .then((texture) => magazine.setCover(texture))
+  .catch((err) => console.warn("Couldn't load the listings cover; keeping the drawn one.", err));
+
 // Your left hand, for the drink.
 CanHand.load(`${import.meta.env.BASE_URL}models/hand/left.glb`)
   .then((hand) => {

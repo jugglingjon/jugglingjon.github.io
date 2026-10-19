@@ -37,7 +37,8 @@ export class ListingsMagazine {
 
     const paper = new THREE.MeshStandardMaterial({ color: '#e8e0cc', roughness: 0.9 });
     const backCover = new THREE.MeshStandardMaterial({ color: '#d4cbb5', roughness: 0.6 });
-    const front = new THREE.MeshStandardMaterial({ map: createMagazineTexture(), roughness: 0.6 });
+    // The drawn cover stands in until a cover image arrives (setCover).
+    const front = (this.front = new THREE.MeshStandardMaterial({ map: createMagazineTexture(), roughness: 0.6 }));
 
     this.rightCanvas = pageCanvas();
     this.rightTexture = new THREE.CanvasTexture(this.rightCanvas);
@@ -95,6 +96,15 @@ export class ListingsMagazine {
   // Lying on the table, ready to be picked up.
   get atRest() {
     return this.target === 0 && this.openness === 0;
+  }
+
+  // Put a cover image on the front, 27:38 portrait like the magazine (13.5 × 19 cm).
+  setCover(texture) {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 8; // it's mostly seen at a slant, lying on the table
+    this.front.map.dispose();
+    this.front.map = texture;
+    this.front.needsUpdate = true;
   }
 
   // What the listings show: [{ number, name, source }] and the channel on now.
