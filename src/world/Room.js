@@ -12,6 +12,7 @@ import {
 import { createBeerCan, createMagazines, createPlant, createPrint, replaceCan, replaceLeaves } from './props.js';
 import { createBookshelf } from './bookshelf.js';
 import { Squishy } from './Squishy.js';
+import { Twirl } from './Twirl.js';
 import { createCarpetTexture, createCeilingTexture, createPanelingTexture, createRugTexture, createWallpaperTexture } from './textures.js';
 import { createWindow, neonFlicker } from './windowView.js';
 import { BOOKSHELF_AT, COFFEE_TABLE, COUCH, DOOR, END_TABLE, EYE, FLOOR_LAMP, NEON, PLANT, PRINT, ROOM, RUG, STAND, TABLE_LAMP, WINDOW } from './layout.js';
@@ -247,10 +248,12 @@ export class Room {
     print.group.position.copy(PRINT.position);
     scene.add(print.group);
 
-    // The snake plant, in the far left corner where the table lamp lights it.
+    // The snake plant, in the far left corner where the table lamp lights it
+    // (click it and it does a twirl).
     this.plant = createPlant();
     this.plant.group.position.copy(PLANT);
     scene.add(this.plant.group);
+    this.plantTwirl = new Twirl(this.plant.group);
 
     // Right of the TV, a bookshelf with a lava lamp (click it for a new
     // colour), a stuffed panda (click it to squeeze it) and a few books.
@@ -329,6 +332,7 @@ export class Room {
     this.lava.brightness = s.lavaLight;
     this.lava.update(dt, camera, s.bookshelf);
     this.panda.update(dt);
+    this.plantTwirl.update(dt);
 
     const level = s.flicker ? neonFlicker(time) : 1;
     this.neon.intensity = this.neonIntensity * s.neon * level;

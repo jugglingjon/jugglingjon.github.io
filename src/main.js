@@ -156,6 +156,8 @@ interactions.add(room.lava.group, {
     audio?.bloop();
   },
 });
+room.plantTwirl.reducedMotion = reducedMotion;
+interactions.add(room.plant.group, { name: 'Snake plant', onClick: () => room.plantTwirl.spin(), enabled: () => !room.plantTwirl.active });
 room.panda.reducedMotion = reducedMotion;
 interactions.add(room.bookshelf.panda, {
   name: 'Panda',
