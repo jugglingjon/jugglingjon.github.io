@@ -73,6 +73,7 @@ export class ListingsMagazine {
     }
     this.spine = new THREE.Vector3(-width / 2, block, 0); // the middle of the open spread
     this.coverMiddle = new THREE.Vector3(0, block, 0); // the middle of the cover, while it's shut
+    this.onCoverOpen = null; // called as the cover starts to swing open, after the look
 
     // A soft light from your side while you read, so the pages aren't in shadow.
     this.light = new THREE.PointLight('#ffe6c4', 0, 0.8, 2);
@@ -177,6 +178,8 @@ export class ListingsMagazine {
       let t = this.openness * TOTAL;
       t = closing ? Math.max(0, t - dt) : Math.min(TOTAL, t + dt);
       if (closing && t > TIMING.lift && t < TIMING.lift + TIMING.look) t = TIMING.lift; // no look on the way down
+      const swing = TIMING.lift + TIMING.look;
+      if (!closing && this.openness * TOTAL < swing && t >= swing) this.onCoverOpen?.();
       this.openness = t / TOTAL;
     }
     const t = this.openness * TOTAL;

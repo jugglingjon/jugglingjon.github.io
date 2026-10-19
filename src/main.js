@@ -146,6 +146,7 @@ post.markGlowing(...room.glowing, rig.model.group);
 post.markScreen(tvModel.screen);
 post.markFront(rig.root, room.magazines.listings.group);
 const magazine = room.magazines.listings;
+magazine.onCoverOpen = () => audio?.rustle();
 interactions.add(room.tableLamp, {
   name: 'Table lamp',
   onClick: () => audio?.lampSwitch(room.toggleTableLamp()),
@@ -192,8 +193,7 @@ function haveADrink() {
 
 function openMagazine() {
   magazine.setListings(tv.lineup, tv.number);
-  magazine.open(room.scene);
-  audio?.rustle();
+  magazine.open(room.scene); // the cover rustles as it swings open (onCoverOpen)
   rig.setActive(false);
   seated.setLook(0, 0);
 }
