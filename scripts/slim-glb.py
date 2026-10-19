@@ -18,11 +18,11 @@ The soda can (public/models/can/soda-can.glb, 460 KB -> 96 KB):
   python3 scripts/slim-glb.py soda_can.glb public/models/can/soda-can.glb \
     --image 0:512:jpeg:85 --image 1:256:png --image 2:512:jpeg:92
 
-The clock radio (public/models/radio/clock-radio.glb, 318 KB -> 52 KB), its
-tuning needle painted out of the texture (the site draws its own) and its
-clock digits and dial lit by a hand-painted glow map:
+The clock radio (public/models/radio/clock-radio.glb, 318 KB -> 48 KB), its
+tuning dial painted out of the texture (the site puts a level meter in its
+window) and its clock digits lit by a hand-painted glow map:
   python3 scripts/slim-glb.py digital_radio_clock.glb public/models/radio/clock-radio.glb \
-    --source 0:texture-no-needle.png --image 0:512:jpeg:88 --emissive 0:clock-glow.png
+    --source 0:texture-meter.png --image 0:512:jpeg:88 --emissive 0:clock-glow.png
 """
 import argparse, io, json, struct
 from PIL import Image

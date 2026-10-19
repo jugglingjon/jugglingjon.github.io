@@ -26,9 +26,9 @@ describe('placeRadio', () => {
   it('stands the radio on the middle shelf, right of the novels, its clock towards the couch', () => {
     const shelf = createBookshelf();
     const { model, body, face } = standIn();
-    const needle = placeRadio(shelf, model);
+    const meter = placeRadio(shelf, model);
     shelf.group.updateMatrixWorld(true);
-    expect(needle.mesh.parent).toBe(model); // on the dial, so it moves and scales with the radio
+    expect(meter.mesh.parent).toBe(model); // in the dial's window, so it moves and scales with the radio
 
     const radio = boxOf(model);
     expect(radio.max.y - radio.min.y).toBeCloseTo(RADIO.height, 6);

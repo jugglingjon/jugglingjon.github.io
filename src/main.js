@@ -475,8 +475,8 @@ models
   .loadAsync(`${import.meta.env.BASE_URL}models/radio/clock-radio.glb`)
   .then((gltf) => {
     room.setRadioModel(gltf.scene);
-    room.radioNeedle.reducedMotion = reducedMotion;
-    post.markGlowing(room.radioNeedle.mesh);
+    room.radioMeter.reducedMotion = reducedMotion;
+    post.markGlowing(room.radioMeter.mesh);
     refreshOccluders();
   })
   .catch((err) => console.warn("Couldn't load the clock radio; the shelf stays empty.", err));
