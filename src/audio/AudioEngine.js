@@ -288,6 +288,16 @@ export class AudioEngine {
     }
   }
 
+  // The terracotta pot coming back down on the carpet after its twirl: a
+  // dull, muffled thud, a knock of clay, a faint ring, and the soil settling.
+  potClunk() {
+    const t = this.ctx.currentTime;
+    this.tone(t, { freq: 150, to: 85, duration: 0.13, level: 0.55 });
+    this.noiseBurst(t, { duration: 0.05, level: 0.5, type: 'bandpass', freq: 640, q: 3 });
+    this.tone(t + 0.004, { freq: 830, to: 812, duration: 0.16, level: 0.035, type: 'triangle' });
+    this.noiseBurst(t + 0.02, { duration: 0.09, level: 0.06, type: 'bandpass', freq: 2600, q: 1 });
+  }
+
   // The stuffed panda's squeaker: a reedy squeal as it's squeezed, and a
   // softer, falling one as it fills back up with air.
   squeak() {

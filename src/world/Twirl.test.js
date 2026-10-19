@@ -64,6 +64,30 @@ describe('Twirl', () => {
     expect(plant.quaternion.toArray()).toEqual(before.q);
   });
 
+  it('lands once, as it comes down from the hop', () => {
+    const twirl = new Twirl(new THREE.Object3D());
+    const landings = [];
+    twirl.onLand = () => landings.push(twirl.time);
+    twirl.spin();
+    run(twirl, TWIRL_LENGTH + 0.1);
+    expect(landings).toHaveLength(1);
+    expect(landings[0]).toBeGreaterThanOrEqual(TWIRL.air);
+    expect(landings[0]).toBeLessThan(TWIRL.air + 1 / 60 + 1e-9);
+    twirl.spin();
+    run(twirl, TWIRL_LENGTH + 0.1);
+    expect(landings).toHaveLength(2); // and again next time
+  });
+
+  it('never leaves the floor, so never lands, with reduced motion', () => {
+    const twirl = new Twirl(new THREE.Object3D());
+    twirl.reducedMotion = true;
+    let landed = false;
+    twirl.onLand = () => (landed = true);
+    twirl.spin();
+    run(twirl, TWIRL_LENGTH + 0.1);
+    expect(landed).toBe(false);
+  });
+
   it('stays upright with reduced motion', () => {
     const plant = new THREE.Object3D();
     const twirl = new Twirl(plant);

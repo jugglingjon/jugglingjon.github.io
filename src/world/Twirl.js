@@ -40,7 +40,9 @@ export class Twirl {
     this.rest = { position: object.position.clone(), quaternion: object.quaternion.clone() };
     this.time = 0;
     this.active = false;
+    this.landed = false;
     this.reducedMotion = false; // a spin, without the hop and the wobble
+    this.onLand = () => {}; // as it comes down from the hop (for a sound)
   }
 
   // Start a twirl (one at a time).
@@ -50,12 +52,17 @@ export class Twirl {
     this.rest.quaternion.copy(this.object.quaternion);
     this.active = true;
     this.time = 0;
+    this.landed = this.reducedMotion; // no hop, no landing
     return true;
   }
 
   update(dt) {
     if (!this.active) return;
     this.time += dt;
+    if (!this.landed && this.time >= TWIRL.air) {
+      this.landed = true;
+      this.onLand();
+    }
     const { position, quaternion } = this.object;
     if (this.time >= TWIRL_LENGTH) {
       this.active = false;
