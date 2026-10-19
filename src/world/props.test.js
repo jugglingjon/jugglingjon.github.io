@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { CAN, createPlant, fitModel, PLANT_HEIGHT, replaceCan, replaceLeaves } from './props.js';
+
+// The soil's texture is painted on a canvas, which needs a browser.
+vi.mock('./textures.js', async (original) => ({ ...(await original()), createDirtTexture: () => null }));
 
 describe('createPlant', () => {
   it('stands built-in leaves on the soil until a model replaces them', () => {

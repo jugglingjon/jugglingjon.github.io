@@ -94,6 +94,23 @@ export function createCarpetTexture() {
   return colorTexture(canvas, [24, 24]);
 }
 
+// Potting soil: dark crumbly brown, flecked lighter and darker.
+export function createDirtTexture() {
+  const [canvas, ctx] = makeCanvas(128, 128);
+  ctx.fillStyle = '#2e1b0e';
+  ctx.fillRect(0, 0, 128, 128);
+  const rand = seededRandom(17);
+  const palette = ['#3d2614', '#4a2f19', '#21130a', '#160c05', '#5a3a20'];
+  for (let i = 0; i < 2200; i++) {
+    ctx.fillStyle = palette[Math.floor(rand() * palette.length)];
+    ctx.globalAlpha = 0.6 + rand() * 0.4;
+    const size = 1 + rand() * 2.5;
+    ctx.fillRect(rand() * 128, rand() * 128, size, size);
+  }
+  ctx.globalAlpha = 1;
+  return colorTexture(canvas, [2, 2]);
+}
+
 // Slotted speaker grille.
 export function createGrilleTexture() {
   const [canvas, ctx] = makeCanvas(128, 128);

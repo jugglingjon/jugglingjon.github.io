@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { place } from './furniture.js';
 import { CanTop } from './CanTop.js';
 import { ListingsMagazine } from './Magazine.js';
-import { createCanTexture, createMagazineTexture, createPrintTexture, seededRandom } from './textures.js';
+import { createCanTexture, createDirtTexture, createMagazineTexture, createPrintTexture, seededRandom } from './textures.js';
 
 // Small set dressing. Each builder returns a group at the origin (sitting on
 // y = 0), plus any anchor points other systems need. Some have a model that
@@ -68,16 +68,34 @@ export function createMagazines() {
 
 // Snake plant in a terracotta pot. Its leaves are a group of their own
 // standing on the soil, so a model can replace them (replaceLeaves).
-const SOIL = 0.31;
+const SOIL = 0.29; // a few centimetres down inside the rim
 export const PLANT_HEIGHT = 0.72; // a leaf model's height above the soil, in metres
+
+// The pot's outline, turned round its axis: [radius, height] from the middle
+// of the base, out and up the tapering wall, round the thick rolled lip at
+// the top, and down the inside wall to just under the soil.
+const POT = [
+  [0, 0],
+  [0.128, 0],
+  [0.132, 0.006],
+  [0.16, 0.262],
+  [0.174, 0.266], // under the lip
+  [0.179, 0.272],
+  [0.18, 0.31],
+  [0.176, 0.32], // the rim's top
+  [0.163, 0.321],
+  [0.158, 0.312],
+  [0.153, SOIL - 0.01], // inside, down to the soil
+];
 
 export function createPlant() {
   const group = new THREE.Group();
   const pot = new THREE.MeshStandardMaterial({ color: '#9a4f2a', roughness: 0.85 });
-  const soil = new THREE.MeshStandardMaterial({ color: '#1f140c', roughness: 1 });
+  const soil = new THREE.MeshStandardMaterial({ map: createDirtTexture(), roughness: 1 });
   const leaf = new THREE.MeshStandardMaterial({ color: '#2f5a2c', roughness: 0.6 });
-  place(group, new THREE.CylinderGeometry(0.17, 0.13, 0.32, 24), pot, 0, 0.16, 0);
-  place(group, new THREE.CylinderGeometry(0.155, 0.155, 0.01, 24), soil, 0, SOIL, 0);
+  place(group, new THREE.LatheGeometry(POT.map(([r, y]) => new THREE.Vector2(r, y)), 32), pot);
+  const dirt = place(group, new THREE.CircleGeometry(0.156, 32), soil, 0, SOIL, 0, { cast: false });
+  dirt.rotation.x = -Math.PI / 2;
   const leaves = new THREE.Group();
   leaves.position.y = SOIL;
   group.add(leaves);
