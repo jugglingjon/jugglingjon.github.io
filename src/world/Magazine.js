@@ -3,15 +3,18 @@ import { createMagazineTexture } from './textures.js';
 import { PAGE, drawListings, drawWelcome, rowAt } from './listings.js';
 
 // The listings magazine on top of the coffee-table stack. Click it and it lifts
-// off the table into your hands, the cover swings open, and tonight's listings
-// face you; pick a show to tune the set to it. Built in its own space: x
+// off the table into your hands, holds a moment so you can take in the cover,
+// then the cover swings open and tonight's listings face you; pick a show to
+// tune the set to it. Built in its own space: x
 // across the cover, y up out of it, z down the page (−z is the top edge).
 
 export const MAGAZINE_SIZE = { width: 0.135, length: 0.19, block: 0.0032, cover: 0.0008 };
 
-// Seconds for the whole open (or close), and how it splits: lifting to you
-// takes the first `fly` of it, the cover swings over from `flipStart`.
-const TIMING = { duration: 1, fly: 0.65, flipStart: 0.45, flip: 0.5 };
+// Seconds for each part of picking it up: lifting it to you, a look at the
+// cover, and the cover swinging open. Putting it down runs backwards, without
+// the look.
+const TIMING = { lift: 0.65, look: 0.6, flip: 0.5 };
+const TOTAL = TIMING.lift + TIMING.look + TIMING.flip;
 const READ = { fill: 0.72, drop: 0.012, tilt: 0.12 }; // share of the view's height, a touch low, top tipped back
 
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
@@ -69,6 +72,7 @@ export class ListingsMagazine {
       mesh.receiveShadow = true;
     }
     this.spine = new THREE.Vector3(-width / 2, block, 0); // the middle of the open spread
+    this.coverMiddle = new THREE.Vector3(0, block, 0); // the middle of the cover, while it's shut
 
     // A soft light from your side while you read, so the pages aren't in shadow.
     this.light = new THREE.PointLight('#ffe6c4', 0, 0.8, 2);
@@ -168,16 +172,24 @@ export class ListingsMagazine {
   update(dt, camera) {
     if (this.openness === this.target && this.atRest) return;
     if (this.openness !== this.target) {
-      const step = dt / TIMING.duration;
-      this.openness = this.target > this.openness ? Math.min(1, this.openness + step) : Math.max(0, this.openness - step);
+      // `openness` is how far along the whole thing is (0 … 1).
+      const closing = this.target < this.openness;
+      let t = this.openness * TOTAL;
+      t = closing ? Math.max(0, t - dt) : Math.min(TOTAL, t + dt);
+      if (closing && t > TIMING.lift && t < TIMING.lift + TIMING.look) t = TIMING.lift; // no look on the way down
+      this.openness = t / TOTAL;
     }
-    const fly = ease(clamp01(this.openness / TIMING.fly));
-    this.hinge.rotation.z = ease(clamp01((this.openness - TIMING.flipStart) / TIMING.flip)) * Math.PI;
+    const t = this.openness * TOTAL;
+    const fly = ease(clamp01(t / TIMING.lift));
+    const flip = ease(clamp01((t - TIMING.lift - TIMING.look) / TIMING.flip));
+    this.hinge.rotation.z = flip * Math.PI;
     this.light.intensity = fly * 0.03;
 
+    // Held with the shut cover in the middle of the view, sliding over as it
+    // opens so the open spread ends up in the middle.
     const distance = MAGAZINE_SIZE.length / READ.fill / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
     this.readQuaternion.copy(camera.quaternion).multiply(HOLD);
-    this.offset.copy(this.spine).applyQuaternion(this.readQuaternion);
+    this.offset.lerpVectors(this.coverMiddle, this.spine, flip).applyQuaternion(this.readQuaternion);
     this.readPosition.set(0, -READ.drop, -distance).applyQuaternion(camera.quaternion).add(camera.position).sub(this.offset);
     this.group.position.lerpVectors(this.tablePosition, this.readPosition, fly);
     this.group.quaternion.slerpQuaternions(this.tableQuaternion, this.readQuaternion, fly);
