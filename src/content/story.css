@@ -373,7 +373,6 @@
   padding: 1.5rem clamp(1rem, 4vw, 2.5rem) 2rem;
   background: var(--paper, #f2ead8);
   box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
-  transform: rotate(-0.6deg);
   --paper: #f2ead8;
   --ink: #1b1b1b;
   --gold: #ffc53d;
@@ -411,7 +410,7 @@
 @keyframes story-in {
   from {
     opacity: 0;
-    transform: translateY(2rem) rotate(-3deg);
+    transform: translateY(2rem);
   }
 }
 
