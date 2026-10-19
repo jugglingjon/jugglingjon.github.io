@@ -34,7 +34,7 @@ ${site.author ? `<meta name="author" content="${escapeHtml(site.author)}">` : ''
 
 function footer(site) {
   return `<footer class="page__footer">
-  <p>${escapeHtml(site.title)}${site.author ? ` · ${escapeHtml(site.author)}` : ''}</p>
+  <p>${escapeHtml(site.title)}${site.author && site.author !== site.title ? ` · ${escapeHtml(site.author)}` : ''}</p>
   ${site.credits?.length ? `<ul>${site.credits.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>` : ''}
 </footer>`;
 }

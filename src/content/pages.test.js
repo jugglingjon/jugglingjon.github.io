@@ -77,6 +77,11 @@ describe('the static pages', () => {
     expect(index).toContain('CH 08');
   });
 
+  it('name the author in the footer, unless the site is already named after them', () => {
+    expect(renderWorkIndex(projects, { site: { ...site, author: 'Jo Bloggs' } })).toContain('<p>Test Site · Jo Bloggs</p>');
+    expect(renderWorkIndex(projects, { site: { ...site, title: 'Jo Bloggs', author: 'Jo Bloggs' } })).toContain('<p>Jo Bloggs</p>');
+  });
+
   it('list every project on the index, with thumbnails from their folders', () => {
     const html = renderWorkIndex(projects, { site });
     for (const p of projects) expect(html).toContain(`href="${p.slug}/"`);
