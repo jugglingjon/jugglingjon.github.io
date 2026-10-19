@@ -11,6 +11,7 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
   const set = gui.addFolder('TV');
   set.add(state, 'mode', { 'Seated (you)': 'seated', 'Orbit (debug)': 'orbit', 'Flat screen': 'flat' }).name('View   V').listen().onChange(actions.setMode);
   set.add({ power: () => actions.press('power') }, 'power').name('Power   P');
+  set.add(actions, 'replayIntro').name('Replay the intro');
   set.add({ up: () => actions.press('ch+') }, 'up').name('Channel ▲   ↑ →');
   set.add({ down: () => actions.press('ch-') }, 'down').name('Channel ▼   ↓ ←');
   set.add(actions, 'degauss').name('Degauss   D');

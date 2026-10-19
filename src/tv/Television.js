@@ -26,6 +26,10 @@ export const digitChannel = (digit) => (digit === '0' ? 10 : Number(digit));
 // Presses mid-change never restart the sequence: the tuner stays in the snow,
 // swaps stations under it, and only locks once the viewer pauses.
 //
+// It can also power on into a station ident (powerOnWithIdent): the ident is
+// on air in place of the channel until it ends or a button cuts it short,
+// then the set changes over to the channel as if you'd tuned to it.
+//
 // Events (detail in brackets):
 //   power {on} · tune {number, channel} · swap {number, channel}
 //   phase {phase} · relay · volume {level, muted}
@@ -48,6 +52,8 @@ export class Television extends EventTarget {
     this.timeline = null;
     this.acquireCall = null;
     this.osdCall = null;
+    this.ident = null; // { name, source } on air in place of the channel, if any
+    this.identCall = null;
 
     this.setLineup(lineup);
     this.number = this.lineup[0]?.number ?? 2;
@@ -64,11 +70,13 @@ export class Television extends EventTarget {
     return this.lineup.find((c) => c.number === number) ?? null;
   }
 
+  // What's on: the ident while it's airing, else the station on this number.
   get channel() {
-    return this.channelAt(this.number);
+    return this.ident ?? this.channelAt(this.number);
   }
 
   receive(button) {
+    if (this.ident && button !== 'power') this.endIdent(); // any other button cuts it short, then does its job
     if (button === 'power') {
       this.on ? this.powerOff() : this.powerOn();
       return;
@@ -108,18 +116,40 @@ export class Television extends EventTarget {
       this.setPhase('dead');
       this.timeline = deadAir(this.fx, { reducedMotion: this.reducedMotion });
     }
-    // The OSD comes up once the tube has warmed enough to show it.
+    // The OSD comes up once the tube has warmed enough to show it (not over an ident).
     this.osdCall = gsap.delayedCall(0.9, () => {
-      this.osd.setChannel(this.number);
-      if (this.channel) this.osd.setCaption(this.channel.name);
+      if (!this.ident) {
+        this.osd.setChannel(this.number);
+        if (this.channel) this.osd.setCaption(this.channel.name);
+      }
       if (this.muted) this.osd.setMute(true);
     });
+  }
+
+  // Power on into `ident` ({ name, source }) for `seconds`, then over to the channel.
+  powerOnWithIdent(ident, seconds) {
+    if (this.on) return;
+    this.ident = ident;
+    this.powerOn();
+    this.identCall = gsap.delayedCall(seconds, () => this.endIdent());
+  }
+
+  // Off the ident and over to the channel, as if you'd tuned to it.
+  endIdent() {
+    if (!this.ident) return;
+    this.identCall?.kill();
+    this.identCall = null;
+    this.ident = null;
+    this.osd.setChannel(this.number);
+    this.osd.setCaption('');
+    this.changeChannel();
   }
 
   powerOff() {
     if (!this.on) return;
     this.on = false;
     this.killTuner();
+    this.ident = null;
     calm(this.fx);
     powerOffFx(this.fx);
     this.osd.clear();
@@ -237,7 +267,8 @@ export class Television extends EventTarget {
     this.timeline?.kill();
     this.acquireCall?.kill();
     this.osdCall?.kill();
-    this.timeline = this.acquireCall = this.osdCall = null;
+    this.identCall?.kill();
+    this.timeline = this.acquireCall = this.osdCall = this.identCall = null;
   }
 
   emit(type, detail = {}) {

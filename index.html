@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Screen Lab · Retro Portfolio</title>
     <!-- site:head -->
+    <noscript><style>.curtain { display: none; }</style></noscript>
   </head>
   <body data-mode="seated" data-aim="remote">
     <canvas id="scene" aria-label="A CRT television showing portfolio projects"></canvas>
+
+    <!-- Dark until the room is ready, then it fades up (src/intro/curtain.js). -->
+    <div class="curtain" aria-hidden="true"><p class="curtain__note">Warming up the set…</p></div>
 
     <div class="hud" hidden>
       <h1 class="hud__title">Retro Portfolio <span>Screen lab · Phase 6</span></h1>

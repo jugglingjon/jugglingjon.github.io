@@ -25,7 +25,7 @@ One-time setup on GitHub: **Settings → Pages → Build and deployment → Sour
 
 ## Screen lab controls
 
-The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red **POWER** button (top right of the remote) and click. That first press also enables sound, since browsers block audio until you interact with the page.
+The room fades up once it has loaded, and the set switches itself on: to a station ident the first time in a visit, then to channel 1 (see [The curtain and the station ident](#the-curtain-and-the-station-ident)). Your first click or key press enables sound, since browsers block audio until you interact with the page. Press <kbd>P</kbd>, or move your thumb to the red **POWER** button (top right of the remote) and click, to switch the set off and on.
 
 | Input | Remote button | Action |
 |---|---|---|
@@ -55,6 +55,7 @@ The set starts switched off. Press <kbd>P</kbd>, or move your thumb to the red *
 - Drop any image or video onto the page (or use **Source → Load image / video…**) to add it as the next channel. Dropped videos play their soundtrack through the TV speaker.
 - Channels start at 1, so the number keys reach the first ten. Tuning a number with nothing on it gives dead air: snow and hiss.
 - **TV → Speed (slow-mo)** runs the lab clock down to 2% speed, so you can study a channel change frame by frame.
+- **TV → Replay the intro** switches the set off and back on to the station ident.
 - **Tuner** sets reduced motion, rough-change odds, IR latency and the snow/surf timings. **Sound** sets the volume and mix.
 - Every slider in **Signal**, **Tube** and **Glass** is live. Changes auto-save to this browser. **Presets → Copy JSON** exports the current look; paste it into `PRESETS` in `src/screen/params.js` to make it permanent.
 
@@ -186,6 +187,16 @@ Television.receive(button)
   - **Straight from the hardware** (unaffected by volume): remote clicks, the tuner relay, the power thunk, degauss hum and HV crackle, and the 15.7 kHz flyback whine.
   - **Always on:** quiet room tone.
 - **Reduced motion:** with `prefers-reduced-motion` the tuner swaps through a quick snow cut, with no roll or tearing.
+- **Switching off lets go of the picture**, so the next power-on starts a channel afresh: the ident from its first frame, a video back on air.
+
+## The curtain and the station ident
+
+- **The curtain** (`.curtain` in `index.html`, lifted by `src/intro/curtain.js`) keeps the page dark from the very first paint until the room is ready: both hands, the plant, the can, the clock radio, the listings cover and the ident's fonts are in, every shader is compiled (`renderer.compileAsync`), so the fade doesn't stutter, and a frame is drawn. Then the room fades up over 1.2 s (0.3 s with reduced motion). It waits at most 3 s from page load (`CURTAIN.cap`); after that the room comes up with whatever stand-ins are still there, and the models swap in as they arrive. If the wait passes 1.5 s, "Warming up the set…" comes up on the curtain. If the script never runs, the curtain gives up by itself after 12 s (a CSS animation); with JavaScript off it isn't there at all (`<noscript>`).
+- **The station ident** (`src/intro/ident.js`): 0.6 s after the room comes up, the set switches itself on to an ident, the way a station opened its broadcast day. Over a starfield and a synthwave grid rolling towards you, a neon triangle draws itself in, "JONATHAN CRONIN" flies in from the distance in chrome, trailing ghosts, and lands with a flash, a glint runs across the chrome, and "Interactive Portfolio" stutters on in neon script. It's drawn on a 2D canvas each frame, at the channels' 1280 × 960, and the set shows it like any channel, so it gets the warm-up, the scanlines and the glass. After 6.5 s (`IDENT.seconds`) the set tunes to channel 1 through the usual change. The beats' timings are in `BEATS`; the name, tagline, fonts and colours are near the top of the file.
+- **Once a visit:** a `sessionStorage` flag (`retro-portfolio:ident`) remembers it's been shown, so reloading or coming back from a project's page goes straight to channel 1. A link to a project (`?channel=`) skips it too and comes on to that channel.
+- **Skipping:** any click or key cuts it short and tunes to channel 1. A remote button still does its job, so <kbd>5</kbd> lands on channel 5 and POWER switches the set off.
+- **Reduced motion** shows the finished card, held still. It's silent: browsers block sound until your first click, which skips it anyway.
+- **Fonts:** Exo 2 Black Italic (the chrome) and Mr Dafoe (the neon), self-hosted in `public/fonts/` (Latin subsets, 17 KB each) and loaded with the `FontFace` API. See [Credits](#credits).
 
 ## Project structure
 
@@ -196,6 +207,9 @@ content/
   site.js                  the site's title, description, published URL and credits
 src/
   main.js                  wiring: renderer, views, channels, input, render loop
+  intro/
+    curtain.js             holds the page dark until the room is ready, then fades it up
+    ident.js               the station ident: chrome name, neon tagline, triangle, grid, stars (+ ident.test.js)
   content/                 from content/ to the TV and the pages
     channels.js            each project's channel: still, slideshow, scrolling page or video (+ channels.test.js)
     caseStudy.js           the story behind a show, as an article (+ pages.test.js)
@@ -266,6 +280,7 @@ public/models/hand/        WebXR generic left and right hands (.glb) and their M
 public/models/plant/       Sansevieria leaves for the snake plant (.glb)
 public/models/can/         soda can on the coffee table (.glb) and its CC BY licence
 public/models/radio/       clock radio on the bookshelf (.glb) and its CC BY licence
+public/fonts/              the ident's fonts (.woff2) and their OFL licences
 scripts/
   make-test-media.sh       renders the test videos
   make-placeholder-music.mjs  synthesizes the music loops from note data
@@ -312,6 +327,7 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 - **Clock radio station:** `public/media/radio/station.mp3`, supplied by the site owner.
 - **Listings magazine cover:** `public/media/listings/cover.webp`, supplied by the site owner.
 - **Plant model:** the Sansevieria (`public/models/plant/sansevieria.glb`), supplied by the site owner; its texture is from a "tiny treats" palette.
+- **Fonts:** [Exo 2](https://fonts.google.com/specimen/Exo+2) by The Exo 2 Project Authors and [Mr Dafoe](https://fonts.google.com/specimen/Mr+Dafoe) by Alejandro Paul, both under the [SIL Open Font License 1.1](https://openfontlicense.org); the licences are in `public/fonts/`.
 - **Hand models:** the generic left and right hands from [WebXR Input Profiles](https://github.com/immersive-web/webxr-input-profiles) (`@webxr-input-profiles/assets` 1.0.20). MIT licence, © 2019 Amazon; the full notice is in `public/models/hand/LICENSE.md`.
 
 ## Roadmap
@@ -322,4 +338,4 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 4. ~~Arm and remote: viewmodel pass, pointer → thumb mapping over every button, highlight, thumb presses~~ (this phase)
 5. ~~Art pass: rigged hands, clickable room (lamp, listings magazine, lava lamp, the drink), post-processing, models for the plant and can~~ (baked lighting skipped: the lights stay live)
 6. Content: project data, static pages per project with link previews and a sitemap, TV Guide case-study overlay (pipeline done, with placeholders; your projects next) (this phase)
-7. Polish: power-on intro, mobile, accessibility (reduced motion, keyboard), quality tiers
+7. Polish: ~~power-on intro (loading curtain, station ident)~~, mobile, accessibility (reduced motion, keyboard), quality tiers

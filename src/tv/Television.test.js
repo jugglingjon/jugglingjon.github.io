@@ -81,6 +81,52 @@ describe('power', () => {
   });
 });
 
+describe('station ident', () => {
+  const IDENT = { name: 'Ident', source: {} };
+
+  it('powers on into the ident, with no OSD, then changes over to the channel', () => {
+    const { tv, osd, of } = setup();
+    tv.powerOnWithIdent(IDENT, 3);
+    expect(tv.on).toBe(true);
+    expect(of('swap').map((e) => e.channel)).toEqual([IDENT]);
+    advance(2.5);
+    expect(osd.setChannel).not.toHaveBeenCalled();
+    expect(tv.channel).toBe(IDENT);
+    advance(3);
+    expect(tv.ident).toBe(null);
+    expect(of('swap').at(-1).channel.name).toBe('Two');
+    expect(tv.phase).toBe('locked');
+    expect(osd.setChannel).toHaveBeenCalledWith(2);
+    expect(osd.setCaption).toHaveBeenLastCalledWith('Two');
+  });
+
+  it('a button cuts it short and still does its job', () => {
+    const { tv, of } = setup();
+    tv.powerOnWithIdent(IDENT, 6);
+    advance(1);
+    tv.receive('5');
+    advance(2);
+    expect(tv.ident).toBe(null);
+    expect(tv.number).toBe(5);
+    expect(of('swap').at(-1).channel.name).toBe('Five');
+    advance(6); // the ident's timer is gone: no second change-over
+    expect(of('swap').at(-1).channel.name).toBe('Five');
+  });
+
+  it('POWER turns the set off mid-ident, and the next power-on goes straight to the channel', () => {
+    const { tv, of } = setup();
+    tv.powerOnWithIdent(IDENT, 6);
+    advance(1);
+    tv.receive('power');
+    expect(tv.on).toBe(false);
+    expect(tv.ident).toBe(null);
+    advance(8);
+    expect(tv.phase).toBe('off');
+    tv.receive('power');
+    expect(of('swap').at(-1).channel.name).toBe('Two');
+  });
+});
+
 describe('tuning', () => {
   let ctx;
   beforeEach(() => {

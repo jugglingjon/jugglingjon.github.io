@@ -21,6 +21,8 @@ import { COUCH, EYE, FLOOR_LAMP, STAND, WINDOW } from './world/layout.js';
 import { SeatedCamera } from './camera/SeatedCamera.js';
 import { ArmRig } from './viewmodel/ArmRig.js';
 import { XRHand } from './viewmodel/XRHand.js';
+import { liftCurtain } from './intro/curtain.js';
+import { IDENT, createIdent, loadIdentFonts } from './intro/ident.js';
 import { CanHand } from './viewmodel/CanHand.js';
 import { LeftArm } from './viewmodel/LeftArm.js';
 import { Drink } from './viewmodel/Drink.js';
@@ -343,7 +345,10 @@ tv.addEventListener('power', (e) => {
   tvModel.setPower(e.detail.on);
   document.body.classList.toggle('is-tv-on', e.detail.on);
   audio?.power(e.detail.on);
-  if (!e.detail.on) audio?.setChannel(null);
+  if (!e.detail.on) {
+    audio?.setChannel(null);
+    showSource(null); // let go of the picture, so the next power-on starts it afresh (an ident from its first frame, a video back on air)
+  }
   updateHud();
 });
 tv.addEventListener('relay', () => audio?.relay());
@@ -438,6 +443,9 @@ canvas.addEventListener(
 const fileInput = document.querySelector('#file');
 fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
 
+// The station ident the set comes on to, once a visit (src/intro/ident.js).
+const ident = { name: 'Station ident', source: createIdent({ reducedMotion }) };
+
 const actions = {
   setMode,
   drink: () => haveADrink(),
@@ -449,6 +457,10 @@ const actions = {
   degauss: () => degauss(fx),
   loadFile: () => fileInput.click(),
   showLabExtras,
+  replayIntro() {
+    tv.powerOff();
+    gsap.delayedCall(0.8, () => tv.powerOnWithIdent(ident, IDENT.seconds));
+  },
   setTimeScale(value) {
     // Browsers clamp playbackRate; 1/16 is the lowest Chrome allows.
     tv.lineup.forEach(({ source }) => source.video && (source.video.playbackRate = Math.max(0.0625, value)));
@@ -458,7 +470,7 @@ const actions = {
 const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig, post });
 
 // The WebXR hand model replaces the built-in hand once it has loaded.
-XRHand.load(`${import.meta.env.BASE_URL}models/hand/right.glb`)
+const rightHand = XRHand.load(`${import.meta.env.BASE_URL}models/hand/right.glb`)
   .then((hand) => {
     rig.addHand('webxr', hand);
     post.markFront(hand.group); // it can block the TV's glow, like the rest of your arm
@@ -468,21 +480,21 @@ XRHand.load(`${import.meta.env.BASE_URL}models/hand/right.glb`)
 
 // Models for the plant's leaves and the can replace their built-in stand-ins once they've loaded.
 const models = new GLTFLoader();
-models
+const plantLeaves = models
   .loadAsync(`${import.meta.env.BASE_URL}models/plant/sansevieria.glb`)
   .then((gltf) => {
     room.setPlantLeaves(gltf.scene);
     refreshOccluders();
   })
   .catch((err) => console.warn("Couldn't load the plant model; keeping the built-in leaves.", err));
-models
+const canModel = models
   .loadAsync(`${import.meta.env.BASE_URL}models/can/soda-can.glb`)
   .then((gltf) => {
     room.setCanModel(gltf.scene);
     refreshOccluders();
   })
   .catch((err) => console.warn("Couldn't load the can model; keeping the built-in can (and no drink).", err));
-models
+const radioModel = models
   .loadAsync(`${import.meta.env.BASE_URL}models/radio/clock-radio.glb`)
   .then((gltf) => {
     room.setRadioModel(gltf.scene);
@@ -493,13 +505,13 @@ models
   .catch((err) => console.warn("Couldn't load the clock radio; the shelf stays empty.", err));
 
 // The listings magazine's cover (27:38 portrait); the drawn one stays if it can't load.
-new THREE.TextureLoader()
+const listingsCover = new THREE.TextureLoader()
   .loadAsync(`${import.meta.env.BASE_URL}media/listings/cover.webp`)
   .then((texture) => magazine.setCover(texture))
   .catch((err) => console.warn("Couldn't load the listings cover; keeping the drawn one.", err));
 
 // Your left hand, for the drink.
-CanHand.load(`${import.meta.env.BASE_URL}models/hand/left.glb`)
+const leftHand = CanHand.load(`${import.meta.env.BASE_URL}models/hand/left.glb`)
   .then((hand) => {
     drink.arm = new LeftArm(hand);
     room.scene.add(drink.arm.root);
@@ -508,6 +520,9 @@ CanHand.load(`${import.meta.env.BASE_URL}models/hand/left.glb`)
     lab.addCanGripControls(hand);
   })
   .catch((err) => console.warn("Couldn't load the left hand; the can stays put.", err));
+
+// What the curtain waits for before the room fades up (src/intro/curtain.js).
+const startupLoads = [rightHand, plantLeaves, canModel, radioModel, listingsCover, leftHand, loadIdentFonts(import.meta.env.BASE_URL)];
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;
@@ -688,6 +703,29 @@ if (linkedChannel) {
   tv.tune(linkedChannel.number);
   tv.powerOn();
 }
+
+// The curtain lifts once the room is ready, and then the set comes on by
+// itself: to the station ident the first time in a visit, straight to the
+// channel after that. (A link to a project has switched it on already.)
+function firstTimeThisVisit() {
+  try {
+    if (sessionStorage.getItem('retro-portfolio:ident')) return false;
+    sessionStorage.setItem('retro-portfolio:ident', '1');
+  } catch {
+    // Storage blocked: show it.
+  }
+  return true;
+}
+liftCurtain(document.querySelector('.curtain'), { loads: startupLoads, renderer, scene: room.scene, camera: seated.camera, reducedMotion }).then(() => {
+  gsap.delayedCall(0.6, () => {
+    if (tv.on) return;
+    if (firstTimeThisVisit()) tv.powerOnWithIdent(ident, IDENT.seconds);
+    else tv.powerOn();
+  });
+});
+
+// Any click or key skips the ident (the remote's buttons do too, through the set).
+for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => tv.ident && tv.endIdent(), true);
 
 // Then fetch every channel's media in the background, one at a time, so
 // flicking through doesn't keep you waiting on a STAND BY card.
