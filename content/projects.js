@@ -247,11 +247,11 @@ The rest is plain HTML, CSS and a little JavaScript: the FAQ is an accordion, th
         alt: 'The SPECTRA program page: its full name over navy beside a glowing illustration, and its solicitation status below',
         caption: 'A program page: SPECTRA',
       },
-      { src: 'phone-home.webp', alt: 'The homepage on a phone: the official-government banner, the ARPA-H logo and the headline', caption: 'On a phone…' },
+      { src: 'phone-home.webp', alt: 'The homepage on a phone: the official-government banner, the ARPA-H logo and the headline over the background video', caption: 'On a phone…' },
       { src: 'phone-programs.webp', alt: 'The 1-CURE program card on a phone, with its illustration and question', caption: '…and a program card' },
     ],
     alt: {
-      'tv-home.webp': 'ARPA-H’s homepage: The future of health isn’t waiting, and neither are we, on navy',
+      'tv-home.webp': 'ARPA-H’s homepage: The future of health isn’t waiting, and neither are we, over a glowing holographic figure from the background video',
       'tv-mission.webp': 'The mission statement over a navy-to-pink gradient',
       'tv-portfolio.webp': 'Investing in transformative health solutions: program cards for SURPASS, SPECTRA, UNIQUE and PCX',
       'tv-programs.webp': 'The program grid: 1-CURE, ADAPT, ADVOCATE, AIR, APECx, ARPA-H BDF, BIOGAMI and BoSS',
