@@ -11,6 +11,7 @@ import {
 } from './furniture.js';
 import { createBeerCan, createMagazines, createPlant, createPrint, replaceCan, replaceLeaves } from './props.js';
 import { createBookshelf } from './bookshelf.js';
+import { Squishy } from './Squishy.js';
 import { createCarpetTexture, createCeilingTexture, createPanelingTexture, createRugTexture, createWallpaperTexture } from './textures.js';
 import { createWindow, neonFlicker } from './windowView.js';
 import { BOOKSHELF_AT, COFFEE_TABLE, COUCH, DOOR, END_TABLE, EYE, FLOOR_LAMP, NEON, PLANT, PRINT, ROOM, RUG, STAND, TABLE_LAMP, WINDOW } from './layout.js';
@@ -252,12 +253,13 @@ export class Room {
     scene.add(this.plant.group);
 
     // Right of the TV, a bookshelf with a lava lamp (click it for a new
-    // colour), a stuffed panda and a few books.
+    // colour), a stuffed panda (click it to squeeze it) and a few books.
     this.bookshelf = createBookshelf();
     this.bookshelf.group.position.copy(BOOKSHELF_AT);
     scene.add(this.bookshelf.group);
     this.lava = this.bookshelf.lava;
     this.glowing.push(this.lava.bulb);
+    this.panda = new Squishy(this.bookshelf.panda);
   }
 
   buildLights() {
@@ -326,6 +328,7 @@ export class Room {
     this.bookshelf.group.visible = s.bookshelf;
     this.lava.brightness = s.lavaLight;
     this.lava.update(dt, camera, s.bookshelf);
+    this.panda.update(dt);
 
     const level = s.flicker ? neonFlicker(time) : 1;
     this.neon.intensity = this.neonIntensity * s.neon * level;

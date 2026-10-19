@@ -288,6 +288,38 @@ export class AudioEngine {
     }
   }
 
+  // The stuffed panda's squeaker: a reedy squeal as it's squeezed, and a
+  // softer, falling one as it fills back up with air.
+  squeak() {
+    const t = this.ctx.currentTime;
+    const pitch = 0.92 + Math.random() * 0.16;
+    this.squeal(t, { from: 950 * pitch, to: 1650 * pitch, duration: 0.16, level: 0.25 });
+    this.squeal(t + 0.2, { from: 1500 * pitch, to: 1100 * pitch, duration: 0.13, level: 0.11 });
+  }
+
+  squeal(t, { from, to, duration, level }) {
+    const ctx = this.ctx;
+    const reed = ctx.createOscillator();
+    reed.type = 'square';
+    reed.frequency.setValueAtTime(from, t);
+    reed.frequency.exponentialRampToValueAtTime(to, t + duration * 0.7);
+    // The rubber flutters as the air squeezes past.
+    const flutter = ctx.createOscillator();
+    flutter.frequency.value = 32;
+    flutter.connect(gain(ctx, from * 0.03)).connect(reed.frequency);
+    const env = gain(ctx, 0);
+    env.gain.setValueAtTime(0, t);
+    env.gain.linearRampToValueAtTime(level, t + 0.015);
+    env.gain.setValueAtTime(level, t + duration * 0.6);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    chain(reed, biquad(ctx, 'bandpass', 2300, 1.6), biquad(ctx, 'lowpass', 5000), env, this.hardware);
+    for (const source of [reed, flutter]) {
+      source.start(t);
+      source.stop(t + duration + 0.02);
+    }
+    this.noiseBurst(t, { duration: duration * 0.6, level: level * 0.25, type: 'bandpass', freq: 3200, q: 1.2 });
+  }
+
   // Paper: a magazine picked up and its cover turned, or put back down.
   rustle() {
     const t = this.ctx.currentTime;

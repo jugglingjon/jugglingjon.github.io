@@ -156,6 +156,14 @@ interactions.add(room.lava.group, {
     audio?.bloop();
   },
 });
+room.panda.reducedMotion = reducedMotion;
+interactions.add(room.bookshelf.panda, {
+  name: 'Panda',
+  onClick: () => {
+    room.panda.squeeze();
+    audio?.squeak();
+  },
+});
 interactions.add(room.can.group, { name: 'Soda can', onClick: haveADrink, enabled: () => drink.ready && !drink.active });
 
 // What can block the pointer: everything but your arms. Models swap in as
