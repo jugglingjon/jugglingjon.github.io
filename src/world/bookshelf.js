@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { place } from './furniture.js';
 import { LavaLamp } from './LavaLamp.js';
 import { fitModel } from './props.js';
+import { RadioNeedle } from './RadioNeedle.js';
 import { createWoodTexture, seededRandom } from './textures.js';
 
 // A small three-shelf bookcase for the corner right of the TV: a lava lamp
@@ -15,6 +16,10 @@ const SHELVES = [0.06, 0.36, 0.66]; // top faces of the shelf boards
 // The clock radio: 7 cm tall, its clock turned a little towards the couch
 // (to your left), from the model's own front (+x, once its node is applied).
 export const RADIO = { height: 0.07, turn: -Math.PI / 2 - 0.2 };
+
+// Its tuning needle, where the texture had it, in the model's own units:
+// standing on the dial's face (+x), a hair in front of it.
+const RADIO_NEEDLE = { x: 0.776, y: -0.1164, z: -0.6035, width: 0.011, height: 0.161 };
 
 const BOOK_COLOURS = ['#b8322a', '#e0a43a', '#2f6f73', '#6b8e3a', '#3b4a7a', '#b45a2a', '#7a2f4f', '#d8c8a0'];
 const PAGES = new THREE.MeshStandardMaterial({ color: '#efe6cf', roughness: 0.9 });
@@ -149,13 +154,20 @@ export function createBookshelf() {
   return { group, lava, panda: bear, radio };
 }
 
-// Put the clock radio model (main.js loads it) in its place on the shelf.
+// Put the clock radio model (main.js loads it) in its place on the shelf,
+// with a tuning needle that can bounce. Returns the needle.
 export function placeRadio(shelf, model) {
   fitModel(model, RADIO.height);
   model.traverse((o) => {
     if (o.isMesh) o.material.metalness = 0; // the model leaves it at glTF's default, fully metallic
   });
+  const { x, y, z, width, height } = RADIO_NEEDLE;
+  const needle = new RadioNeedle({ width, height });
+  needle.mesh.position.set(x, y, z);
+  needle.mesh.rotation.y = Math.PI / 2;
+  model.add(needle.mesh);
   shelf.radio.rotation.y = RADIO.turn;
   shelf.radio.clear();
   shelf.radio.add(model);
+  return needle;
 }

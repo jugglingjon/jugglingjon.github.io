@@ -475,6 +475,8 @@ models
   .loadAsync(`${import.meta.env.BASE_URL}models/radio/clock-radio.glb`)
   .then((gltf) => {
     room.setRadioModel(gltf.scene);
+    room.radioNeedle.reducedMotion = reducedMotion;
+    post.markGlowing(room.radioNeedle.mesh);
     refreshOccluders();
   })
   .catch((err) => console.warn("Couldn't load the clock radio; the shelf stays empty.", err));
@@ -637,6 +639,7 @@ renderer.setAnimationLoop(() => {
       tvLevel: glow.level,
       pixelScale: renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))),
       camera,
+      radioOn: audio?.radioOn,
     });
     renderer.render(room.scene, camera);
     outline.render(room.scene, camera, clock);

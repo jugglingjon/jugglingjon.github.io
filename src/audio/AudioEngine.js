@@ -209,6 +209,10 @@ export class AudioEngine {
     return true;
   }
 
+  get radioOn() {
+    return Boolean(this.radio && !this.radio.paused);
+  }
+
   // A remote button: plastic tick over a soft thock.
   click() {
     const t = this.ctx.currentTime;

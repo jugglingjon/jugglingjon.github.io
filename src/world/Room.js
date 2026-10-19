@@ -318,7 +318,7 @@ export class Room {
 
   // The clock radio on the bookshelf, from a model (main.js loads it).
   setRadioModel(model) {
-    placeRadio(this.bookshelf, model);
+    this.radioNeedle = placeRadio(this.bookshelf, model);
   }
 
   // Flick the table lamp's switch; returns whether it's now on.
@@ -328,7 +328,7 @@ export class Room {
     return this.tableLampOn;
   }
 
-  update(time, { tvColor, tvLevel, pixelScale, camera }) {
+  update(time, { tvColor, tvLevel, pixelScale, camera, radioOn = false }) {
     const s = this.settings;
     const dt = Math.max(0, time - this.time);
     this.time = time;
@@ -338,6 +338,7 @@ export class Room {
     this.lava.update(dt, camera, s.bookshelf);
     this.panda.update(dt);
     this.plantTwirl.update(dt);
+    this.radioNeedle?.update(dt, radioOn);
 
     const level = s.flicker ? neonFlicker(time) : 1;
     this.neon.intensity = this.neonIntensity * s.neon * level;

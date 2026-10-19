@@ -3,12 +3,14 @@
 vertex attributes it doesn't need, narrows 32-bit indices to 16-bit where they
 fit, and repacks the buffer. Needs Python 3 and Pillow (pip install pillow).
 
-  python3 scripts/slim-glb.py in.glb out.glb --image N:SIZE:FORMAT[:QUALITY] ... [--drop ATTRIBUTE] [--emissive M:FILE]
+  python3 scripts/slim-glb.py in.glb out.glb --image N:SIZE:FORMAT[:QUALITY] ... [--drop ATTRIBUTE] [--source N:FILE] [--emissive M:FILE]
 
 --image   texture N (its index in the file's images) to SIZE x SIZE pixels, as
           jpeg (with QUALITY, default 88) or png. Textures not listed are kept.
 --drop    a vertex attribute to leave out, e.g. TANGENT. Check the result: three
           works tangents out itself without them, but not always the same way.
+--source  an image to use in place of texture N (an edited copy of it, the
+          same layout), before any --image resizing.
 --emissive  an image (PNG or JPEG, laid out like the base colour texture) to
           add as material M's emissive map: what glows, black elsewhere.
 
@@ -17,9 +19,10 @@ The soda can (public/models/can/soda-can.glb, 460 KB -> 96 KB):
     --image 0:512:jpeg:85 --image 1:256:png --image 2:512:jpeg:92
 
 The clock radio (public/models/radio/clock-radio.glb, 318 KB -> 52 KB), its
-clock digits and tuning dial lit by a hand-painted glow map:
+tuning needle painted out of the texture (the site draws its own) and its
+clock digits and dial lit by a hand-painted glow map:
   python3 scripts/slim-glb.py digital_radio_clock.glb public/models/radio/clock-radio.glb \
-    --image 0:512:jpeg:88 --emissive 0:clock-glow.png
+    --source 0:texture-no-needle.png --image 0:512:jpeg:88 --emissive 0:clock-glow.png
 """
 import argparse, io, json, struct
 from PIL import Image
@@ -28,6 +31,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument('src'); ap.add_argument('dst')
 ap.add_argument('--image', action='append', default=[])
 ap.add_argument('--drop', action='append', default=[])
+ap.add_argument('--source', action='append', default=[])
 ap.add_argument('--emissive', action='append', default=[])
 args = ap.parse_args()
 
@@ -42,7 +46,12 @@ views = gltf['bufferViews']
 accessors = gltf['accessors']
 view_bytes = [binary[v.get('byteOffset', 0):v.get('byteOffset', 0) + v['byteLength']] for v in views]
 
-# Images: resize and re-encode.
+# Images: swap in edited copies, then resize and re-encode.
+for spec in args.source:
+    i, path = spec.split(':', 1)
+    view_bytes[gltf['images'][int(i)]['bufferView']] = open(path, 'rb').read()
+    print(f'image {i}: from {path}')
+
 for spec in args.image:
     parts = spec.split(':')
     i, size, fmt = int(parts[0]), int(parts[1]), parts[2]
