@@ -199,4 +199,75 @@ Pick a power color and the model, the swatches and the order form change togethe
 The rest is plain HTML, CSS and a little JavaScript: the FAQ is an accordion, the swatches are a radio group you can work from the keyboard, and the sunbursts are CSS conic gradients, turned by an animated custom property.`,
     placeholder: true,
   },
+  {
+    slug: 'arpa-h',
+    name: 'ARPA-H',
+    blurb: 'Health research agency · web',
+    title: 'ARPA-H: a website for health breakthroughs',
+    summary: 'The public website of the Advanced Research Projects Agency for Health: its mission, more than 40 research programs, funding, news and careers.',
+    role: 'Front-end development',
+    client: 'Advanced Research Projects Agency for Health (ARPA-H)',
+    tech: ['Drupal', 'U.S. Web Design System', 'JavaScript', 'GSAP', 'Swiper'],
+    links: { live: 'https://arpa-h.gov/' },
+    tv: {
+      type: 'slideshow',
+      slides: ['tv-home.webp', 'tv-mission.webp', 'tv-portfolio.webp', 'tv-programs.webp', 'tv-about.webp', 'tv-careers.webp', 'tv-news.webp', 'tv-spectra.webp'],
+    },
+    music: '/media/music/arpa-h.mp3',
+    hero: 'hero.webp',
+    share: 'share.jpg',
+    gallery: [
+      {
+        src: 'mission.webp',
+        alt: 'The mission statement in large white type over a gradient from navy to pink and violet',
+        caption: 'The mission brightens word by word as you scroll to it',
+      },
+      {
+        src: 'portfolio.webp',
+        alt: 'Investing in transformative health solutions: a carousel of program cards, each with a glowing illustration',
+        caption: 'The program portfolio on the homepage',
+      },
+      {
+        src: 'programs.webp',
+        alt: 'The Programs page: a grid of white cards for 1-CURE, ADAPT, ADVOCATE, AIR and more, each with its own illustration and question',
+        caption: 'Every program has its own card, illustration and question',
+      },
+      {
+        src: 'about.webp',
+        alt: 'The About page: Who We Are beside a photo of a scientist in safety glasses, and What We Fund beside a microscope image of cells',
+        caption: 'About ARPA-H',
+      },
+      {
+        src: 'careers.webp',
+        alt: 'Career Opportunities beside a gloved hand holding up a vial, over a list of current openings',
+        caption: 'Careers',
+      },
+      {
+        src: 'spectra.webp',
+        alt: 'The SPECTRA program page: its full name over navy beside a glowing illustration, and its solicitation status below',
+        caption: 'A program page: SPECTRA',
+      },
+      { src: 'phone-home.webp', alt: 'The homepage on a phone: the official-government banner, the ARPA-H logo and the headline', caption: 'On a phone…' },
+      { src: 'phone-programs.webp', alt: 'The 1-CURE program card on a phone, with its illustration and question', caption: '…and a program card' },
+    ],
+    alt: {
+      'tv-home.webp': 'ARPA-H’s homepage: The future of health isn’t waiting, and neither are we, on navy',
+      'tv-mission.webp': 'The mission statement over a navy-to-pink gradient',
+      'tv-portfolio.webp': 'Investing in transformative health solutions: program cards for SURPASS, SPECTRA, UNIQUE and PCX',
+      'tv-programs.webp': 'The program grid: 1-CURE, ADAPT, ADVOCATE, AIR, APECx, ARPA-H BDF, BIOGAMI and BoSS',
+      'tv-about.webp': 'Who We Are and What We Fund, beside a scientist and a microscope image of cells',
+      'tv-careers.webp': 'Career Opportunities beside a gloved hand holding a vial',
+      'tv-news.webp': 'News and Insights beside a robotic surgical arm',
+      'tv-spectra.webp': 'The SPECTRA program page: Systems for Phenotypic Evaluation, Clinical Trajectories, Response, and Agency',
+      'hero.webp': 'ARPA-H’s News and Insights page: the heading beside a robotic surgical arm in a ring of light',
+    },
+    story: `ARPA-H, the Advanced Research Projects Agency for Health, funds research that's too big, too complex or too high-risk for traditional funding or industry. Its website is the agency's front door: for researchers looking for funding, for patients and partners, for the press, and for people who might want to work there.
+
+The homepage opens on a full-width background video under "The future of health isn't waiting, and neither are we", with a button to pause it. Below, the mission statement brightens word by word as you scroll it into view, and carousels lead into the program portfolio and the latest news.
+
+Each of the more than 40 research programs has its own illustrated card and page: the question it asks, the problem and the proposed solution, its solicitation status and key dates, and the program manager behind it. The portfolio can be filtered by solicitation status and sorted.
+
+It's built on Drupal with the U.S. Web Design System, so it has the parts every federal site shares, from the official-government banner to accessible menus and forms, with motion (GSAP and ScrollTrigger) and carousels (Swiper) layered on top.`,
+    placeholder: true,
+  },
 ];
