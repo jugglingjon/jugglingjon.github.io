@@ -270,6 +270,7 @@ The rest is plain HTML, CSS and a little JavaScript: the FAQ is an accordion, th
       'tv-news.webp': 'News and Insights beside a robotic surgical arm',
       'tv-spectra.webp': 'The SPECTRA program page: Systems for Phenotypic Evaluation, Clinical Trajectories, Response, and Agency',
       'hero.webp': 'ARPA-H’s News and Insights page: the heading beside a robotic surgical arm in a ring of light',
+      'share.jpg': 'ARPA-H’s homepage: The future of health isn’t waiting, and neither are we, over a glowing holographic figure from the background video',
     },
     story: `ARPA-H, the Advanced Research Projects Agency for Health, funds research that's too big, too complex or too high-risk for traditional funding or industry. Its website is the agency's front door: for researchers looking for funding, for patients and partners, for the press, and for people who might want to work there.
 
