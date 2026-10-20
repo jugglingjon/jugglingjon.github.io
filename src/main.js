@@ -268,8 +268,11 @@ function watch(row) {
 // pointing. With the magazine or the résumé open, the pointer reads it instead.
 // Leaving the page lowers the arm and faces the set again.
 const pointer = new THREE.Vector2();
+const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches; // a phone or tablet
+let touching = coarse; // the last pointer was a finger
 function aim(e) {
   pointer.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  touching = e.pointerType === 'touch';
   if (drink.active || story.isOpen) {
     // Hands full, or reading: the pointer waits.
     rig.setActive(false);
@@ -285,6 +288,14 @@ function aim(e) {
     document.body.dataset.aim = 'look';
     return { inside: false, reading: true };
   }
+  if (touching) {
+    // No hover on a touch screen: the remote stays up, in reach, and a tap
+    // does whatever it lands on (see the touch gestures below).
+    rig.setActive(true);
+    interactions.setPointer(pointer.x, pointer.y);
+    document.body.dataset.aim = 'look';
+    return { inside: false, touch: true };
+  }
   const where = locatePointer(e.clientX, e.clientY, window.innerWidth, window.innerHeight, rig.settings.area, rig.settings.areaWidth, rig.settings.areaRight, rig.settings.areaLift);
   if (where.inside) rig.setPointer(where.u, where.v);
   rig.setActive(where.inside);
@@ -295,7 +306,8 @@ function aim(e) {
   return where;
 }
 window.addEventListener('pointermove', aim);
-document.documentElement.addEventListener('pointerleave', () => {
+document.documentElement.addEventListener('pointerleave', (e) => {
+  if (e.pointerType === 'touch') return; // a finger lifting off isn't the pointer leaving
   rig.setActive(false);
   seated.setLook(0, 0);
   interactions.clearPointer();
@@ -310,16 +322,12 @@ canvas.addEventListener('pointerdown', (e) => {
   if (state.mode !== 'seated' || e.button !== 0) return;
   const where = aim(e);
   if (where.busy) return;
-  if (where.reading && plane.isOpen) {
-    const link = plane.linkAtPointer(pointer, seated.camera);
-    if (link) follow(link.url);
-    else if (!plane.isUnder(pointer, seated.camera)) closeResume();
+  if (e.pointerType === 'touch') {
+    touchDown(e, where);
     return;
   }
   if (where.reading) {
-    const row = magazine.rowAtPointer(pointer, seated.camera);
-    if (row >= 0) watch(row);
-    else if (!magazine.isUnder(pointer, seated.camera)) closeMagazine();
+    readClick();
     return;
   }
   if (!where.inside) {
@@ -330,6 +338,95 @@ canvas.addEventListener('pointerdown', (e) => {
   remote.hold(rig.target);
 });
 for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(type, () => remote.release());
+
+// A click (or tap) while reading: a link or a listing does its thing, and off
+// the page puts it down. On the résumé brought closer (by a pinch), a tap on
+// the page takes it back out to the whole page.
+function readClick() {
+  if (plane.isOpen) {
+    const link = plane.linkAtPointer(pointer, seated.camera);
+    if (link) follow(link.url);
+    else if (!plane.isUnder(pointer, seated.camera)) closeResume();
+    else if (plane.zoom > 1) plane.setZoom(1);
+    return;
+  }
+  const row = magazine.rowAtPointer(pointer, seated.camera);
+  if (row >= 0) watch(row);
+  else if (!magazine.isUnder(pointer, seated.camera)) closeMagazine();
+}
+
+// Touch gestures. Tap a button on the remote and your thumb presses it (hold
+// CH or VOL to repeat); tap something in the room to click it; drag to look
+// around (further on a narrow screen: see resize); pinch to zoom in on the
+// set and back out. Reading, a tap works like a click; and on the résumé a
+// pinch brings the page closer, and a drag slides it about.
+const fingers = new Map(); // touch pointerId → [x, y] now
+let gesture = null; // what the fingers down are doing: 'press', 'tap', 'look', 'pan' or 'pinch'
+const clampOne = (n) => Math.max(-1, Math.min(1, n));
+const spread = () => {
+  const [[ax, ay], [bx, by]] = [...fingers.values()];
+  return Math.hypot(ax - bx, ay - by);
+};
+
+function touchDown(e, where) {
+  fingers.set(e.pointerId, [e.clientX, e.clientY]);
+  if (fingers.size === 2) {
+    // A second finger: a pinch, whatever the first was doing.
+    remote.release();
+    gesture = { kind: 'pinch', from: spread(), zoom: plane.isOpen ? plane.zoom : null };
+    return;
+  }
+  if (fingers.size > 2) return;
+  const button = !where.reading && rig.buttonAt(pointer, seated.camera);
+  if (button) {
+    rig.pin(button);
+    seated.setLook(0, 0); // using the remote, you look at the set
+    canvas.setPointerCapture(e.pointerId);
+    remote.hold(button);
+    gesture = { kind: 'press' };
+    return;
+  }
+  gesture = { kind: 'tap', x: e.clientX, y: e.clientY, last: [e.clientX, e.clientY], look: seated.lookTarget.clone(), reading: Boolean(where.reading) };
+}
+
+canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'touch' || !fingers.has(e.pointerId)) return;
+  fingers.set(e.pointerId, [e.clientX, e.clientY]);
+  if (gesture?.kind === 'pinch') {
+    if (fingers.size < 2) return;
+    const ratio = spread() / gesture.from;
+    if (gesture.zoom !== null) plane.setZoom(gesture.zoom * ratio); // the résumé, held up: closer or further
+    else if (ratio > 1.15) seated.setZoomed(true);
+    else if (ratio < 0.87) seated.setZoomed(false);
+    return;
+  }
+  if (gesture?.kind === 'tap' && Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > 10) gesture.kind = gesture.reading ? 'pan' : 'look';
+  if (gesture?.kind === 'pan') {
+    // Slide the page with the finger.
+    if (plane.isOpen) plane.panBy(((e.clientX - gesture.last[0]) / window.innerWidth) * 2, (-(e.clientY - gesture.last[1]) / window.innerHeight) * 2);
+    gesture.last = [e.clientX, e.clientY];
+  }
+  if (gesture?.kind === 'look') {
+    // Drag the room: the view turns the opposite way to the finger.
+    const dx = (e.clientX - gesture.x) / (window.innerWidth / 2);
+    const dy = (e.clientY - gesture.y) / (window.innerHeight / 2);
+    seated.setLook(clampOne(gesture.look.x - dx), clampOne(gesture.look.y + dy));
+  }
+});
+
+for (const type of ['pointerup', 'pointercancel']) {
+  canvas.addEventListener(type, (e) => {
+    if (e.pointerType !== 'touch' || !fingers.delete(e.pointerId)) return;
+    if (type === 'pointerup' && gesture?.kind === 'tap') {
+      if (gesture.reading) readClick();
+      else interactions.pick(seated.camera)?.onClick();
+    }
+    if (!fingers.size) {
+      gesture = null;
+      interactions.clearPointer();
+    }
+  });
+}
 
 let current = null;
 
@@ -372,6 +469,9 @@ function startAudio() {
 }
 window.addEventListener('pointerdown', startAudio, true);
 window.addEventListener('keydown', startAudio, true);
+// iOS only counts the end of a tap (or a click) as a gesture that may start sound.
+window.addEventListener('touchend', startAudio, true);
+window.addEventListener('click', startAudio, true);
 
 const nowPlaying = document.querySelector('#now-playing');
 const soundLabel = document.querySelector('#sound');
@@ -527,6 +627,11 @@ const actions = {
 };
 
 const lab = createLabGui({ params, state, actions, glow, osd, renderer, tv, remote, soundSettings, seated, room, rig, post });
+// On a phone or tablet the lab's panel would crowd the screen: it starts hidden.
+if (coarse) {
+  state.panel = false;
+  lab.gui.show(false);
+}
 
 // The WebXR hand model replaces the built-in hand once it has loaded.
 const rightHand = XRHand.load(`${import.meta.env.BASE_URL}models/hand/right.glb`)
@@ -663,6 +768,10 @@ function resize() {
   renderer.setSize(width, height);
   post.setSize(width, height);
   seated.setAspect(width / height);
+  // Dragging to look around on a touch screen reaches further on a narrow
+  // one, which shows less of the room: on a phone held upright, from the
+  // bookshelf to the plant.
+  if (coarse) seated.settings.lookAround = Math.max(1, 1.6 / (width / height));
   orbitCamera.aspect = width / height;
   orbitCamera.updateProjectionMatrix();
 
@@ -716,7 +825,9 @@ renderer.setAnimationLoop(() => {
     if (seatedView) seated.update(clock, realDt);
     else controls.update();
     drink.update(dt, seated.camera);
-    rig.update(dt, seated.camera, clock, { reducedMotion });
+    // On a touch screen the remote stays up whenever you're not busy with something else.
+    if (touching && !drink.active && !story.isOpen && !magazine.isOpen && !plane.isOpen) rig.setActive(true);
+    rig.update(dt, seated.camera, clock, { reducedMotion, viewFov: seated.baseFov });
     drink.arm?.update(seated.camera);
     magazine.update(dt, seated.camera);
     plane.update(dt, seated.camera);

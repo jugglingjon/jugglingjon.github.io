@@ -65,6 +65,8 @@ export class ArmRig {
     this.active = true;
     this.raise = 0;
     this.hovered = 'ch+';
+    this.pinned = null; // a button tapped on a touch screen, the thumb held over it
+    this.raycaster = new THREE.Raycaster();
     this.pressButton = null;
     this.pressTime = Infinity;
     this.tip = null;
@@ -117,8 +119,27 @@ export class ArmRig {
   // Pointer across the remote area (−1…1 each way, y up). The target updates
   // straight away, so a press right after (a tap) goes to the right button.
   setPointer(x, y) {
+    this.pinned = null;
     this.pointer.set(x, y);
     this.hovered = nearestButton(pointerToField(x, y), this.hovered);
+  }
+
+  // A touch screen has no pointer hovering over the remote: the thumb goes to
+  // whichever button is tapped, and stays there.
+  pin(button) {
+    this.pinned = button;
+    this.hovered = button;
+  }
+
+  // The button nearest where a ray from `pointer` (NDC) lands on the remote,
+  // through your hand if it's in the way, or null if it misses the remote.
+  buttonAt(pointer, camera) {
+    if (this.raise < 0.5 || this.override.weight > 0) return null;
+    this.raycaster.setFromCamera(pointer, camera);
+    const hit = this.raycaster.intersectObject(this.model.group, true)[0];
+    if (!hit) return null;
+    const p = this.model.group.worldToLocal(hit.point.clone());
+    return nearestButton({ x: p.x, z: p.z });
   }
 
   // Lowered out of view while the pointer is outside the remote area.
@@ -139,7 +160,9 @@ export class ArmRig {
     return Math.max(0, 1 - (t - PRESS.down - PRESS.hold) / PRESS.up);
   }
 
-  update(dt, camera, time, { reducedMotion = false } = {}) {
+  // `viewFov`: the view's vertical field of view before any zoom, to keep the
+  // remote in frame on a narrow screen.
+  update(dt, camera, time, { reducedMotion = false, viewFov = camera.fov } = {}) {
     const s = this.settings;
     this.syncHand();
     this.raise += ((this.active ? 1 : 0) - this.raise) * (1 - Math.exp(-dt * 5));
@@ -150,9 +173,12 @@ export class ArmRig {
 
     // Hold the remote out in front, aimed at the TV, face tilted towards you.
     // The arm drifts a few centimetres after the pointer, and the tip swings
-    // that way a little, while still pointing at the set.
+    // that way a little, while still pointing at the set. On a narrow screen
+    // (a phone held upright) it comes in from the right, to stay in view.
+    const halfWidth = s.distance * Math.tan(THREE.MathUtils.degToRad(viewFov / 2)) * camera.aspect;
+    const x = Math.min(s.x, halfWidth - 0.05 * s.size);
     this.offset.set(
-      s.x + this.look.x * 0.02 * follow + Math.sin(time * 0.9) * 0.002 * sway,
+      x + this.look.x * 0.02 * follow + Math.sin(time * 0.9) * 0.002 * sway,
       s.y + this.look.y * 0.014 * follow - lower * 0.45 + Math.sin(time * 1.3) * 0.0015 * sway,
       -s.distance + lower * 0.1,
     );
@@ -175,8 +201,8 @@ export class ArmRig {
     this.held.updateMatrixWorld();
 
     // Which button the thumb is after. A press in progress wins.
-    const field = pointerToField(this.pointer.x, this.pointer.y);
-    this.hovered = nearestButton(field, this.hovered);
+    const field = this.pinned ? this.model.buttons.get(this.pinned).def : pointerToField(this.pointer.x, this.pointer.y);
+    this.hovered = this.pinned ?? nearestButton(field, this.hovered);
     this.pressTime += dt;
     const pressing = this.pressTime < PRESS_LENGTH && this.model.buttons.has(this.pressButton);
     const aim = pressing ? this.pressButton : this.hovered;

@@ -15,7 +15,7 @@ export const MAGAZINE_SIZE = { width: 0.135, length: 0.19, block: 0.0032, cover:
 // the look.
 const TIMING = { lift: 0.65, look: 0.6, flip: 0.5 };
 const TOTAL = TIMING.lift + TIMING.look + TIMING.flip;
-const READ = { fill: 0.72, drop: 0.012, tilt: 0.12 }; // share of the view's height, a touch low, top tipped back
+const READ = { fill: 0.72, fillWidth: 0.94, drop: 0.012, tilt: 0.12 }; // share of the view's height (or width, if that's tighter), a touch low, top tipped back
 
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
@@ -190,7 +190,9 @@ export class ListingsMagazine {
 
     // Held with the shut cover in the middle of the view, sliding over as it
     // opens so the open spread ends up in the middle.
-    const distance = MAGAZINE_SIZE.length / READ.fill / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+    // Far enough off to fit the open spread, two pages wide, on a narrow screen too.
+    const tan = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const distance = Math.max(MAGAZINE_SIZE.length / READ.fill / tan, (2 * MAGAZINE_SIZE.width) / READ.fillWidth / (tan * camera.aspect));
     this.readQuaternion.copy(camera.quaternion).multiply(HOLD);
     this.offset.lerpVectors(this.coverMiddle, this.spine, flip).applyQuaternion(this.readQuaternion);
     this.readPosition.set(0, -READ.drop, -distance).applyQuaternion(camera.quaternion).add(camera.position).sub(this.offset);

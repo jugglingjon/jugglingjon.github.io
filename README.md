@@ -59,6 +59,23 @@ The room fades up once it has loaded. The set comes on by itself to a station id
 - **Tuner** sets reduced motion, rough-change odds, IR latency and the snow/surf timings. **Sound** sets the volume and mix.
 - Every slider in **Signal**, **Tube** and **Glass** is live. Changes auto-save to this browser. **Presets → Copy JSON** exports the current look; paste it into `PRESETS` in `src/screen/params.js` to make it permanent.
 
+### On a touch screen
+
+A finger has no hover, so on a phone or tablet the room works by taps and gestures instead (`touchDown` and the touch handlers in `main.js`; a mouse works as above, even on a touch laptop):
+
+| Gesture | What it does |
+|---|---|
+| Tap a button on the remote | Your thumb presses it (hold CH or VOL to repeat), and the view faces the set. The tap finds the nearest button to where it lands on the remote's face (`ArmRig.buttonAt`), through your hand if it's in the way |
+| Tap something in the room | Click it: the lamp, the paper plane, the listings, the can… |
+| Drag | Look around. It reaches further the narrower the screen (`lookAround`, 1.6 ÷ the screen's aspect, at least 1): on a phone held upright, from the bookshelf to the plant |
+| Pinch out / in | Zoom in on the set / back out |
+| Reading the listings or the résumé | Tap a listing or a link; tap off it to put it down. On the résumé, pinch to bring the page closer (up to 3×, `READ_ZOOM`), drag to slide it about, and tap the page to see all of it again |
+
+- **The remote stays up** whenever you're not busy with something else, and on a narrow screen it comes in from the right to stay in view (`viewFov` in `ArmRig.update`).
+- **The open listings** fit the screen's width as well as its height, so the whole spread shows on a phone held upright.
+- **The lab panel** starts hidden on a phone or tablet.
+- **Sound** starts with your first tap. iPhones only count the end of a tap (or a click) as the gesture that may start sound, so those are listened for too.
+
 ## Your work
 
 Every project is an entry in **`content/projects.js`**, in channel order (the number keys tune straight to the first nine), with its media in **`public/work/<slug>/`**. A project can ask for a channel of its own with `channel: 8`; the rest take the lowest numbers still free, in order, and the test cards fill in after them (`src/content/lineup.js`, shared by the TV, the listings and the pages). A show's time slot follows its number: channel 1 at 7:00, each one half an hour later. The comment at the top of that file lists every field. The test cards come on the channels after your work. `content/site.js` holds the site's title, description and published URL.

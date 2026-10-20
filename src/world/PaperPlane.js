@@ -17,6 +17,7 @@ const TOTAL = TIMING.lift + TIMING.hold + TIMING.unfold;
 // The share of the view the page fills; how much farther off the folded plane
 // is held; how high it arcs on its way up; its reading light.
 const READ = { fill: 0.9, hold: 1.35, arc: 0.07, glow: 0.5 };
+export const READ_ZOOM = 3; // how much closer a pinch can bring the page (on a phone, its type's tiny)
 const LAYER = 0.00004; // metres between stacked layers of paper
 
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
@@ -103,6 +104,9 @@ export class PaperPlane {
     this.holdPosition = new THREE.Vector3();
     this.holdQuaternion = new THREE.Quaternion();
     this.held = new THREE.Quaternion(); // how it lay on the table, as you saw it
+    this.zoom = 1; // brought this much closer to read (pinched, on a touch screen)
+    this.pan = new THREE.Vector2(); // the point on the page (sheet space) in the middle of the view, zoomed in
+    this.view = { halfWidth: 1, halfHeight: 1 }; // how much of the page's plane the view takes in, held up
   }
 
   get isOpen() {
@@ -197,6 +201,22 @@ export class PaperPlane {
   close() {
     this.target = 0;
     this.setHover(null);
+    this.setZoom(1);
+  }
+
+  // Bring the page closer (1, as held up, … READ_ZOOM), keeping the view on it.
+  setZoom(zoom) {
+    this.zoom = THREE.MathUtils.clamp(zoom, 1, READ_ZOOM);
+    this.panBy(0, 0);
+  }
+
+  // Slide the page by a drag of (dx, dy) in NDC (the view's width or height is
+  // 2), as far as its edges allow.
+  panBy(dx, dy) {
+    const { halfWidth, halfHeight } = this.view;
+    const room = (half, page) => Math.max(0, page / 2 - half);
+    this.pan.x = THREE.MathUtils.clamp(this.pan.x - dx * halfWidth, -room(halfWidth, SHEET.width), room(halfWidth, SHEET.width));
+    this.pan.y = THREE.MathUtils.clamp(this.pan.y - dy * halfHeight, -room(halfHeight, SHEET.height), room(halfHeight, SHEET.height));
   }
 
   setHover(link) {
@@ -252,7 +272,11 @@ export class PaperPlane {
     // it; then turned to face you as it opens out into the page.
     const tan = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     const distance = Math.max(SHEET.height / (READ.fill * tan), SHEET.width / (READ.fill * tan * camera.aspect));
-    this.readPosition.set(0, 0, -distance).applyQuaternion(camera.quaternion).add(camera.position);
+    const near = distance / this.zoom;
+    this.view.halfHeight = (near * tan) / 2;
+    this.view.halfWidth = this.view.halfHeight * camera.aspect;
+    this.panBy(0, 0); // still within the page's edges, as the view changes
+    this.readPosition.set(-this.pan.x, -this.pan.y, -near).applyQuaternion(camera.quaternion).add(camera.position);
     this.holdPosition.set(0, 0, -distance * READ.hold).applyQuaternion(camera.quaternion).add(camera.position);
     this.holdQuaternion.copy(camera.quaternion).multiply(this.held);
     this.sheet.position.lerpVectors(this.tablePosition, this.holdPosition, lift).lerp(this.readPosition, turn);
