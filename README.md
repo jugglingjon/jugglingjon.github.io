@@ -25,7 +25,7 @@ One-time setup on GitHub: **Settings → Pages → Build and deployment → Sour
 
 ## Screen lab controls
 
-The room fades up once it has loaded, and the set switches itself on: to a station ident the first time in a visit, then to channel 1 (see [The curtain and the station ident](#the-curtain-and-the-station-ident)). Your first click or key press enables sound, since browsers block audio until you interact with the page. Press <kbd>P</kbd>, or move your thumb to the red **POWER** button (top right of the remote) and click, to switch the set off and on.
+The room fades up once it has loaded. The first time in a visit, the set comes on by itself to a station ident, then switches off again (see [The curtain and the station ident](#the-curtain-and-the-station-ident)). Then it's yours: press <kbd>P</kbd>, or move your thumb to the red **POWER** button (top right of the remote) and click. That first press also enables sound, since browsers block audio until you interact with the page.
 
 | Input | Remote button | Action |
 |---|---|---|
@@ -187,15 +187,15 @@ Television.receive(button)
   - **Straight from the hardware** (unaffected by volume): remote clicks, the tuner relay, the power thunk, degauss hum and HV crackle, and the 15.7 kHz flyback whine.
   - **Always on:** quiet room tone.
 - **Reduced motion:** with `prefers-reduced-motion` the tuner swaps through a quick snow cut, with no roll or tearing.
-- **Switching off lets go of the picture**, so the next power-on starts a channel afresh: the ident from its first frame, a video back on air.
+- **Switching off lets go of the picture** once it has collapsed to a dot (`COLLAPSE` in `transitions.js`), so the next power-on starts a channel afresh: the ident from its first frame, a video back on air.
 
 ## The curtain and the station ident
 
 - **The curtain** (`.curtain` in `index.html`, lifted by `src/intro/curtain.js`) keeps the page dark from the very first paint until the room is ready: both hands, the plant, the can, the clock radio, the listings cover and the ident's fonts are in, every shader is compiled (`renderer.compileAsync`), so the fade doesn't stutter, and a frame is drawn. Then the room fades up over 1.2 s (0.3 s with reduced motion). It waits at most 3 s from page load (`CURTAIN.cap`); after that the room comes up with whatever stand-ins are still there, and the models swap in as they arrive. If the wait passes 1.5 s, "Warming up the set…" comes up on the curtain. If the script never runs, the curtain gives up by itself after 12 s (a CSS animation); with JavaScript off it isn't there at all (`<noscript>`).
-- **The station ident** (`src/intro/ident.js`): 0.6 s after the room comes up, the set switches itself on to an ident, the way a station opened its broadcast day. Over a starfield and a synthwave grid rolling towards you, a neon triangle draws itself in, "JONATHAN CRONIN" flies in from the distance in chrome, trailing ghosts, and lands with a flash, a glint runs across the chrome, and "Interactive Portfolio" stutters on in neon script. It's drawn on a 2D canvas each frame, at the channels' 1280 × 960, and the set shows it like any channel, so it gets the warm-up, the scanlines and the glass. After 6.5 s (`IDENT.seconds`) the set tunes to channel 1 through the usual change. The beats' timings are in `BEATS`; the name, tagline, fonts and colours are near the top of the file.
-- **Once a visit:** a `sessionStorage` flag (`retro-portfolio:ident`) remembers it's been shown, so reloading or coming back from a project's page goes straight to channel 1. A link to a project (`?channel=`) skips it too and comes on to that channel.
-- **Skipping:** any click or key cuts it short and tunes to channel 1. A remote button still does its job, so <kbd>5</kbd> lands on channel 5 and POWER switches the set off.
-- **Reduced motion** shows the finished card, held still. It's silent: browsers block sound until your first click, which skips it anyway.
+- **The station ident** (`src/intro/ident.js`): 0.6 s after the room comes up, the set switches itself on to an ident, the way a station opened its broadcast day. Over a starfield and a synthwave grid rolling towards you, a neon triangle draws itself in, "JONATHAN CRONIN" flies in from the distance in chrome, trailing ghosts, and lands with a flash, a glint runs across the chrome, and "Interactive Portfolio" stutters on in neon script. It's drawn on a 2D canvas each frame, at the channels' 1280 × 960, and the set shows it like any channel, so it gets the warm-up, the scanlines and the glass. After 6.5 s (`IDENT.seconds`) the set switches itself off, collapsing the card to a dot, and waits for you to switch it on. That's deliberate: switching it on is a click, and browsers only allow sound after one, so the first channel comes on with its sound. The beats' timings are in `BEATS`; the name, tagline, fonts and colours are near the top of the file.
+- **Once a visit:** a `sessionStorage` flag (`retro-portfolio:ident`) remembers it's been shown, so reloading or coming back from a project's page leaves the set off, waiting for you. A link to a project (`?channel=`) skips it too and comes on to that channel.
+- **Skipping:** any click or key cuts it short and tunes to channel 1, with sound, since that was a click. A remote button still does its job, so <kbd>5</kbd> lands on channel 5 and POWER switches the set off.
+- **Reduced motion** shows the finished card, held still. It's silent: browsers block sound until your first click.
 - **Fonts:** Exo 2 Black Italic (the chrome) and Mr Dafoe (the neon), self-hosted in `public/fonts/` (Latin subsets, 17 KB each) and loaded with the `FontFace` API. See [Credits](#credits).
 
 ## Project structure

@@ -27,8 +27,9 @@ export const digitChannel = (digit) => (digit === '0' ? 10 : Number(digit));
 // swaps stations under it, and only locks once the viewer pauses.
 //
 // It can also power on into a station ident (powerOnWithIdent): the ident is
-// on air in place of the channel until it ends or a button cuts it short,
-// then the set changes over to the channel as if you'd tuned to it.
+// on air in place of the channel, then the set switches itself off. A button
+// cuts it short, and the set changes over to the channel as if you'd tuned
+// to it.
 //
 // Events (detail in brackets):
 //   power {on} · tune {number, channel} · swap {number, channel}
@@ -126,12 +127,12 @@ export class Television extends EventTarget {
     });
   }
 
-  // Power on into `ident` ({ name, source }) for `seconds`, then over to the channel.
+  // Power on into `ident` ({ name, source }) for `seconds`, then off again.
   powerOnWithIdent(ident, seconds) {
     if (this.on) return;
     this.ident = ident;
     this.powerOn();
-    this.identCall = gsap.delayedCall(seconds, () => this.endIdent());
+    this.identCall = gsap.delayedCall(seconds, () => this.powerOff());
   }
 
   // Off the ident and over to the channel, as if you'd tuned to it.

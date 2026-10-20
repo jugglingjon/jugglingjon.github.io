@@ -8,7 +8,7 @@ import { cloneDefaults, createFx } from './screen/params.js';
 import { SignalPass } from './screen/SignalPass.js';
 import { ScreenMaterial } from './screen/ScreenMaterial.js';
 import { OSD } from './screen/OSD.js';
-import { degauss } from './screen/transitions.js';
+import { COLLAPSE, degauss } from './screen/transitions.js';
 import { Television } from './tv/Television.js';
 import { Remote } from './tv/Remote.js';
 import { AudioEngine, SOUND_DEFAULTS } from './audio/AudioEngine.js';
@@ -347,7 +347,9 @@ tv.addEventListener('power', (e) => {
   audio?.power(e.detail.on);
   if (!e.detail.on) {
     audio?.setChannel(null);
-    showSource(null); // let go of the picture, so the next power-on starts it afresh (an ident from its first frame, a video back on air)
+    // Once the picture has collapsed, let go of it, so the next power-on
+    // starts it afresh (an ident from its first frame, a video back on air).
+    gsap.delayedCall(COLLAPSE, () => tv.on || showSource(null));
   }
   updateHud();
 });
@@ -704,9 +706,10 @@ if (linkedChannel) {
   tv.powerOn();
 }
 
-// The curtain lifts once the room is ready, and then the set comes on by
-// itself: to the station ident the first time in a visit, straight to the
-// channel after that. (A link to a project has switched it on already.)
+// The curtain lifts once the room is ready. The first time in a visit, the set
+// then comes on by itself to the station ident, and switches off again when
+// it's over: it's yours to switch on, and that click starts the sound too.
+// (A link to a project has switched it on already.)
 function firstTimeThisVisit() {
   try {
     if (sessionStorage.getItem('retro-portfolio:ident')) return false;
@@ -718,13 +721,12 @@ function firstTimeThisVisit() {
 }
 liftCurtain(document.querySelector('.curtain'), { loads: startupLoads, renderer, scene: room.scene, camera: seated.camera, reducedMotion }).then(() => {
   gsap.delayedCall(0.6, () => {
-    if (tv.on) return;
-    if (firstTimeThisVisit()) tv.powerOnWithIdent(ident, IDENT.seconds);
-    else tv.powerOn();
+    if (!tv.on && firstTimeThisVisit()) tv.powerOnWithIdent(ident, IDENT.seconds);
   });
 });
 
-// Any click or key skips the ident (the remote's buttons do too, through the set).
+// Any click or key skips the ident to the channel (the remote's buttons do
+// too, through the set), and being a click, it brings the sound with it.
 for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => tv.ident && tv.endIdent(), true);
 
 // Then fetch every channel's media in the background, one at a time, so

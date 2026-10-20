@@ -84,7 +84,7 @@ describe('power', () => {
 describe('station ident', () => {
   const IDENT = { name: 'Ident', source: {} };
 
-  it('powers on into the ident, with no OSD, then changes over to the channel', () => {
+  it('powers on into the ident, with no OSD, then switches itself off', () => {
     const { tv, osd, of } = setup();
     tv.powerOnWithIdent(IDENT, 3);
     expect(tv.on).toBe(true);
@@ -92,12 +92,16 @@ describe('station ident', () => {
     advance(2.5);
     expect(osd.setChannel).not.toHaveBeenCalled();
     expect(tv.channel).toBe(IDENT);
-    advance(3);
+    advance(1);
+    expect(tv.on).toBe(false);
     expect(tv.ident).toBe(null);
+    expect(tv.phase).toBe('off');
+    expect(of('power').map((e) => e.on)).toEqual([true, false]);
+    expect(of('swap').map((e) => e.channel)).toEqual([IDENT]); // never changed over
+    expect(osd.setChannel).not.toHaveBeenCalled();
+    tv.receive('power'); // yours to switch on: straight to the channel
     expect(of('swap').at(-1).channel.name).toBe('Two');
     expect(tv.phase).toBe('locked');
-    expect(osd.setChannel).toHaveBeenCalledWith(2);
-    expect(osd.setCaption).toHaveBeenLastCalledWith('Two');
   });
 
   it('a button cuts it short and still does its job', () => {

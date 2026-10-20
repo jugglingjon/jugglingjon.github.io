@@ -65,12 +65,14 @@ export function powerOn(fx) {
     .fromTo(fx, { degauss: 1 }, { degauss: 0, duration: 1.4, ease: 'power2.out' }, 0.35);
 }
 
+export const COLLAPSE = 0.45; // seconds for the picture to collapse to a dot at power-off
+
 export function powerOff(fx) {
   gsap.killTweensOf(fx, 'power,afterglow,degauss');
   // Collapse to a line, then a dot that lingers on the phosphor.
   return gsap
     .timeline()
-    .to(fx, { power: 0, degauss: 0, duration: 0.45, ease: 'power3.in' })
+    .to(fx, { power: 0, degauss: 0, duration: COLLAPSE, ease: 'power3.in' })
     .set(fx, { afterglow: 1 })
     .to(fx, { afterglow: 0, duration: 1.8, ease: 'power2.out' });
 }
