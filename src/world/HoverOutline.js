@@ -43,6 +43,7 @@ export class HoverOutline {
     this.renderer = renderer;
     this.width = width;
     this.target = null;
+    this.marked = []; // what's on the outline layer now
     this.mask = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false });
     this.maskMaterial = new THREE.MeshBasicMaterial({ color: '#ffffff', fog: false, side: THREE.DoubleSide });
     this.maskCamera = new THREE.PerspectiveCamera();
@@ -74,9 +75,15 @@ export class HoverOutline {
   // Outline `object` (and everything in it), or nothing.
   setTarget(object) {
     if (object === this.target) return;
-    this.target?.traverse((o) => o.layers.disable(OUTLINE_LAYER));
+    // Unmark exactly what was marked, wherever it's gone since: part of the
+    // target can leave it (the paper plane's sheet flies off on its own).
+    for (const o of this.marked) o.layers.disable(OUTLINE_LAYER);
+    this.marked = [];
     this.target = object;
-    object?.traverse((o) => o.layers.enable(OUTLINE_LAYER));
+    object?.traverse((o) => {
+      o.layers.enable(OUTLINE_LAYER);
+      this.marked.push(o);
+    });
   }
 
   // Draw the outline over what's already on screen, after the scene's render.
