@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { FRAME } from '../content/channels.js';
+import { SIGNAL_WIDTH } from '../screen/SignalPass.js';
 import { seededRandom } from '../world/textures.js';
 
 // The station ident the set comes on to, once a visit: JONATHAN CRONIN in 80s
@@ -87,8 +88,17 @@ export function loadIdentFonts(base) {
   ).catch((err) => console.warn("Couldn't load the ident's fonts; it'll use fallbacks.", err));
 }
 
+// Laid out at the channels' size (FRAME, 1280 × 960), but drawn at the 640 ×
+// 480 the TV shows every channel at (SignalPass): a quarter of the pixels to
+// fill and upload, for the same picture. Blurs don't scale with the canvas,
+// so they're scaled by hand (blur). Redrawn at a broadcast's 30 frames a
+// second, not every frame; and what doesn't change (the sky, the grid's
+// lines, the finished triangle) is drawn once and laid in.
 const W = FRAME.width;
 const H = FRAME.height;
+const SCALE = SIGNAL_WIDTH / W;
+const FPS = 30;
+const blur = (px) => px * SCALE;
 const HORIZON = H * 0.62;
 const NAME_Y = H * 0.45; // the name's baseline
 const NEON_Y = H * 0.58;
@@ -137,12 +147,17 @@ function chromeName() {
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.strokeText(IDENT.name, x, y);
   measure.width = 0;
-  // And with its purple glow baked in, for the frames without the landing flash.
+  // And with its purple glow baked in, for the frames without the landing
+  // flash; and the flash's white burst of glow, laid in as it flares.
   const [glowing, g] = layer(canvas.width, canvas.height);
   g.shadowColor = 'rgba(180, 110, 255, 0.55)';
   g.shadowBlur = 30;
   g.drawImage(canvas, 0, 0);
-  return { canvas, glowing, y, ascent: y - top };
+  const [burst, b] = layer(canvas.width, canvas.height);
+  b.shadowColor = '#ffffff';
+  b.shadowBlur = 60;
+  b.drawImage(canvas, 0, 0);
+  return { canvas, glowing, burst, y, ascent: y - top };
 }
 
 // The tagline as a neon sign, lit and unlit (the dark tube shows when it's off).
@@ -186,74 +201,112 @@ function stars(rand) {
   }));
 }
 
-function drawSky(ctx, s, sky, time) {
+// A layer the size of the drawn picture, set up to draw in FRAME's units.
+function scaledLayer() {
+  const [canvas, ctx] = layer(W * SCALE, H * SCALE);
+  ctx.scale(SCALE, SCALE);
+  return [canvas, ctx];
+}
+
+// What doesn't change, drawn once at full strength (each frame lays it in as
+// strongly as the ident has faded up): the sky's glow, the floor's lines to
+// the vanishing point, and one glowing cross line to stamp across the floor.
+const LINE = 40; // the cross line's strip, tall enough for its glow
+function backdrop() {
+  // A red-violet glow rising off the horizon, and a soft column of light.
+  const [sky, k] = scaledLayer();
+  k.save();
+  k.translate(W / 2, HORIZON);
+  k.scale(1.9, 0.62);
+  const glow = k.createRadialGradient(0, 0, 0, 0, 0, 430);
+  glow.addColorStop(0, 'rgba(255, 70, 120, 0.62)');
+  glow.addColorStop(0.45, 'rgba(170, 30, 120, 0.3)');
+  glow.addColorStop(1, 'rgba(60, 0, 60, 0)');
+  k.fillStyle = glow;
+  k.fillRect(-W, -H, W * 2, H * 2);
+  k.restore();
+  k.save();
+  k.translate(W / 2, HORIZON);
+  k.scale(0.32, 1.5);
+  const beam = k.createRadialGradient(0, 0, 0, 0, 0, 420);
+  beam.addColorStop(0, 'rgba(255, 90, 120, 0.26)');
+  beam.addColorStop(1, 'rgba(255, 90, 120, 0)');
+  k.fillStyle = beam;
+  k.fillRect(-W * 2, -H, W * 4, H);
+  k.restore();
+  k.clearRect(0, HORIZON, W, H - HORIZON); // the floor covers it
+
+  // The floor: lines running to a vanishing point on the horizon, fading out
+  // into the distance.
+  const [floor, f] = scaledLayer();
+  f.beginPath();
+  f.rect(0, HORIZON, W, H - HORIZON);
+  f.clip();
+  f.shadowColor = '#6b4bff';
+  f.shadowBlur = blur(10);
+  const fade = f.createLinearGradient(0, HORIZON, 0, H);
+  fade.addColorStop(0, 'rgba(138, 107, 255, 0)');
+  fade.addColorStop(0.3, 'rgba(138, 107, 255, 0.75)');
+  fade.addColorStop(1, 'rgba(170, 140, 255, 1)');
+  f.strokeStyle = fade;
+  f.lineWidth = 2;
+  for (let k = -16; k <= 16; k++) {
+    f.beginPath();
+    f.moveTo(W / 2, HORIZON);
+    f.lineTo(W / 2 + k * 150, H + 40);
+    f.stroke();
+  }
+
+  const [line, l] = layer(W * SCALE, LINE * SCALE);
+  l.scale(SCALE, SCALE);
+  l.shadowColor = '#6b4bff';
+  l.shadowBlur = blur(10);
+  l.strokeStyle = 'rgb(160, 130, 255)';
+  l.lineWidth = 2;
+  l.beginPath();
+  l.moveTo(0, LINE / 2);
+  l.lineTo(W, LINE / 2);
+  l.stroke();
+  return { sky, floor, line };
+}
+
+// How strong the floor's lines are at height y: none at the horizon, most of
+// the way up a third of the way down, full at the bottom.
+function floorFade(y) {
+  const u = (y - HORIZON) / (H - HORIZON);
+  return u < 0.3 ? (u / 0.3) * 0.75 : 0.75 + ((u - 0.3) / 0.7) * 0.25;
+}
+
+function drawSky(ctx, s, sky, time, back) {
   ctx.fillStyle = '#04010a';
   ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#e8e4ff';
   for (const star of sky) {
     ctx.globalAlpha = s.glow * (0.35 + 0.65 * Math.abs(Math.sin(time * star.speed + star.phase)));
-    ctx.fillStyle = '#e8e4ff';
     ctx.fillRect(star.x, star.y, star.r * 2, star.r * 2);
   }
+  ctx.globalAlpha = s.glow;
+  ctx.drawImage(back.sky, 0, 0, W, H);
   ctx.globalAlpha = 1;
-
-  // A red-violet glow rising off the horizon, and a soft column of light.
-  ctx.save();
-  ctx.translate(W / 2, HORIZON);
-  ctx.scale(1.9, 0.62);
-  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, 430);
-  glow.addColorStop(0, `rgba(255, 70, 120, ${0.62 * s.glow})`);
-  glow.addColorStop(0.45, `rgba(170, 30, 120, ${0.3 * s.glow})`);
-  glow.addColorStop(1, 'rgba(60, 0, 60, 0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(-W, -H, W * 2, H * 2);
-  ctx.restore();
-  ctx.save();
-  ctx.translate(W / 2, HORIZON);
-  ctx.scale(0.32, 1.5);
-  const beam = ctx.createRadialGradient(0, 0, 0, 0, 0, 420);
-  beam.addColorStop(0, `rgba(255, 90, 120, ${0.26 * s.glow})`);
-  beam.addColorStop(1, 'rgba(255, 90, 120, 0)');
-  ctx.fillStyle = beam;
-  ctx.fillRect(-W * 2, -H, W * 4, H);
-  ctx.restore();
 }
 
 // The floor: lines running to a vanishing point on the horizon, and cross
 // lines rolling towards you, fading out into the distance.
-function drawGrid(ctx, s) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, HORIZON, W, H - HORIZON);
-  ctx.clip();
+function drawGrid(ctx, s, back) {
   ctx.fillStyle = '#05010e';
   ctx.fillRect(0, HORIZON, W, H - HORIZON);
-  ctx.shadowColor = '#6b4bff';
-  ctx.shadowBlur = 10;
-  const fade = ctx.createLinearGradient(0, HORIZON, 0, H);
-  fade.addColorStop(0, 'rgba(138, 107, 255, 0)');
-  fade.addColorStop(0.3, `rgba(138, 107, 255, ${0.75 * s.glow})`);
-  fade.addColorStop(1, `rgba(170, 140, 255, ${s.glow})`);
-  ctx.strokeStyle = fade;
-  ctx.lineWidth = 2;
-  for (let k = -16; k <= 16; k++) {
-    ctx.beginPath();
-    ctx.moveTo(W / 2, HORIZON);
-    ctx.lineTo(W / 2 + k * 150, H + 40);
-    ctx.stroke();
-  }
+  ctx.globalAlpha = s.glow;
+  ctx.drawImage(back.floor, 0, 0, W, H);
   const roll = s.grid % 1;
   for (let i = 0; i < 18; i++) {
     const z = i + 1 - roll;
     if (z <= 0.2) continue;
     const y = HORIZON + (H - HORIZON) / z;
     if (y > H + 2) continue;
-    ctx.globalAlpha = clamp01((y - HORIZON) / 70);
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(W, y);
-    ctx.stroke();
+    ctx.globalAlpha = s.glow * floorFade(y) * clamp01((y - HORIZON) / 70);
+    ctx.drawImage(back.line, 0, y - LINE / 2, W, LINE);
   }
-  ctx.restore();
+  ctx.globalAlpha = 1;
 }
 
 // An upside-down neon triangle behind the name, drawing itself in. Its lines
@@ -280,7 +333,7 @@ function drawTriangle(ctx, s, gap) {
   ctx.lineWidth = 6;
   ctx.lineJoin = 'round';
   ctx.shadowColor = '#b04fff';
-  ctx.shadowBlur = 26;
+  ctx.shadowBlur = blur(26);
   ctx.setLineDash([length * s.triangle, length]);
   ctx.beginPath();
   ctx.moveTo(...pts[0]);
@@ -305,19 +358,19 @@ function drawName(ctx, s, name, glint) {
   if (s.ghosts) [0.35, 0.2, 0.1].forEach((a, i) => at(name.canvas, s.scale * (1 - 0.1 * (i + 1)), s.alpha * a));
   if (s.flash > 0) {
     // Landing: a white burst of glow round it.
-    ctx.save();
-    ctx.shadowColor = `rgba(255, 255, 255, ${0.8 * s.flash})`;
-    ctx.shadowBlur = 30 + 60 * s.flash;
+    at(name.burst, s.scale, s.alpha * s.flash);
     at(name.canvas, s.scale, s.alpha);
-    ctx.restore();
   } else at(name.glowing, s.scale, s.alpha);
 
   if (s.glint !== null) {
-    // A bright band, sloped, swept across the chrome and clipped to it.
+    // A bright band, sloped, swept across the chrome and clipped to it (on
+    // a scratch layer at the size it's drawn, half the lettering's).
+    const { width, height } = name.canvas;
     const g = glint.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, glint.width, glint.height);
     g.globalCompositeOperation = 'source-over';
-    g.drawImage(name.canvas, 0, 0);
+    g.drawImage(name.canvas, 0, 0, glint.width, glint.height);
     g.globalCompositeOperation = 'source-in';
     const x = -W * 0.2 + s.glint * W * 1.4;
     const band = g.createLinearGradient(x - 70, 0, x + 70, 0);
@@ -325,12 +378,11 @@ function drawName(ctx, s, name, glint) {
     band.addColorStop(0.5, 'rgba(255, 255, 255, 0.95)');
     band.addColorStop(1, 'rgba(255, 255, 255, 0)');
     g.fillStyle = band;
-    g.setTransform(1, 0, -0.5, 1, glint.height * 0.25, 0);
-    g.fillRect(0, 0, glint.width * 2, glint.height);
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.setTransform(SCALE, 0, -0.5 * SCALE, SCALE, height * 0.25 * SCALE, 0);
+    g.fillRect(0, 0, width * 2, height);
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(glint, 0, NAME_Y - name.y);
+    ctx.drawImage(glint, 0, NAME_Y - name.y, width, height);
     ctx.restore();
   }
 }
@@ -351,35 +403,63 @@ function drawNeon(ctx, s, neon) {
 // The ident as a source the TV can show (see src/lab/sources.js). Its clock
 // starts when it comes on screen.
 export function createIdent({ reducedMotion = false } = {}) {
-  const [canvas, ctx] = layer(W, H);
+  const [canvas, ctx] = scaledLayer();
   const texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = false; // the TV shows it at its own size: no smaller copies (rebuilt each upload)
+  texture.minFilter = THREE.LinearFilter;
   const sky = stars(seededRandom(19));
   let art = null; // the name and tagline, drawn once the fonts are in
+  let back = null; // what doesn't change (backdrop)
+  let triangle = null; // the triangle, once it's drawn itself in
   let start = null;
+  let drawnAt = null;
+
+  function draw(s, time) {
+    if (!art) {
+      const name = chromeName();
+      art = { name, neon: neonTagline(), glint: layer(name.canvas.width * SCALE, name.canvas.height * SCALE)[0] };
+    }
+    back ??= backdrop();
+    const gap = { top: NAME_Y - art.name.ascent - 26, bottom: NAME_Y + 34 };
+    drawSky(ctx, s, sky, time, back);
+    drawGrid(ctx, s, back);
+    if (s.triangle < 1) drawTriangle(ctx, s, gap);
+    else {
+      if (!triangle) {
+        const [done, t] = scaledLayer();
+        drawTriangle(t, s, gap);
+        triangle = done;
+      }
+      ctx.drawImage(triangle, 0, 0, W, H);
+    }
+    drawName(ctx, s, art.name, art.glint);
+    drawNeon(ctx, s, art.neon);
+    if (s.flash > 0) {
+      ctx.fillStyle = `rgba(255, 240, 255, ${0.22 * s.flash})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
   return {
     name: 'Station ident',
     texture,
     width: W,
     height: H,
+    // Make and draw everything once, ahead of time (behind the loading
+    // curtain, once the fonts are in), so the first frames on air don't stall.
+    prepare() {
+      for (const t of [1.9, 2.4, 4]) draw(identState(t, reducedMotion), t);
+    },
     activate() {
       start = null;
+      drawnAt = null;
     },
     update(time) {
       start ??= time;
-      if (!art) {
-        const name = chromeName();
-        art = { name, neon: neonTagline(), glint: layer(name.canvas.width, name.canvas.height)[0] };
-      }
-      const s = identState(time - start, reducedMotion);
-      drawSky(ctx, s, sky, reducedMotion ? 0 : time - start);
-      drawGrid(ctx, s);
-      drawTriangle(ctx, s, { top: NAME_Y - art.name.ascent - 26, bottom: NAME_Y + 34 });
-      drawName(ctx, s, art.name, art.glint);
-      drawNeon(ctx, s, art.neon);
-      if (s.flash > 0) {
-        ctx.fillStyle = `rgba(255, 240, 255, ${0.22 * s.flash})`;
-        ctx.fillRect(0, 0, W, H);
-      }
+      // A broadcast's frame rate; and with reduced motion it's a still.
+      if (drawnAt !== null && (reducedMotion || time - drawnAt < 1 / FPS - 1e-6)) return;
+      drawnAt = time;
+      draw(identState(time - start, reducedMotion), reducedMotion ? 0 : time - start);
       texture.needsUpdate = true;
     },
   };

@@ -694,7 +694,8 @@ const leftHand = CanHand.load(`${import.meta.env.BASE_URL}models/hand/left.glb`)
 
 // What the curtain waits for before the room fades up (src/intro/curtain.js).
 const resumeFont = loadResumeFonts(import.meta.env.BASE_URL).then(() => plane.redraw());
-const startupLoads = [rightHand, plantLeaves, canModel, radioModel, listingsCover, leftHand, loadIdentFonts(import.meta.env.BASE_URL), resumeFont];
+const identReady = loadIdentFonts(import.meta.env.BASE_URL).then(() => ident.source.prepare()); // drawn once, before it's on air
+const startupLoads = [rightHand, plantLeaves, canModel, radioModel, listingsCover, leftHand, identReady, resumeFont];
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;
