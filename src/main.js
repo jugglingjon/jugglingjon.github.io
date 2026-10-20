@@ -127,6 +127,8 @@ const remote = new Remote(tv);
 // Your arm, holding the remote out towards the TV.
 const rig = new ArmRig({ remote, aimAt: screenWorld });
 room.scene.add(rig.root);
+rig.model.invite = !tv.on; // POWER pulses red while the set's off, so you know where to start
+rig.model.steadyInvite = reducedMotion;
 
 // Click the can for a drink: your left hand (once its model has loaded)
 // picks it up, your right thumb opens it, you drink and put it back.
@@ -343,6 +345,7 @@ tv.addEventListener('tune', (e) => {
 });
 tv.addEventListener('power', (e) => {
   tvModel.setPower(e.detail.on);
+  rig.model.invite = !e.detail.on;
   document.body.classList.toggle('is-tv-on', e.detail.on);
   audio?.power(e.detail.on);
   if (!e.detail.on) {

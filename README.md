@@ -25,7 +25,7 @@ One-time setup on GitHub: **Settings → Pages → Build and deployment → Sour
 
 ## Screen lab controls
 
-The room fades up once it has loaded. The first time in a visit, the set comes on by itself to a station ident, then switches off again (see [The curtain and the station ident](#the-curtain-and-the-station-ident)). Then it's yours: press <kbd>P</kbd>, or move your thumb to the red **POWER** button (top right of the remote) and click. That first press also enables sound, since browsers block audio until you interact with the page.
+The room fades up once it has loaded. The first time in a visit, the set comes on by itself to a station ident, then switches off again (see [The curtain and the station ident](#the-curtain-and-the-station-ident)). Then it's yours: press <kbd>P</kbd>, or move your thumb to the red **POWER** button (top right of the remote, pulsing while the set's off) and click. That first press also enables sound, since browsers block audio until you interact with the page.
 
 | Input | Remote button | Action |
 |---|---|---|
@@ -234,7 +234,7 @@ src/
     shaders/               common.glsl, signal.frag, screen.vert/.frag, fullscreen.vert
   viewmodel/               your arm and the remote in your hand
     ArmRig.js              places the remote, targets buttons, plays presses, arm IK and sleeve
-    RemoteModel.js         the remote: body, buttons with labels, highlight, press travel, IR LED
+    RemoteModel.js         the remote: body, buttons with labels, highlight, press travel, IR LED, POWER's pulse while the set's off
     XRHand.js              the WebXR hand model gripping the remote: grip fit, finger curls, thumb IK (+ XRHand.test.js)
     handRig.js             what both WebXR hands share: joints, rest frames, bending, placing, the wrist's section
     Sleeve.js              the flannel sleeve from wrist to shoulder, for either arm
@@ -314,7 +314,7 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 ## Placeholders to replace
 
 - **TV, furniture, props and room:** procedural geometry and canvas textures, laid out in `layout.js`. They get replaced by Blender models with baked lightmaps (including a TV-light channel) in Phase 5.
-- **Projects:** five placeholder projects in `content/projects.js` (Neon Burger Co., Field Notes, Orbit Analytics, Game of Life, Gradient Reel), with placeholder stories. Their pictures were exported from the canvas mock sites in `src/lab/testCards.js` into `public/work/`; the videos are the ffmpeg loops in `public/media/test/`. Replace them with your own (see [Your work](#your-work)). **ARPA-H** (channel 6), **Zones** (channel 7) and **The Reacharound** (channel 8) are real work, with starter stories (still marked `placeholder` until they're reviewed). ARPA-H's and The Reacharound's pictures, TV slideshows included, were captured from the live sites; Zones' come from the owner's own app screenshots, composed for the TV, the hero and the link preview on the app's dark background.
+- **Projects:** five placeholder projects in `content/projects.js` (Neon Burger Co., Field Notes, Orbit Analytics, Game of Life, Gradient Reel), with placeholder stories. Their pictures were exported from the canvas mock sites in `src/lab/testCards.js` into `public/work/`; the videos are the ffmpeg loops in `public/media/test/`. Replace them with your own (see [Your work](#your-work)). **The Reacharound** (channel 1), **Zones** (channel 2) and **ARPA-H** (channel 3) are real work, with starter stories (still marked `placeholder` until they're reviewed). ARPA-H's and The Reacharound's pictures, TV slideshows included, were captured from the live sites; Zones' come from the owner's own app screenshots, composed for the TV, the hero and the link preview on the app's dark background.
 - **Channel music:** synthesized placeholder loops (see [Channel music](#channel-music)), except The Reacharound's, “Countdown Groove” (`public/media/music/reacharound.mp3`), ARPA-H's, “Warm Analog Groove” (`public/media/music/arpa-h.mp3`), and Zones', “Pursuit Signal” (`public/media/music/zones.mp3`), all supplied by the site owner.
 - **Hand:** the WebXR generic hand (see [Credits](#credits)). A more realistic rigged hand can replace it. Any model with three thumb joints and three per finger works with the same IK; only the joint names and the grip fit change.
 - **Arm and remote:** procedural cylinders and rounded boxes (`src/viewmodel/`), still to be replaced in Phase 5. The clickable DOM remote (`src/lab/RemotePad.js`) stays as a lab tool, hidden unless **TV → 2D remote** is on, and drives the same `Remote`.
