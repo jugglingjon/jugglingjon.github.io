@@ -127,8 +127,14 @@ const remote = new Remote(tv);
 // Your arm, holding the remote out towards the TV.
 const rig = new ArmRig({ remote, aimAt: screenWorld });
 room.scene.add(rig.root);
-rig.model.invite = !tv.on; // POWER pulses red while the set's off, so you know where to start
 rig.model.steadyInvite = reducedMotion;
+
+// A button on the remote pulses to show you what to press next: POWER while
+// the set's off, INFO while a show with a story is on.
+function inviteAPress() {
+  rig.model.invite = !tv.on ? 'power' : tv.channel?.source?.project ? 'info' : null;
+}
+inviteAPress();
 
 // Click the can for a drink: your left hand (once its model has loaded)
 // picks it up, your right thumb opens it, you drink and put it back.
@@ -338,6 +344,7 @@ function updateHud() {
 tv.addEventListener('swap', (e) => {
   showSource(e.detail.channel);
   audio?.setChannel(e.detail.channel);
+  inviteAPress();
 });
 tv.addEventListener('tune', (e) => {
   state.channel = e.detail.number;
@@ -345,7 +352,7 @@ tv.addEventListener('tune', (e) => {
 });
 tv.addEventListener('power', (e) => {
   tvModel.setPower(e.detail.on);
-  rig.model.invite = !e.detail.on;
+  inviteAPress();
   document.body.classList.toggle('is-tv-on', e.detail.on);
   audio?.power(e.detail.on);
   if (!e.detail.on) {
@@ -709,23 +716,12 @@ if (linkedChannel) {
   tv.powerOn();
 }
 
-// The curtain lifts once the room is ready. The first time in a visit, the set
-// then comes on by itself to the station ident, and switches off again when
-// it's over: it's yours to switch on, and that click starts the sound too.
-// (A link to a project has switched it on already.)
-function firstTimeThisVisit() {
-  try {
-    if (sessionStorage.getItem('retro-portfolio:ident')) return false;
-    sessionStorage.setItem('retro-portfolio:ident', '1');
-  } catch {
-    // Storage blocked: show it.
-  }
-  return true;
-}
+// The curtain lifts once the room is ready. Then the set comes on by itself
+// to the station ident, and switches off again when it's over: it's yours to
+// switch on, and that click starts the sound too. (A link to a project has
+// switched it on already.)
 liftCurtain(document.querySelector('.curtain'), { loads: startupLoads, renderer, scene: room.scene, camera: seated.camera, reducedMotion }).then(() => {
-  gsap.delayedCall(0.6, () => {
-    if (!tv.on && firstTimeThisVisit()) tv.powerOnWithIdent(ident, IDENT.seconds);
-  });
+  gsap.delayedCall(0.6, () => tv.on || tv.powerOnWithIdent(ident, IDENT.seconds));
 });
 
 // Any click or key skips the ident to the channel (the remote's buttons do

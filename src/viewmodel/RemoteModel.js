@@ -10,8 +10,14 @@ export const FACE_Y = REMOTE_SIZE.height / 2;
 const BUTTON_HEIGHT = 0.0045;
 export const TRAVEL = 0.0022; // how far a button sinks when pressed
 const HIGHLIGHT = new THREE.Color('#5dff6a');
-// POWER's pulse while the set's off. Kept low: ACES turns a brighter red orange.
-const INVITE = { color: new THREE.Color('#ff0000'), peak: 0.25, steady: 0.18, period: 1.6 };
+// A button can pulse to invite a press: POWER while the set's off, INFO while
+// a show with a story is on. Kept low: ACES turns a brighter red orange, and
+// a brighter yellow white.
+const INVITES = {
+  power: { color: new THREE.Color('#ff0000'), peak: 0.25, steady: 0.18 },
+  info: { color: new THREE.Color('#ffb300'), peak: 0.25, steady: 0.18 },
+};
+const INVITE_PERIOD = 1.6; // seconds a pulse
 
 function labelTexture(text, { color = '#efe8da', width = 128, height = 96, weight = 800 } = {}) {
   const canvas = document.createElement('canvas');
@@ -47,9 +53,9 @@ function printed(text, w, d, options) {
 
 // The chunky 80s remote in your hand. Buttons can be highlighted (the one your
 // thumb is over) and sunk (being pressed); the IR LED blinks on every press.
-// While `invite` is on (the set's off), POWER pulses red to ask you to switch
-// it on; with `steadyInvite` (reduced motion) it just glows. Your thumb's
-// green highlight still shows over it.
+// `invite` names a button to pulse (see INVITES), or null; with
+// `steadyInvite` (reduced motion) it just glows. Your thumb's green highlight
+// still shows over it.
 export class RemoteModel {
   constructor() {
     this.group = new THREE.Group();
@@ -99,8 +105,9 @@ export class RemoteModel {
     led.position.set(0, 0, front - 0.004);
     this.group.add(led);
     this.blinkTime = 0;
-    this.invite = false;
+    this.invite = null;
     this.steadyInvite = false;
+    this.inviting = null;
     this.inviteTime = 0;
     this.highlighted = null;
 
@@ -147,12 +154,15 @@ export class RemoteModel {
     this.blinkTime = Math.max(0, this.blinkTime - dt);
     this.ledMaterial.emissiveIntensity = this.blinkTime > 0 ? 6 : 0;
 
-    this.inviteTime = this.invite ? this.inviteTime + dt : 0;
-    if (this.invite && this.highlighted !== 'power') {
-      const wave = 0.5 - 0.5 * Math.cos((this.inviteTime / INVITE.period) * Math.PI * 2);
-      const power = this.buttons.get('power').material;
-      power.emissive.copy(INVITE.color);
-      power.emissiveIntensity = this.steadyInvite ? INVITE.steady : INVITE.peak * wave;
+    // Each new invite starts its pulse from rest.
+    this.inviteTime = this.invite === this.inviting ? this.inviteTime + dt : 0;
+    this.inviting = this.invite;
+    const invite = INVITES[this.invite];
+    if (invite && this.highlighted !== this.invite) {
+      const wave = 0.5 - 0.5 * Math.cos((this.inviteTime / INVITE_PERIOD) * Math.PI * 2);
+      const material = this.buttons.get(this.invite).material;
+      material.emissive.copy(invite.color);
+      material.emissiveIntensity = this.steadyInvite ? invite.steady : invite.peak * wave;
     }
   }
 }

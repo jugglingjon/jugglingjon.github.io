@@ -4,7 +4,7 @@ const FLYBACK_HZ = 15734; // NTSC line rate: the CRT's high-pitched whine
 
 export const SOUND_DEFAULTS = { master: 0.8, music: 1, static: 1, whine: 0.3, roomTone: 0.5 };
 const MUSIC_GAIN = 1.5; // music level at settings.music = 1
-const RADIO_GAIN = 0.28; // the clock radio's station is mastered loud: about as loud as the TV at its starting volume
+const RADIO_GAIN = 0.224; // the clock radio's station is mastered loud: this sits it a little under the TV at its starting volume
 const RADIO_PAN = 0.4; // the bookshelf is off to your right
 
 // Everything you hear. The set's own sounds are synthesized with Web Audio;
