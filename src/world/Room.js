@@ -220,8 +220,8 @@ export class Room {
     onTable(this.can.group, -0.33, -0.13); // left of the remote area, so you can point at it
     this.magazines = createMagazines();
     onTable(this.magazines.group, -0.03, -0.04, 0.3);
-    this.paperPlane = new PaperPlane(); // your résumé, folded into a plane
-    onTable(this.paperPlane.group, -0.42, -0.02, 0.75);
+    this.paperPlane = new PaperPlane({ lean: 'left' }); // your résumé, folded into a plane, tipped towards you
+    onTable(this.paperPlane.group, 0.36, -0.14, 0.45);
 
     const couch = createCouch(COUCH);
     couch.group.position.copy(COUCH.position);

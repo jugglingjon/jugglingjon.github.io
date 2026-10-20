@@ -17,6 +17,8 @@ import * as THREE from 'three';
 //   only       optional: which facets may move, by their middle on the flat
 //              sheet ([x, y] → bool), for folding one layer of a stack (a wing)
 //   angle      how far it's folded in the finished plane (π, flat, unless set)
+//   stage      when it's made, if not one after another: folds that share a
+//              stage (a mirrored pair) fold and unfold together
 
 const EPS = 1e-9;
 const SLIVER = 1e-9; // m²: a facet any smaller is a rounding error, not paper
@@ -164,8 +166,14 @@ export function foldSheet({ width, height, steps }) {
 const ease = (t) => t * t * (3 - 2 * t);
 const UP = new THREE.Vector3(0, 0, 1);
 
+const stageOf = (step, k) => step.stage ?? k;
+
+// How many stages folding it takes, one after another: progress runs from 0
+// (the flat sheet) to this (the finished plane).
+export const stageCount = (folded) => Math.max(...folded.steps.map(stageOf)) + 1;
+
 // Where each facet is, as a matrix from the flat sheet into sheet space, at
-// `progress`: 0 is the flat sheet, 1 the first fold made, … steps.length the
+// `progress`: 0 is the flat sheet, 1 the first stage made, … stageCount the
 // finished plane.
 export function poseSheet(folded, progress, matrices = []) {
   const { steps, facets, hinges } = folded;
@@ -180,7 +188,7 @@ export function poseSheet(folded, progress, matrices = []) {
   const shift = new THREE.Matrix4();
 
   steps.forEach((step, k) => {
-    const amount = ease(THREE.MathUtils.clamp(progress - k, 0, 1));
+    const amount = ease(THREE.MathUtils.clamp(progress - stageOf(step, k), 0, 1));
     if (amount === 0) return;
     // The crease, where it is now, carried there by the facet it belongs to.
     const hinge = hinges[k];
@@ -208,10 +216,10 @@ export function poseSheet(folded, progress, matrices = []) {
 
 // How far to lift each facet off the flat sheet, in layers, at `progress`, so
 // stacked layers don't flicker through each other: its place in the stack the
-// folds already made leave (the one in progress is still turning), along its
+// folds already made leave (those in progress are still turning), along its
 // own z, which faces down the stack once it's been turned over.
 export function layersAt(folded, progress) {
-  const done = THREE.MathUtils.clamp(Math.floor(progress), 0, folded.steps.length);
+  const done = folded.steps.filter((step, k) => stageOf(step, k) < Math.floor(progress)).length;
   return folded.facets.map((f) => {
     const flips = f.moves.slice(0, done).filter(Boolean).length;
     return (flips % 2 ? -1 : 1) * f.layers[done];
@@ -219,9 +227,10 @@ export function layersAt(folded, progress) {
 }
 
 // A dart, the paper plane everyone learns first, from a sheet `width` ×
-// `height`, printed side out: the top corners in to the middle, the new edges
-// in to the middle again, in half down the middle, then a wing down on each
-// side, leaving a keel `keel` deep at the tail.
+// `height`, printed side in (so unfolding it shows the page): the top corners
+// in to the middle, the new edges in to the middle again, in half down the
+// middle, then a wing down on each side, leaving a keel `keel` deep at the
+// tail. Each mirrored pair folds together: four stages.
 export function dartFolds(width, height, { keel = 0.035, nose = 0.006, open = 0.16, dihedral = 0.14 } = {}) {
   const top = height / 2;
   const slant = Math.tan(Math.PI / 8); // the second folds halve the 45° of the first
@@ -229,12 +238,13 @@ export function dartFolds(width, height, { keel = 0.035, nose = 0.006, open = 0.
   const right = (p) => p[0] > 0;
   const wing = { from: [nose, top], to: [keel, -top], moving: [width / 2 - 0.005, -top + 0.005] };
   return [
-    { from: [0, top], to: [-width / 2, top - width / 2], moving: [-width / 2 + 0.001, top - 0.001], dir: -1 },
-    { from: [0, top], to: [width / 2, top - width / 2], moving: [width / 2 - 0.001, top - 0.001], dir: -1 },
-    { from: [0, top], to: [-width / 2, top - width / 2 / slant], moving: [-width / 2 + 0.001, 0], dir: -1 },
-    { from: [0, top], to: [width / 2, top - width / 2 / slant], moving: [width / 2 - 0.001, 0], dir: -1 },
-    { from: [0, top], to: [0, -top], moving: [-0.01, 0], dir: -1, angle: Math.PI - open },
-    { ...wing, dir: -1, only: left, angle: Math.PI / 2 - dihedral },
-    { ...wing, dir: 1, only: right, angle: Math.PI / 2 - dihedral },
+    { from: [0, top], to: [-width / 2, top - width / 2], moving: [-width / 2 + 0.001, top - 0.001], dir: 1, stage: 0 },
+    { from: [0, top], to: [width / 2, top - width / 2], moving: [width / 2 - 0.001, top - 0.001], dir: 1, stage: 0 },
+    { from: [0, top], to: [-width / 2, top - width / 2 / slant], moving: [-width / 2 + 0.001, 0], dir: 1, stage: 1 },
+    { from: [0, top], to: [width / 2, top - width / 2 / slant], moving: [width / 2 - 0.001, 0], dir: 1, stage: 1 },
+    { from: [0, top], to: [0, -top], moving: [-0.01, 0], dir: 1, angle: Math.PI - open, stage: 2 },
+    // The left half is on top now: its wing folds up, the right one down.
+    { ...wing, dir: 1, only: left, angle: Math.PI / 2 - dihedral, stage: 3 },
+    { ...wing, dir: -1, only: right, angle: Math.PI / 2 - dihedral, stage: 3 },
   ];
 }

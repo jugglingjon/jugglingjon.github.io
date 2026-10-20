@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { centroid, dartFolds, foldSheet, layersAt, poseSheet } from './paperFolds.js';
+import { centroid, dartFolds, foldSheet, layersAt, poseSheet, stageCount } from './paperFolds.js';
 
 const W = 0.2159; // US letter, in metres
 const H = 0.2794;
 const folded = foldSheet({ width: W, height: H, steps: dartFolds(W, H) });
-const STAGES = [0.3, 1, 1.5, 2.7, 3, 3.5, 4.2, 5, 5.5, 6.4, 7];
+const END = stageCount(folded);
+const STAGES = [0.3, 0.7, 1, 1.5, 2, 2.4, 2.8, 3, 3.5, END];
 
 const area = (poly) => Math.abs(poly.reduce((sum, [x, y], i) => sum + x * poly[(i + 1) % poly.length][1] - poly[(i + 1) % poly.length][0] * y, 0)) / 2;
 const at = ([x, y], m) => new THREE.Vector3(x, y, 0).applyMatrix4(m);
@@ -66,8 +67,12 @@ describe('poseSheet', () => {
     }
   });
 
+  it('folds in four stages, mirrored pairs together', () => {
+    expect(END).toBe(4);
+  });
+
   it('ends up a dart: nose to tail the length of the page, wings out either side of a keel', () => {
-    const m = poseSheet(folded, 7);
+    const m = poseSheet(folded, END);
     const box = new THREE.Box3();
     folded.facets.forEach((f, i) => f.poly.forEach((p) => box.expandByPoint(at(p, m[i]))));
     const size = box.getSize(new THREE.Vector3());
@@ -79,15 +84,26 @@ describe('poseSheet', () => {
   });
 
   it('folds the two halves together down the middle, wings apart', () => {
-    const m = poseSheet(folded, 7);
+    const m = poseSheet(folded, END);
     const side = (f) => Math.sign(centroid(f.poly)[0]);
     const zs = (s) => folded.facets.flatMap((f, i) => (side(f) === s ? f.poly.map((p) => at(p, m[i]).z) : []));
-    expect(Math.max(...zs(1))).toBeGreaterThan(0.05); // the right wing up one side
-    expect(Math.min(...zs(-1))).toBeLessThan(-0.05); // the left wing down the other
+    expect(Math.max(...zs(-1))).toBeGreaterThan(0.05); // the left wing out one side
+    expect(Math.min(...zs(1))).toBeLessThan(-0.05); // the right wing out the other
+  });
+
+  it('keeps the print inside: the outermost layers show their blank backs', () => {
+    const done = 5; // the corners, the edges and the middle folded
+    const levels = folded.facets.map((f) => f.layers[done]);
+    const [bottom, top] = [Math.min(...levels), Math.max(...levels)];
+    for (const f of folded.facets) {
+      const turned = f.moves.slice(0, done).filter(Boolean).length % 2 === 1;
+      if (f.layers[done] === bottom) expect(turned).toBe(false); // printed side up, into the plane
+      if (f.layers[done] === top) expect(turned).toBe(true); // printed side down, into the plane
+    }
   });
 
   it('stacks folded layers apart, so they never sit in the same plane', () => {
-    const layers = layersAt(folded, 4); // corners and edges folded under, flat
+    const layers = layersAt(folded, 2); // corners and edges folded in, flat
     expect(new Set(layers).size).toBeGreaterThan(2);
   });
 });

@@ -225,7 +225,7 @@ function closeMagazine() {
 // The paper plane lifts off the table and unfolds into your résumé; a click
 // off it folds it back up and puts it down.
 function openResume() {
-  plane.open(room.scene);
+  plane.open(room.scene, seated.camera);
   rig.setActive(false);
   seated.setLook(0, 0);
   interactions.clearPointer();
