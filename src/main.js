@@ -32,6 +32,8 @@ import { HoverOutline } from './world/HoverOutline.js';
 import { PostFX } from './render/PostFX.js';
 import { createTestCards, sourceFromFile } from './lab/sources.js';
 import { projects } from '../content/projects.js';
+import { resume } from '../content/resume.js';
+import { loadResumeFonts } from './world/resumePage.js';
 import { projectChannels } from './content/channels.js';
 import { channelNumbers, FIRST_CHANNEL } from './content/lineup.js';
 import { renderCaseStudy } from './content/caseStudy.js';
@@ -144,8 +146,9 @@ const DRINK_SOUNDS = { pick: 'canPick', open: 'canOpen', gulp: 'gulp', ahh: 'ahh
 drink.onEvent = (name) => audio?.[DRINK_SOUNDS[name]]();
 
 // Things in the room you can click, outlined while you point at them: the
-// table lamp switches on and off, and the listings magazine lifts into your
-// hands, opens, and tunes the set to whichever show you pick.
+// table lamp switches on and off, the listings magazine lifts into your
+// hands, opens, and tunes the set to whichever show you pick, and the paper
+// plane unfolds into your résumé.
 const interactions = new Interactions();
 const outline = new HoverOutline(renderer);
 
@@ -154,14 +157,19 @@ const post = new PostFX(renderer, { scene: room.scene, camera: seated.camera });
 post.reducedMotion = reducedMotion;
 post.markGlowing(...room.glowing, rig.model.group);
 post.markScreen(tvModel.screen);
-post.markFront(rig.root, room.magazines.listings.group);
+post.markFront(rig.root, room.magazines.listings.group, room.paperPlane.sheet);
 const magazine = room.magazines.listings;
 magazine.onCoverOpen = () => audio?.rustle();
+const plane = room.paperPlane; // your résumé (content/resume.js), folded into a paper plane
+plane.setResume(resume, projects);
+plane.reducedMotion = reducedMotion;
+plane.onCrease = () => audio?.crease();
 interactions.add(room.tableLamp, {
   name: 'Table lamp',
   onClick: () => audio?.lampSwitch(room.toggleTableLamp()),
 });
 interactions.add(magazine.group, { name: 'Listings magazine', onClick: openMagazine, enabled: () => magazine.atRest });
+interactions.add(plane.group, { name: 'Paper plane', onClick: openResume, enabled: () => plane.atRest });
 interactions.add(room.lava.group, {
   name: 'Lava lamp',
   onClick: () => {
@@ -214,6 +222,34 @@ function closeMagazine() {
   audio?.rustle();
 }
 
+// The paper plane lifts off the table and unfolds into your résumé; a click
+// off it folds it back up and puts it down.
+function openResume() {
+  plane.open(room.scene);
+  rig.setActive(false);
+  seated.setLook(0, 0);
+  interactions.clearPointer();
+  audio?.rustle();
+}
+
+function closeResume() {
+  if (!plane.isOpen) return;
+  plane.close();
+}
+
+// A link on the résumé: a web address opens in a new tab, an email address
+// in your mail app.
+function follow(url) {
+  const a = document.createElement('a');
+  a.href = url;
+  if (!url.startsWith('mailto:')) {
+    a.target = '_blank';
+    a.rel = 'noopener';
+  }
+  a.click();
+  audio?.click();
+}
+
 // Tune to a show picked from the listings (switching the set on if need be),
 // then put the magazine down so you can watch.
 function watch(row) {
@@ -229,7 +265,7 @@ function watch(row) {
 // the remote and nudges your arm about, and the view stays still. Outside it,
 // the arm drops out of view and you look around a little instead, pointing at
 // things in the room; the cursor shows there, so you can see where you're
-// pointing. With the magazine open, the pointer reads the listings instead.
+// pointing. With the magazine or the résumé open, the pointer reads it instead.
 // Leaving the page lowers the arm and faces the set again.
 const pointer = new THREE.Vector2();
 function aim(e) {
@@ -242,7 +278,7 @@ function aim(e) {
     document.body.dataset.aim = 'look';
     return { inside: false, busy: true };
   }
-  if (magazine.isOpen) {
+  if (magazine.isOpen || plane.isOpen) {
     rig.setActive(false);
     seated.setLook(0, 0);
     interactions.clearPointer();
@@ -268,11 +304,18 @@ document.documentElement.addEventListener('pointerleave', () => {
 // Click presses whichever button the thumb is over; holding CH or VOL repeats.
 // Aim first: a tap on a touch screen arrives without a hover. Outside the
 // remote area a click works whatever you're pointing at; with the magazine
-// open it picks a show, and a click off the magazine puts it down.
+// open it picks a show, with the résumé open it follows a link, and a click
+// off either puts it down.
 canvas.addEventListener('pointerdown', (e) => {
   if (state.mode !== 'seated' || e.button !== 0) return;
   const where = aim(e);
   if (where.busy) return;
+  if (where.reading && plane.isOpen) {
+    const link = plane.linkAtPointer(pointer, seated.camera);
+    if (link) follow(link.url);
+    else if (!plane.isUnder(pointer, seated.camera)) closeResume();
+    return;
+  }
   if (where.reading) {
     const row = magazine.rowAtPointer(pointer, seated.camera);
     if (row >= 0) watch(row);
@@ -385,6 +428,7 @@ function toggleStory() {
     return;
   }
   closeMagazine();
+  closeResume();
   rig.setActive(false);
   seated.setLook(0, 0);
   interactions.clearPointer();
@@ -410,7 +454,10 @@ showLabExtras();
 const MODES = ['seated', 'orbit', 'flat'];
 
 function setMode(mode) {
-  if (mode !== 'seated') closeMagazine();
+  if (mode !== 'seated') {
+    closeMagazine();
+    closeResume();
+  }
   state.mode = mode;
   controls.enabled = mode === 'orbit';
   document.body.dataset.mode = mode;
@@ -534,7 +581,8 @@ const leftHand = CanHand.load(`${import.meta.env.BASE_URL}models/hand/left.glb`)
   .catch((err) => console.warn("Couldn't load the left hand; the can stays put.", err));
 
 // What the curtain waits for before the room fades up (src/intro/curtain.js).
-const startupLoads = [rightHand, plantLeaves, canModel, radioModel, listingsCover, leftHand, loadIdentFonts(import.meta.env.BASE_URL)];
+const resumeFont = loadResumeFonts(import.meta.env.BASE_URL).then(() => plane.redraw());
+const startupLoads = [rightHand, plantLeaves, canModel, radioModel, listingsCover, leftHand, loadIdentFonts(import.meta.env.BASE_URL), resumeFont];
 
 // Drag and drop any image or video to tune it in.
 let dragDepth = 0;
@@ -590,6 +638,7 @@ window.addEventListener('keydown', (e) => {
   switch (key) {
     case 'escape':
       closeMagazine();
+      closeResume();
       break;
     case 'd':
       degauss(fx);
@@ -670,13 +719,16 @@ renderer.setAnimationLoop(() => {
     rig.update(dt, seated.camera, clock, { reducedMotion });
     drink.arm?.update(seated.camera);
     magazine.update(dt, seated.camera);
-    // What the pointer's over: a listing while you read, otherwise something
-    // in the room (outlined).
-    const reading = seatedView && magazine.isOpen;
-    magazine.setHover(reading ? magazine.rowAtPointer(pointer, seated.camera) : -1);
-    const hovered = seatedView && !reading && !drink.active ? interactions.update(seated.camera) : null;
+    plane.update(dt, seated.camera);
+    // What the pointer's over: a listing or a link while you read, otherwise
+    // something in the room (outlined).
+    const listings = seatedView && magazine.isOpen;
+    const page = seatedView && plane.isOpen;
+    magazine.setHover(listings ? magazine.rowAtPointer(pointer, seated.camera) : -1);
+    plane.setHover(page ? plane.linkAtPointer(pointer, seated.camera) : null);
+    const hovered = seatedView && !listings && !page && !drink.active ? interactions.update(seated.camera) : null;
     outline.setTarget(hovered?.object ?? null);
-    document.body.dataset.hover = String(Boolean(hovered) || magazine.hover >= 0);
+    document.body.dataset.hover = String(Boolean(hovered) || magazine.hover >= 0 || Boolean(plane.hover));
     glow.update(signal.texture, fx.power * params.display.emission, realDt);
     room.update(clock, {
       tvColor: glow.light.color,
@@ -736,7 +788,7 @@ setTimeout(async () => {
 
 if (import.meta.env.DEV) {
   window.lab = {
-    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote, rig, post, drink, story, projects,
+    params, fx, state, actions, renderer, seated, orbitCamera, controls, glow, room, tvModel, signal, osd, tv, remote, rig, post, drink, story, projects, plane,
     gsap,
     get audio() {
       return audio;

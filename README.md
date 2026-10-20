@@ -34,7 +34,7 @@ The room fades up once it has loaded. The set comes on by itself to a station id
 | Click, middle of the screen | the lit one | Press it with your thumb; hold CH or VOL to repeat |
 | Point at something towards the edges | | If it glows with an outline, it's clickable: the table lamp switches on and off, the listings magazine opens |
 | Click a listing in the open magazine | | Tune to that show (switching the set on if it's off) |
-| <kbd>Esc</kbd>, or click off the magazine | | Put the magazine back down |
+| <kbd>Esc</kbd>, or click off the magazine or the résumé | | Put it back down |
 | <kbd>P</kbd> | POWER | Power on/off (warm-up, degauss, collapse to a dot) |
 | <kbd>↑</kbd> <kbd>→</kbd> / <kbd>↓</kbd> <kbd>←</kbd> | CH ▲ / ▼ | Channel up/down; skips unprogrammed numbers; hold to surf |
 | <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | CH ▲ / ▼ | Channel up / down |
@@ -64,6 +64,8 @@ The room fades up once it has loaded. The set comes on by itself to a station id
 Every project is an entry in **`content/projects.js`**, in channel order (the number keys tune straight to the first nine), with its media in **`public/work/<slug>/`**. A project can ask for a channel of its own with `channel: 8`; the rest take the lowest numbers still free, in order, and the test cards fill in after them (`src/content/lineup.js`, shared by the TV, the listings and the pages). A show's time slot follows its number: channel 1 at 7:00, each one half an hour later. The comment at the top of that file lists every field. The test cards come on the channels after your work. `content/site.js` holds the site's title, description and published URL.
 
 **Adding a project:** make the folder `public/work/<slug>/`, put the media in it, add an entry to `content/projects.js`, and run `npm test`. The content tests check what the TV and the pages can show: a URL-safe slug, a channel number (if it asks for one) of 1–99 that no other project has, a channel name of at most 18 characters in the on-screen display's font (A–Z, 0–9, space and `- . , : · / & ! ? +`), a blurb of at most 32 characters and a summary of at most 155, a valid TV type, every named file present, and alt text for every picture. Remove `placeholder: true` once it's yours; until then the story and the page say it's a placeholder.
+
+**Your résumé** is **`content/resume.js`**: your name and title, your links (email as `mailto:…`, LinkedIn, GitHub, other sites), a profile, experience, the projects to list as selected work (by slug, with their live links from `content/projects.js`), skills and education. It's typed onto the paper plane on the coffee table (see [Things you can click](#things-you-can-click)). It's one page: the type starts at 42 px on the 1700 × 2200 page and steps down to 28 px to fit everything on, and `npm test` fails if even that won't fit, or if a link isn't a web or email address. It's stamped DRAFT while it has `placeholder: true`: the email, LinkedIn, experience and education in it now are stand-ins.
 
 **What plays on the channel** (`tv`). The set draws every channel into a 640×480 picture, so stills, slideshows and pages are drawn into a 4:3 frame first. Media loads the first time you tune in, behind a PLEASE STAND BY card, and the rest load in the background a few seconds after the page opens. Channels air on the clock, so tune away and back and the show has moved on.
 
@@ -121,6 +123,9 @@ Outside the remote area, pointing at the room finds the first visible surface un
 - **The outline** (`src/world/HoverOutline.js`) is drawn in screen space. The hovered object is drawn as a white silhouette into an offscreen mask on its own layer, then a full-screen pass traces the mask's edge over the finished frame with a gentle pulse. The line is the same width whatever the object's shape, and nothing extra is drawn when nothing is hovered.
 - **The table lamp** switches its light, shade and fringe glow. Coming on, the bulb catches with a quick stutter; going off, the filament fades. A synthesized switch click plays (`lampLevel` in `Room.js`, `lampSwitch` in the audio engine).
 - **The listings magazine** (`src/world/Magazine.js`) lifts off the coffee table to a reading spot in front of you, sized to fill most of the view at any zoom. Its cover is an image, `public/media/listings/cover.webp`: 27:38 portrait, the magazine's own 13.5 × 19 cm, at least 768 × 1080 and ideally 1024 × 1440 (it fills about 72% of the view's height as it lifts). Swap the file to change it; the drawn cover stands in until it loads, and stays if it can't. It holds still for a moment, its cover in the middle of the view, then the cover swings open on a hinge, rustling as it goes (`onCoverOpen`), as the magazine slides over to bring the open spread to the middle (0.65 s to lift, 0.6 s to look, 0.5 s to open: `TIMING` in `Magazine.js`; putting it down skips the look). The inside spread is drawn on canvases (`src/world/listings.js`). The left page is a welcome and how-to-watch guide; the right page lists every channel with a time slot and a one-line blurb (`blurb` on each source in `src/lab/sources.js`), and marks the show on now. The row under the pointer lights up. Clicking a listing tunes the set to it (switching it on if need be) and puts the magazine back down, exactly where it was. Esc or a click off the magazine also puts it down.
+- **The paper plane** on the left of the coffee table is your résumé, folded into a dart (`src/world/PaperPlane.js`). Click it and it lifts towards you in a little arc, unfolding as it comes: the wings out, the halves apart like a card, the edges and the corners back, each fold with a papery crease (`crease` in the audio engine), until the page is held flat in front of you, filling 90% of the view (or of its width, on a narrow screen), lit a little so it reads whatever the room's lighting. It's printed side out, so bits of the résumé show on the plane, and the unfolded page keeps its creases. Point at a link and a highlighter swipe marks it; click it and it opens in a new tab (an email address opens your mail app). A click off the page, or <kbd>Esc</kbd>, folds it back up and lands it where it was; it all runs backwards. 0.7 s to lift and 1.5 s to unfold (`TIMING`); with reduced motion, three times as fast, without the arc.
+  - **The folding** (`src/world/paperFolds.js`) is rigid origami. The seven folds of a dart are written the way you'd make them by hand, on the paper as it lies after the folds before (`dartFolds`), and `foldSheet` cuts the sheet along every crease they make into flat facets (16 for the dart), noting which folds move each one and where it sits in the stack after each. `poseSheet` then turns each facet into place for any point between flat (0) and finished (7): each fold turns its facets about its crease, wherever the crease has been carried by the folds before, so half-made folds work too (the finished plane is half-made: the middle a little open, the wings at a dihedral). Stacked layers are lifted apart a hair (0.04 mm a layer), so they don't flicker. The tests check no paper is lost, nothing is ever stretched, and every crease stays joined all the way through.
+  - **The page** (`src/world/resumePage.js`) is typed in Courier Prime, a typewriter face, on a 1700 × 2200 canvas (US letter at 200 dpi), with the type struck a little heavier than the font (`STRIKE`) so it stays dark seen shrunk to fit the view. Laying it out is apart from drawing it, so the tests check it fits without a canvas.
 - **The lava lamp** on the bookshelf changes colour, with a bubbly bloop. Each click picks a random wax hue at least 54° round the colour wheel from the last, in a darker, softer liquid 40–130° away from it (`lavaColours` in `LavaLamp.js`). The wax, the liquid and the light the lamp casts on the corner all fade to the new scheme over about half a second. Click again mid-fade and it heads straight for the newer colours.
 - **The snake plant** (pot and all) does a twirl: it hops, spins a full turn, lands with a clay clunk (`potClunk` in the audio engine) and a wobble that circles round and dies away like a settling coin, and stands exactly where it was (`Twirl.js`). With reduced motion it just spins. Clicks wait until it's done.
 - **The stuffed panda** on the bookshelf gets a squeeze: it squashes down and bulges out (keeping its volume), then springs back up with a wobble (`Squishy.js`; with reduced motion it comes straight back). Its squeaker squeals as it's squeezed and gives a softer, falling squeak as it fills back up with air (`squeak` in the audio engine, a little different in pitch each time).
@@ -206,6 +211,7 @@ index.html                 the TV's page (the build adds its title, link preview
 content/
   projects.js              your work: one entry per channel (+ the content tests in src/content/)
   site.js                  the site's title, description, published URL and credits
+  resume.js                your résumé, on the paper plane (+ the résumé tests in src/world/)
 src/
   main.js                  wiring: renderer, views, channels, input, render loop
   intro/
@@ -261,6 +267,9 @@ src/
     Twirl.js               a hop, a spin and a wobble for the plant (+ Twirl.test.js)
     RadioMeter.js          the clock radio's LED level meter, bouncing while it plays (+ RadioMeter.test.js)
     Magazine.js            the listings magazine: hinged cover, lifts to you, picks a listing
+    PaperPlane.js          the paper plane: lies on the table, unfolds into your résumé, follows its links
+    paperFolds.js          folding a sheet into a dart and back: creases, facets, poses (+ paperFolds.test.js)
+    resumePage.js          the résumé, typed onto a page; link hit-testing (+ resumePage.test.js)
     listings.js            its inside pages, drawn on canvases; row hit-testing (+ listings.test.js)
     Interactions.js        what's clickable and under the pointer, with occlusion (+ Interactions.test.js)
     HoverOutline.js        screen-space outline round the hovered thing
@@ -281,7 +290,7 @@ public/models/hand/        WebXR generic left and right hands (.glb) and their M
 public/models/plant/       Sansevieria leaves for the snake plant (.glb)
 public/models/can/         soda can on the coffee table (.glb) and its CC BY licence
 public/models/radio/       clock radio on the bookshelf (.glb) and its CC BY licence
-public/fonts/              the ident's fonts (.woff2) and their OFL licences
+public/fonts/              the ident's and the résumé's fonts (.woff2) and their OFL licences
 scripts/
   make-test-media.sh       renders the test videos
   make-placeholder-music.mjs  synthesizes the music loops from note data
@@ -328,7 +337,7 @@ Keep a note of each track's source and licence (and credit CC-BY artists somewhe
 - **Clock radio station:** `public/media/radio/station.mp3`, supplied by the site owner.
 - **Listings magazine cover:** `public/media/listings/cover.webp`, supplied by the site owner.
 - **Plant model:** the Sansevieria (`public/models/plant/sansevieria.glb`), supplied by the site owner; its texture is from a "tiny treats" palette.
-- **Fonts:** [Exo 2](https://fonts.google.com/specimen/Exo+2) by The Exo 2 Project Authors and [Mr Dafoe](https://fonts.google.com/specimen/Mr+Dafoe) by Alejandro Paul, both under the [SIL Open Font License 1.1](https://openfontlicense.org); the licences are in `public/fonts/`.
+- **Fonts:** [Exo 2](https://fonts.google.com/specimen/Exo+2) by The Exo 2 Project Authors, [Mr Dafoe](https://fonts.google.com/specimen/Mr+Dafoe) by Alejandro Paul and [Courier Prime](https://fonts.google.com/specimen/Courier+Prime) by The Courier Prime Project Authors, all under the [SIL Open Font License 1.1](https://openfontlicense.org); the licences are in `public/fonts/`.
 - **Hand models:** the generic left and right hands from [WebXR Input Profiles](https://github.com/immersive-web/webxr-input-profiles) (`@webxr-input-profiles/assets` 1.0.20). MIT licence, © 2019 Amazon; the full notice is in `public/models/hand/LICENSE.md`.
 
 ## Roadmap

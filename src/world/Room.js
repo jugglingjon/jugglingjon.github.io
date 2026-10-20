@@ -10,6 +10,7 @@ import {
   place,
 } from './furniture.js';
 import { createBeerCan, createMagazines, createPlant, createPrint, replaceCan, replaceLeaves } from './props.js';
+import { PaperPlane } from './PaperPlane.js';
 import { createBookshelf, placeRadio } from './bookshelf.js';
 import { Squishy } from './Squishy.js';
 import { Twirl } from './Twirl.js';
@@ -219,6 +220,8 @@ export class Room {
     onTable(this.can.group, -0.33, -0.13); // left of the remote area, so you can point at it
     this.magazines = createMagazines();
     onTable(this.magazines.group, -0.03, -0.04, 0.3);
+    this.paperPlane = new PaperPlane(); // your résumé, folded into a plane
+    onTable(this.paperPlane.group, -0.42, -0.02, 0.75);
 
     const couch = createCouch(COUCH);
     couch.group.position.copy(COUCH.position);

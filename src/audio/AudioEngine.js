@@ -384,6 +384,14 @@ export class AudioEngine {
     }
   }
 
+  // A fold in a sheet of paper made or undone: a crisp snap of the crease and
+  // a little papery body behind it.
+  crease() {
+    const t = this.ctx.currentTime;
+    this.noiseBurst(t, { duration: 0.035 + Math.random() * 0.02, level: 0.16, type: 'bandpass', freq: 3800 + Math.random() * 1600, q: 1.2 });
+    this.noiseBurst(t + 0.006, { duration: 0.07, level: 0.07, type: 'bandpass', freq: 1300 + Math.random() * 500, q: 0.8 });
+  }
+
   // The tuner's relay clicking over inside the set.
   relay() {
     const t = this.ctx.currentTime;
