@@ -28,8 +28,8 @@ export const digitChannel = (digit) => (digit === '0' ? 10 : Number(digit));
 //
 // It can also power on into a station ident (powerOnWithIdent): the ident is
 // on air in place of the channel, then the set switches itself off. A button
-// cuts it short, and the set changes over to the channel as if you'd tuned
-// to it.
+// on the remote cuts it short and does its job (the set changes over to the
+// channel as if you'd tuned to it), and so does tuning to a channel.
 //
 // Events (detail in brackets):
 //   power {on} · tune {number, channel} · swap {number, channel}
@@ -138,9 +138,7 @@ export class Television extends EventTarget {
   // Off the ident and over to the channel, as if you'd tuned to it.
   endIdent() {
     if (!this.ident) return;
-    this.identCall?.kill();
-    this.identCall = null;
-    this.ident = null;
+    this.dropIdent();
     this.osd.setChannel(this.number);
     this.osd.setCaption('');
     this.changeChannel();
@@ -170,7 +168,17 @@ export class Television extends EventTarget {
 
   // Change channel. While the set is off this only presets the number (used by
   // the lab's channel picker); the remote can't reach tune() when off.
+  // Off the ident, with no change of channel (the caller makes one).
+  dropIdent() {
+    this.identCall?.kill();
+    this.identCall = null;
+    this.ident = null;
+  }
+
   tune(number) {
+    // Tuning in ends the ident: over to the channel picked.
+    if (this.ident && number === this.number) return this.endIdent();
+    if (this.ident) this.dropIdent();
     if (number === this.number) {
       if (this.on) this.osd.setChannel(number);
       return;

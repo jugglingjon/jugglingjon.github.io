@@ -104,6 +104,22 @@ describe('station ident', () => {
     expect(tv.phase).toBe('locked');
   });
 
+  it('tuning to a channel (from the listings) cuts it short, over to that channel', () => {
+    for (const [number, name] of [[5, 'Five'], [2, 'Two']]) {
+      const { tv, of } = setup();
+      tv.powerOnWithIdent(IDENT, 6);
+      advance(1);
+      tv.tune(number);
+      advance(2);
+      expect(tv.ident).toBe(null);
+      expect(tv.number).toBe(number);
+      expect(of('swap').at(-1).channel.name).toBe(name);
+      advance(6); // its timer is gone: the set stays on
+      expect(tv.on).toBe(true);
+      expect(of('swap').at(-1).channel.name).toBe(name);
+    }
+  });
+
   it('a button cuts it short and still does its job', () => {
     const { tv, of } = setup();
     tv.powerOnWithIdent(IDENT, 6);

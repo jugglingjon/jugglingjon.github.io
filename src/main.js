@@ -776,10 +776,6 @@ liftCurtain(document.querySelector('.curtain'), { loads: startupLoads, renderer,
   gsap.delayedCall(0.6, () => tv.on || tv.powerOnWithIdent(ident, IDENT.seconds));
 });
 
-// Any click or key skips the ident to the channel (the remote's buttons do
-// too, through the set), and being a click, it brings the sound with it.
-for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => tv.ident && tv.endIdent(), true);
-
 // Then fetch every channel's media in the background, one at a time, so
 // flicking through doesn't keep you waiting on a STAND BY card.
 setTimeout(async () => {

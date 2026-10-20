@@ -11,7 +11,7 @@ import { seededRandom } from '../world/textures.js';
 export const IDENT = {
   name: 'JONATHAN CRONIN',
   tagline: 'Interactive Portfolio',
-  seconds: 6.5, // on air before the set changes over to the channel
+  seconds: 5.5, // on air before the set switches itself off
 };
 
 // The fonts (public/fonts, both SIL Open Font License).

@@ -41,7 +41,7 @@ describe('identState', () => {
 
   it('has everything in place well before it ends', () => {
     const last = Math.max(...Object.values(BEATS).map(([, to]) => to));
-    expect(IDENT.seconds - last).toBeGreaterThanOrEqual(2.5); // time to take it in
+    expect(IDENT.seconds - last).toBeGreaterThanOrEqual(2.25); // time to take it in
     const s = identState(IDENT.seconds - 0.1);
     expect([s.glow, s.triangle, s.scale, s.alpha]).toEqual([1, 1, 1, 1]);
   });
