@@ -133,8 +133,27 @@ export function drawListings(ctx, { lineup, current, hover = -1 }) {
   ctx.textAlign = 'left';
 }
 
-// Left-hand page: the week's welcome, how to watch, and an ad.
-export function drawWelcome(ctx) {
+// How to watch, with a mouse and keys, or on a touch screen.
+export const HOW_TO_WATCH = {
+  pointer: [
+    'Middle of the screen: aim your thumb, click to press',
+    'Towards the edges: look around the room',
+    'Scroll: lean in for a closer look',
+    'Glowing outline: click it and see what happens',
+    'INFO on the remote (or I): the story behind the show',
+  ],
+  touch: [
+    'Tap a button on the remote to press it',
+    'Drag: look around the room',
+    'Pinch: lean in for a closer look',
+    'Tap things in the room and see what happens',
+    'INFO on the remote: the story behind the show',
+  ],
+};
+
+// Left-hand page: the week's welcome, how to watch (`touch`: on a touch
+// screen), and an ad.
+export function drawWelcome(ctx, { touch = false } = {}) {
   const { width: W, height: H } = PAGE;
   ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, W, H);
@@ -167,13 +186,7 @@ export function drawWelcome(ctx) {
   ctx.fillText('HOW TO WATCH', 64, boxTop + 48);
   ctx.fillStyle = INK;
   ctx.font = '25px Arial, sans-serif';
-  [
-    'Middle of the screen: aim your thumb, click to press',
-    'Towards the edges: look around the room',
-    'Scroll: lean in for a closer look',
-    'Glowing outline: click it and see what happens',
-    'INFO on the remote (or I): the story behind the show',
-  ].forEach((tip, i) => {
+  HOW_TO_WATCH[touch ? 'touch' : 'pointer'].forEach((tip, i) => {
     ctx.fillText('•', 64, boxTop + 96 + i * 46);
     ctx.fillText(fit(ctx, tip, W - 160), 92, boxTop + 96 + i * 46);
   });

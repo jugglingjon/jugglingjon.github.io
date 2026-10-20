@@ -209,8 +209,13 @@ function haveADrink() {
   interactions.clearPointer();
 }
 
+// The show the listings mark ON NOW: the channel on screen, if there is one
+// (not with the set off, or during the station ident).
+const onNow = () => (tv.on && !tv.ident ? tv.number : null);
+
 function openMagazine() {
-  magazine.setListings(tv.lineup, tv.number);
+  magazine.touch = touching;
+  magazine.setListings(tv.lineup, onNow());
   magazine.open(room.scene); // the cover rustles as it swings open (onCoverOpen)
   rig.setActive(false);
   seated.setLook(0, 0);
@@ -488,6 +493,7 @@ tv.addEventListener('swap', (e) => {
   showSource(e.detail.channel);
   audio?.setChannel(e.detail.channel);
   inviteAPress();
+  if (magazine.isOpen) magazine.setListings(tv.lineup, onNow());
 });
 tv.addEventListener('tune', (e) => {
   state.channel = e.detail.number;
@@ -496,6 +502,7 @@ tv.addEventListener('tune', (e) => {
 tv.addEventListener('power', (e) => {
   tvModel.setPower(e.detail.on);
   inviteAPress();
+  if (magazine.isOpen) magazine.setListings(tv.lineup, onNow());
   document.body.classList.toggle('is-tv-on', e.detail.on);
   audio?.power(e.detail.on);
   if (!e.detail.on) {

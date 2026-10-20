@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PAGE, airTime, rowAt, rowLayout } from './listings.js';
+import { HOW_TO_WATCH, PAGE, airTime, rowAt, rowLayout } from './listings.js';
 
 describe('listings page', () => {
   const vAt = (y) => 1 - y / PAGE.height; // canvas y → texture v
@@ -26,5 +26,15 @@ describe('listings page', () => {
 
   it('runs the schedule from 7:00 in half hours', () => {
     expect([airTime(0), airTime(1), airTime(2), airTime(10)]).toEqual(['7:00', '7:30', '8:00', '12:00']);
+  });
+});
+
+describe('how to watch', () => {
+  it('says the same things by touch as with a mouse, in the same room on the page', () => {
+    expect(HOW_TO_WATCH.touch).toHaveLength(HOW_TO_WATCH.pointer.length);
+  });
+
+  it("doesn't tell a touch screen to click or scroll", () => {
+    for (const tip of HOW_TO_WATCH.touch) expect(tip).not.toMatch(/click|scroll|towards the edges/i);
   });
 });

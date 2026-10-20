@@ -82,6 +82,7 @@ export class ListingsMagazine {
 
     this.lineup = [];
     this.current = null;
+    this.touch = false; // opened on a touch screen: how to watch, by touch
     this.hover = -1;
     this.openness = 0; // 0 on the table … 1 open in your hands
     this.target = 0;
@@ -120,7 +121,7 @@ export class ListingsMagazine {
   }
 
   redraw() {
-    drawWelcome(this.leftCanvas.getContext('2d'));
+    drawWelcome(this.leftCanvas.getContext('2d'), { touch: this.touch });
     drawListings(this.rightCanvas.getContext('2d'), { lineup: this.lineup, current: this.current, hover: this.hover });
     this.leftTexture.needsUpdate = true;
     this.rightTexture.needsUpdate = true;
