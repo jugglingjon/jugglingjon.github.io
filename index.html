@@ -5,12 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Screen Lab · Retro Portfolio</title>
     <!-- site:head -->
+    <!--
+      The curtain: dark until the room is ready, then it fades up
+      (src/intro/curtain.js). Inline, so it covers the page from the first
+      paint, before the stylesheet arrives. The note only appears if the wait
+      runs past a second and a half. If the script never gets to lift it, it
+      gives up after 12 seconds rather than leave the page black. Under the
+      skip link (z-index 30), so the keyboard can reach it.
+    -->
+    <style>
+      html { background: #050403; }
+      .curtain {
+        position: fixed;
+        inset: 0;
+        z-index: 25;
+        display: grid;
+        place-items: center;
+        background: #050403;
+        transition: opacity 1.2s ease-in-out, visibility 0s linear 1.2s;
+        animation: curtain-give-up 0.8s ease-in 12s forwards;
+      }
+      .curtain.is-lifted { opacity: 0; visibility: hidden; }
+      .curtain__note {
+        margin: 0;
+        font: 700 clamp(13px, 1.8vw, 18px) / 1 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: #5dff6a; /* the TV's on-screen green */
+        text-shadow: 0 0 10px rgba(93, 255, 106, 0.55);
+        opacity: 0;
+        animation: curtain-note 0.2s ease-out 1.5s forwards;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .curtain { transition-duration: 0.3s, 0s; transition-delay: 0s, 0.3s; }
+      }
+      @keyframes curtain-note { to { opacity: 1; } }
+      @keyframes curtain-give-up { to { opacity: 0; visibility: hidden; } }
+    </style>
     <noscript><style>.curtain { display: none; }</style></noscript>
   </head>
   <body data-mode="seated" data-aim="remote">
     <canvas id="scene" aria-label="A CRT television showing portfolio projects"></canvas>
 
-    <!-- Dark until the room is ready, then it fades up (src/intro/curtain.js). -->
+    <!-- Dark until the room is ready, then it fades up (styled in the head). -->
     <div class="curtain" aria-hidden="true"><p class="curtain__note">Warming up the set…</p></div>
 
     <div class="hud" hidden>

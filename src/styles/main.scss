@@ -45,56 +45,8 @@ body[data-mode='orbit'] #scene {
   }
 }
 
-// Dark until the room is ready, then it fades up (src/intro/curtain.js). The
-// note only appears if the wait runs past a second and a half. If the script
-// never gets to lift it, it gives up after 12 seconds rather than leave the
-// page black. Under the skip link (z-index 30), so the keyboard can reach it.
-.curtain {
-  position: fixed;
-  inset: 0;
-  z-index: 25;
-  display: grid;
-  place-items: center;
-  background: #050403;
-  transition:
-    opacity 1.2s ease-in-out,
-    visibility 0s linear 1.2s;
-  animation: curtain-give-up 0.8s ease-in 12s forwards;
-
-  &.is-lifted {
-    opacity: 0;
-    visibility: hidden;
-  }
-
-  &__note {
-    margin: 0;
-    font: 700 clamp(13px, 1.8vw, 18px) / 1 $mono;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: #5dff6a; // the TV's on-screen green
-    text-shadow: 0 0 10px rgba(93, 255, 106, 0.55);
-    opacity: 0;
-    animation: curtain-note 0.2s ease-out 1.5s forwards;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    transition-duration: 0.3s, 0s;
-    transition-delay: 0s, 0.3s;
-  }
-}
-
-@keyframes curtain-note {
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes curtain-give-up {
-  to {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
+// The curtain's styles are inline in index.html, so it's dark from the first
+// paint, before this stylesheet arrives.
 
 .hud {
   position: fixed;
