@@ -12,6 +12,7 @@ import { COLLAPSE, degauss } from './screen/transitions.js';
 import { Television } from './tv/Television.js';
 import { Remote } from './tv/Remote.js';
 import { AudioEngine, SOUND_DEFAULTS } from './audio/AudioEngine.js';
+import { playThroughSilentMode } from './audio/silentMode.js';
 import { createScreenGeometry, SCREEN_HEIGHT, SCREEN_WIDTH } from './world/screenGeometry.js';
 import { createEnvTexture, createSmudgeTexture } from './world/textures.js';
 import { SCREEN_CENTER, TV } from './world/TV.js';
@@ -460,8 +461,9 @@ const soundSettings = { ...SOUND_DEFAULTS };
 let audio = null;
 
 function startAudio() {
+  playThroughSilentMode(); // on an iPhone or iPad, heard in Silent mode too, like the radio
   if (audio) {
-    if (audio.ctx.state === 'suspended') audio.ctx.resume();
+    if (audio.ctx.state !== 'running') audio.ctx.resume(); // 'suspended', or iOS's 'interrupted' (a call, another app)
     return;
   }
   const Context = window.AudioContext ?? window.webkitAudioContext;

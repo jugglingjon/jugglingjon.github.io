@@ -75,6 +75,7 @@ A finger has no hover, so on a phone or tablet the room works by taps and gestur
 - **The open listings** fit the screen's width as well as its height, so the whole spread shows on a phone held upright.
 - **The lab panel** starts hidden on a phone or tablet.
 - **Sound** starts with your first tap. iPhones only count the end of a tap (or a click) as the gesture that may start sound, so those are listened for too.
+- **Silent mode on an iPhone or iPad** mutes Web Audio (all the TV's sound: music, static, clicks) but not an `<audio>` element (the clock radio), which takes the page's Web Audio with it once it plays. So the first tap asks for media playback instead (`playThroughSilentMode` in `src/audio/silentMode.js`): the Audio Session API on Safari 16.4 and later, and on older ones a silent `<audio>` loop alongside, paused while the page is hidden. The sound also picks up again after iOS interrupts it (a call, another app) at the next tap.
 
 ## Your work
 
