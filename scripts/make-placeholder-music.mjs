@@ -201,19 +201,6 @@ function neonBurger() {
   return song;
 }
 
-// Field Notes: slow, warm travel-documentary ambience. D major, 72 bpm.
-function fieldNotes() {
-  const song = createSong({ bpm: 72, bars: 8 });
-  const chords = [['D3', 'A3', 'C#4', 'F#4'], ['B2', 'F#3', 'A3', 'D4'], ['G2', 'D3', 'F#3', 'B3'], ['A2', 'E3', 'A3', 'C#4']];
-  const bells = [['F#5', 'A5', 'C#6', 'E5'], ['D5', 'F#5', 'B5', 'A5'], ['B5', 'D6', 'F#5', 'G5'], ['E5', 'A5', 'C#6', 'B5']];
-  chords.forEach((notes, i) => {
-    song.chord('softPad', i * 32, notes, 30);
-    song.note('sub', i * 32, midi(notes[0]) - 12, 30, 0.8);
-    [0, 6, 16, 22].forEach((s, k) => song.note('bell', i * 32 + s, bells[i][k], 4, 0.8));
-  });
-  return song;
-}
-
 // Orbit Analytics: an 80s business-news theme. Eb major, 108 bpm.
 function orbitAnalytics() {
   const song = createSong({ bpm: 108, bars: 8 });
@@ -340,7 +327,6 @@ function wav(samples) {
 
 const SONGS = {
   'neon-burger': neonBurger,
-  'field-notes': fieldNotes,
   'orbit-analytics': orbitAnalytics,
   'game-of-life': gameOfLife,
   'gradient-reel': gradientReel,

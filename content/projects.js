@@ -260,28 +260,77 @@ Orders rose by a third in the first month, and the neon gradient ended up on the
     placeholder: true,
   },
   {
-    slug: 'field-notes',
+    slug: 'visual-recon',
     channel: 7,
-    name: 'Field Notes',
-    blurb: 'Editorial blog · long reads',
-    title: 'Field Notes: long-form travel writing',
-    summary: 'A calm, photo-led blog for long travel essays: big pictures, a measured column of text, and nothing in the way.',
+    name: 'Visual Recon',
+    blurb: 'Aircraft recognition app · web',
+    title: 'Visual Recon: aircraft recognition on 3D models',
+    summary: "A training app for recognizing aircraft by their shape, with the Army's WEFT method on 3D models: learn it, explore 20 aircraft, then test yourself.",
     role: 'Design and development',
-    client: 'Field Notes',
-    year: 2023,
-    tech: ['HTML', 'SCSS', 'PHP', 'WordPress'],
-    links: { live: 'https://example.com/field-notes' },
-    tv: { type: 'scroll', src: 'page.jpg', url: 'fieldnotes.example/stories' },
-    music: '/media/music/field-notes.mp3',
-    hero: 'hero.jpg',
-    gallery: [{ src: 'page.jpg', alt: 'The full stories page: three essays, each with a landscape photograph', caption: 'The stories page, top to bottom' }],
+    year: 2026,
+    tech: ['JavaScript', 'three.js', 'Sass', 'Vite', 'vite-plugin-pwa', 'Fuse.js', 'IndexedDB', 'glTF Transform', 'Vitest', 'Playwright', 'axe-core'],
+    links: { live: 'https://jugglingjon.github.io/Vehicle-Identification/' },
+    tv: { type: 'slideshow', slides: ['tv-1.webp', 'tv-2.webp', 'tv-3.webp', 'tv-4.webp', 'tv-5.webp'] },
+    music: '/media/music/visual-recon.mp3',
+    hero: 'hero.webp',
+    share: 'share.jpg',
+    gallery: [
+      {
+        src: 'home.webp',
+        alt: 'The Visual Recon home screen: an F/A-18 Hornet turning on a dark grid inside an orange ring, beside Learn, Explore and Play',
+        caption: 'Home: an aircraft on display, and the three ways in',
+      },
+      {
+        src: 'explore.webp',
+        alt: 'The Explore library: filters and search above a grid of 3D aircraft thumbnails, with the A-10C Thunderbolt II selected',
+        caption: 'Explore: 20 aircraft in 3D, and the whole TC reference',
+      },
+      {
+        src: 'aircraft-ah-64.webp',
+        alt: "The AH-64 Apache's page: the helicopter in 3D on the left, and its wings, engines, fuselage and tail described on the right, each with its tags",
+        caption: 'Each WEFT row turns the model to the angle that shows it',
+      },
+      {
+        src: 'compare.webp',
+        alt: 'The F-15 Eagle and the Su-27 Flanker side by side from the same angle, with their WEFT descriptions compared below and the differences tagged in orange',
+        caption: 'Compare: two look-alikes at true relative size',
+      },
+      {
+        src: 'lesson-wings.webp',
+        alt: 'The Wings lesson: an F-15 and an AH-64 seen from above, beside the lesson text, the TC’s own words and a figure of the three wing types',
+        caption: 'Learn: lessons in the order of TC 3-01.80',
+      },
+      {
+        src: 'play-setup.webp',
+        alt: 'Play setup: game type, aircraft types, affiliation, angles, difficulty, answer format, mode and rounds, beside a MiG-29 in 3D',
+        caption: 'Play: set up a session',
+      },
+      {
+        src: 'play-weft.webp',
+        alt: 'A WEFT ID question: an Su-25 flying over farmland under a blue sky, and four answers to “Where are the wings mounted?”',
+        caption: 'WEFT ID: name a feature, not just the aircraft',
+      },
+      {
+        src: 'play-realworld.webp',
+        alt: 'A real-world pass: a small drone crossing a hazy, cloudy sky, with four aircraft names to choose from',
+        caption: 'Real world: a pass across a photographed sky',
+      },
+    ],
     alt: {
-      'page.jpg': 'The full stories page: three essays, each with a landscape photograph',
-      'hero.jpg': 'The top of the stories page: the Field Notes masthead over a dusk landscape',
+      'tv-1.webp': 'Visual Recon: Know the aircraft by its shape, beside an F/A-18 Hornet on a grid, and Learn, Explore and Play',
+      'tv-2.webp': "Wings, engines, fuselage, tail, above the AH-64 Apache's page in Visual Recon",
+      'tv-3.webp': 'Tell look-alikes apart: the F-15 Eagle and the Su-27 Flanker side by side',
+      'tv-4.webp': 'Test yourself on a real sky: an Su-25 overhead and a question about where its wings are mounted',
+      'tv-5.webp': 'Learn it from the manual: the Wings lesson, with an F-15 and an AH-64 seen from above',
+      'hero.webp': 'Visual Recon: Know the aircraft by its shape, beside an F/A-18 Hornet on a grid',
     },
-    story: `Placeholder story. Field Notes publishes three long essays a season, each with a dozen photographs. Readers spend twenty minutes on a page, so the design gets out of the way: one column, generous type, photographs at full width.
+    story: `Visual Recon teaches aircraft recognition the way the Army does: by WEFT, the wings, engines, fuselage and tail, from TC 3-01.80, Visual Aircraft Recognition. Instead of the manual's line drawings, every lesson, page and question uses real 3D models you can turn in the browser, on a phone, a tablet or a desktop. It's an unofficial training aid.
 
-The templates are built on WordPress with a custom theme, so the writers lay out a story with blocks and never touch code.`,
+Explore holds 20 modeled aircraft (fixed wing, rotary wing and drones) and all 123 entries of the manual's reference, with filters and a typo-tolerant search. On an aircraft's page, each WEFT row swings the camera round to the angle that shows that feature best, and look-alikes open side by side, from the same angle at true relative size, with the differences picked out.
+
+Play asks you to name the aircraft, or one of its features, against the clock. A question only follows a view that shows the answer, and the hardest mode flies the aircraft across a photographed sky as if you were watching through binoculars, with haze, distance and low cloud. Learn walks through the manual in order, ends each lesson with a check, and finishes with a spot report you fill in line by line.
+
+The models were found, license-checked, scaled to their real size and compressed from 77 MB to 11 MB. It's plain JavaScript on three.js, installs to a home screen and works offline, and every screen passes automated WCAG 2.2 AA checks.`,
     placeholder: true,
   },
   {
