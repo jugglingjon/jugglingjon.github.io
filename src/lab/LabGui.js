@@ -222,6 +222,9 @@ export function createLabGui({ params, state, actions, glow, osd, renderer, tv, 
         ['thumbLength', 0.9, 1.4, 0.01, 'Thumb length'],
         ['thumbSwing', 0, 0.9, 0.01, 'Thumb swing (CMC)'],
         ['slideFollow', 0, 1, 0.01, 'Grip follows thumb'],
+        ['openKnuckle', 0, 1.9, 0.01, 'Touch: finger bend, knuckle'],
+        ['openMiddle', 0, 1.9, 0.01, 'Touch: finger bend, middle'],
+        ['openEnd', 0, 1.9, 0.01, 'Touch: finger bend, end'],
       ].forEach(([key, min, max, step, name]) => grip.add(g, key, min, max, step).name(name).onChange(apply));
       grip
         .add(

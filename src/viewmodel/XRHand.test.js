@@ -5,6 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { XRHand } from './XRHand.js';
 import { FACE_Y, REMOTE_SIZE } from './RemoteModel.js';
 import { REMOTE_BUTTONS } from './thumbing.js';
+import { TOUCH } from './ArmRig.js';
 
 // Signed distance to the remote's rounded body, in metres (negative inside).
 const { width, height, rear, front } = REMOTE_SIZE;
@@ -126,5 +127,24 @@ describe('XRHand', () => {
     fist.forEach((tip, n) => expect(tip.distanceTo(wrist())).toBeLessThan(gripped[n].distanceTo(wrist())));
     hand.setFist(0);
     tips().forEach((tip, n) => expect(tip.distanceTo(gripped[n])).toBeLessThan(1e-9));
+  });
+
+  it('keeps off the buttons on a touch screen: the fingers on the edge, the thumb along the side', () => {
+    // Over the button face: inside its width (less the rounded edge) and above it.
+    const half = REMOTE_SIZE.width / 2;
+    const overFace = (p) => Math.abs(p.x) < half - 0.002 && p.y > FACE_Y - 0.002;
+    rest(REMOTE_BUTTONS.find((b) => b.button === 'ch+'));
+    expect(hand.fingers.some((chain) => overFace(world(chain[4])))).toBe(true); // gripped to use it, they come over
+
+    // As ArmRig holds it by touch, resting.
+    hand.setOpen(1);
+    hand.setSlide(hand.slideFor(TOUCH.home));
+    hand.setThumbTip(TOUCH.rest);
+    hand.group.updateMatrixWorld(true);
+    for (const chain of hand.fingers) for (const bone of chain.slice(2)) expect(overFace(world(bone))).toBe(false);
+    for (const bone of hand.thumb.slice(1)) expect(overFace(world(bone))).toBe(false);
+    expect(world(hand.thumb[3]).distanceTo(TOUCH.rest)).toBeLessThan(0.002); // the thumb reaches its rest
+    for (const chain of hand.fingers) expect(toRemote(world(chain[4]))).toBeLessThan(0.025); // still round the edge, loosely
+    hand.setOpen(0);
   });
 });

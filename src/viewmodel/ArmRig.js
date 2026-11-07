@@ -29,6 +29,20 @@ const UPPER_ARM = 0.3;
 const WRIST_SKIN = 0.045; // bare wrist before the cuff, for a hand that doesn't say
 const PRESS = { down: 0.06, hold: 0.06, up: 0.1 };
 const PRESS_LENGTH = PRESS.down + PRESS.hold + PRESS.up;
+// A touch screen has no pointer hovering over the remote, so the hand keeps
+// clear of the buttons: the thumb lies along the remote's right-hand side
+// (its tip at `rest`, remote space), the fingers hold its edge, and the grip
+// stays where it holds the thumb on the CH ▲ row (`home`: its z is all that
+// counts). Tap a button and the thumb reaches over (`reach` seconds before
+// the button goes down), strikes it, and goes back (`back`: how fast it eases
+// home).
+export const TOUCH = {
+  rest: new THREE.Vector3(-0.044, 0.006, 0.06),
+  home: new THREE.Vector3(0, 0, -0.024),
+  reach: 0.1,
+  near: 0.006,
+  back: 10,
+};
 const Y = new THREE.Vector3(0, 1, 0);
 const dir = new THREE.Vector3();
 const right = new THREE.Vector3();
@@ -37,7 +51,8 @@ const heldTurn = new THREE.Quaternion();
 
 // Your arm, outstretched, pointing the remote at the TV. The pointer steers
 // your thumb across the buttons (the targeted one lights up); a press, from
-// the mouse, keyboard, scroll or lab remote, plays out with the thumb.
+// the mouse, keyboard, scroll or lab remote, plays out with the thumb. By
+// touch, the hand keeps off the buttons until one's tapped (see TOUCH).
 export class ArmRig {
   constructor({ remote, aimAt }) {
     this.settings = { ...ARM_DEFAULTS };
@@ -66,6 +81,8 @@ export class ArmRig {
     this.raise = 0;
     this.hovered = 'ch+';
     this.pinned = null; // a button tapped on a touch screen, the thumb held over it
+    this.touch = false; // the last pointer was a finger
+    this.open = 0; // how far the fingers have let go to the remote's edge (by touch)
     this.raycaster = new THREE.Raycaster();
     this.pressButton = null;
     this.pressTime = Infinity;
@@ -125,10 +142,14 @@ export class ArmRig {
   }
 
   // A touch screen has no pointer hovering over the remote: the thumb goes to
-  // whichever button is tapped, and stays there.
+  // whichever button is tapped, and stays there until the finger lifts.
   pin(button) {
     this.pinned = button;
     this.hovered = button;
+  }
+
+  unpin() {
+    this.pinned = null;
   }
 
   // The button nearest where a ray from `pointer` (NDC) lands on the remote,
@@ -149,21 +170,31 @@ export class ArmRig {
 
   animatePress(button) {
     this.pressButton = button;
-    this.pressTime = 0;
+    this.pressTime = this.touch && this.thumbAway(button) ? -TOUCH.reach : 0;
     this.model.blink();
+  }
+
+  // Whether the thumb's away from `button` (resting, by touch): it reaches
+  // over before pressing.
+  thumbAway(button) {
+    const b = this.model.buttons.get(button);
+    if (!b || !this.tip) return false;
+    return Math.hypot(this.tip.x - b.def.x, this.tip.z - b.def.z) > TOUCH.near || this.tip.y > b.top.y + this.hand.thumbRadius + HOVER * 2;
   }
 
   pressAmount() {
     const t = this.pressTime;
+    if (t <= 0) return 0; // still reaching
     if (t < PRESS.down) return 1 - (1 - t / PRESS.down) ** 2;
     if (t < PRESS.down + PRESS.hold) return 1;
     return Math.max(0, 1 - (t - PRESS.down - PRESS.hold) / PRESS.up);
   }
 
   // `viewFov`: the view's vertical field of view before any zoom, to keep the
-  // remote in frame on a narrow screen.
-  update(dt, camera, time, { reducedMotion = false, viewFov = camera.fov } = {}) {
+  // remote in frame on a narrow screen. `touch`: the last pointer was a finger.
+  update(dt, camera, time, { reducedMotion = false, viewFov = camera.fov, touch = false } = {}) {
     const s = this.settings;
+    this.touch = touch;
     this.syncHand();
     this.raise += ((this.active ? 1 : 0) - this.raise) * (1 - Math.exp(-dt * 5));
     const lower = 1 - this.raise;
@@ -200,35 +231,43 @@ export class ArmRig {
     }
     this.held.updateMatrixWorld();
 
-    // Which button the thumb is after. A press in progress wins.
+    // Which button the thumb is after. A press in progress wins. By touch,
+    // the thumb's only on the remote for a tap (held, or still pressing).
     const field = this.pinned ? this.model.buttons.get(this.pinned).def : pointerToField(this.pointer.x, this.pointer.y);
     this.hovered = this.pinned ?? nearestButton(field, this.hovered);
     this.pressTime += dt;
     const pressing = this.pressTime < PRESS_LENGTH && this.model.buttons.has(this.pressButton);
+    const resting = touch && !pressing && !this.pinned;
     const aim = pressing ? this.pressButton : this.hovered;
     const { def, top } = this.model.buttons.get(aim);
     const press = pressing ? this.pressAmount() : 0;
     const snap = pressing ? 1 : s.snap;
 
     // Pad hovers over the button, then sinks with it on a press.
-    this.tipTarget.set(
-      THREE.MathUtils.lerp(field.x, def.x, snap),
-      top.y - press * TRAVEL + this.hand.thumbRadius + HOVER * (1 - press),
-      THREE.MathUtils.lerp(field.z, def.z, snap),
-    );
+    if (resting) this.tipTarget.copy(TOUCH.rest);
+    else {
+      this.tipTarget.set(
+        THREE.MathUtils.lerp(field.x, def.x, snap),
+        top.y - press * TRAVEL + this.hand.thumbRadius + HOVER * (1 - press),
+        THREE.MathUtils.lerp(field.z, def.z, snap),
+      );
+    }
     if (o.weight > 0) this.tipTarget.lerp(this.held.worldToLocal(this.thumbAt.copy(o.thumb)), o.weight);
     if (!this.tip) this.tip = this.tipTarget.clone();
-    this.tip.lerp(this.tipTarget, 1 - Math.exp(-dt * (pressing || o.weight > 0 ? 45 : 18)));
+    this.tip.lerp(this.tipTarget, 1 - Math.exp(-dt * (pressing || o.weight > 0 ? 45 : resting ? TOUCH.back : 18)));
     // The grip shuffles along the remote, more lazily than the thumb moves.
-    const slide = this.hand.slideFor(this.tipTarget);
+    const slide = this.hand.slideFor(resting ? TOUCH.home : this.tipTarget);
     this.slide = this.slide === null ? slide : THREE.MathUtils.damp(this.slide, slide, 7, dt);
     this.hand.setSlide(this.slide);
     this.hand.bendThumbTowards?.(o.bend, o.weight);
     this.hand.setFist?.(o.weight);
+    const open = touch ? 1 : 0;
+    this.open = Math.abs(this.open - open) < 1e-3 ? open : THREE.MathUtils.damp(this.open, open, 6, dt);
+    this.hand.setOpen?.(this.open);
     this.model.group.visible = o.weight === 0;
     this.hand.setThumbTip(this.tip);
     this.model.setPress(pressing ? this.pressButton : null, press);
-    this.model.setHighlight(s.highlight && this.raise > 0.5 && o.weight === 0 ? aim : null);
+    this.model.setHighlight(s.highlight && this.raise > 0.5 && o.weight === 0 && !resting ? aim : null);
     this.model.update(dt);
 
     // The arm. The forearm leaves the hand along the wrist's own axis with the

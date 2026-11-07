@@ -343,7 +343,12 @@ canvas.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture(e.pointerId);
   remote.hold(rig.target);
 });
-for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(type, () => remote.release());
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+  canvas.addEventListener(type, () => {
+    remote.release();
+    rig.unpin(); // by touch, the thumb goes back off the buttons
+  });
+}
 
 // A click (or tap) while reading: a link or a listing does its thing, and off
 // the page puts it down. On the résumé brought closer (by a pinch), a tap on
@@ -379,6 +384,7 @@ function touchDown(e, where) {
   if (fingers.size === 2) {
     // A second finger: a pinch, whatever the first was doing.
     remote.release();
+    rig.unpin();
     gesture = { kind: 'pinch', from: spread(), zoom: plane.isOpen ? plane.zoom : null };
     return;
   }
@@ -837,7 +843,7 @@ renderer.setAnimationLoop(() => {
     drink.update(dt, seated.camera);
     // On a touch screen the remote stays up whenever you're not busy with something else.
     if (touching && !drink.active && !story.isOpen && !magazine.isOpen && !plane.isOpen) rig.setActive(true);
-    rig.update(dt, seated.camera, clock, { reducedMotion, viewFov: seated.baseFov });
+    rig.update(dt, seated.camera, clock, { reducedMotion, viewFov: seated.baseFov, touch: touching });
     drink.arm?.update(seated.camera);
     magazine.update(dt, seated.camera);
     plane.update(dt, seated.camera);

@@ -35,6 +35,9 @@ export const GRIP_DEFAULTS = {
   thumbLength: 1.2, // the model's thumb is short for a remote this wide; this stretches it
   thumbSwing: 0.332, // how far the CMC swings the thumb across for the far button column
   slideFollow: 0.4, // how much of the way the grip shifts up the remote after the thumb
+  openKnuckle: 0.643, // on a touch screen, the fingers hold the remote by its edge instead, their tips off the buttons
+  openMiddle: 0.42,
+  openEnd: 0.15,
 };
 
 // With the thumb on the CH ▲ row, the grip sits where the settings put it;
@@ -113,6 +116,7 @@ export class XRHand {
     this.wrist = new THREE.Vector3(); // where the forearm meets the hand, remote space
     this.thumbRadius = TIP_ABOVE;
     this.fist = 0;
+    this.open = 0;
     this.applyGrip();
   }
 
@@ -144,25 +148,34 @@ export class XRHand {
     if (this.tipTarget) this.setThumbTip(this.tipTarget);
   }
 
-  // Curl the fingers round the remote, or (`fist`, 0…1) on into a loose
-  // fist when there's nothing to hold.
+  // Curl the fingers round the remote, or (`open`, 0…1) less, holding it by
+  // its edge with the buttons clear, or (`fist`, 0…1) on into a loose fist
+  // when there's nothing to hold.
   curlFingers() {
     const s = this.settings;
     const wraps = [s.wrapIndex, s.wrapMiddle, s.wrapRing, s.wrapPinky];
     const grip = [s.bendKnuckle, s.bendMiddle, s.bendEnd];
+    const open = [s.openKnuckle, s.openMiddle, s.openEnd];
     this.fingers.forEach((chain, n) => {
       for (const bone of chain) {
         const { p, q } = this.rest.get(bone);
         bone.position.copy(p);
         bone.quaternion.copy(q);
       }
-      bend(chain, [0, ...grip.map((angle, i) => THREE.MathUtils.lerp(angle * wraps[n], FIST[i], this.fist))]);
+      const held = grip.map((angle, i) => THREE.MathUtils.lerp(angle, open[i], this.open) * wraps[n]);
+      bend(chain, [0, ...held.map((angle, i) => THREE.MathUtils.lerp(angle, FIST[i], this.fist))]);
     });
   }
 
   setFist(amount) {
     if (amount === this.fist) return;
     this.fist = amount;
+    this.curlFingers();
+  }
+
+  setOpen(amount) {
+    if (amount === this.open) return;
+    this.open = amount;
     this.curlFingers();
   }
 
