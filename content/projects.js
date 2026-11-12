@@ -227,36 +227,72 @@ It's built on Drupal with the U.S. Web Design System, so it has the parts every 
     placeholder: true,
   },
   {
-    slug: 'neon-burger',
+    slug: 'crowdsurf',
     channel: 5,
-    name: 'Neon Burger Co.',
-    blurb: 'Burger joint site · web',
-    title: 'Neon Burger Co.: a late-night brand online',
-    summary: 'A loud, neon-lit site for a burger joint that only opens after dark: menu, locations and ordering in three taps.',
-    role: 'Design and front-end development',
-    client: 'Neon Burger Co.',
-    year: 2024,
-    credits: ['Illustration: in-house'],
-    tech: ['HTML', 'SCSS', 'JavaScript', 'PHP'],
-    links: { live: 'https://example.com/neon-burger' },
-    tv: { type: 'slideshow', slides: ['home.png', 'menu.png', 'order.png'], seconds: 5 },
-    music: '/media/music/neon-burger.mp3',
-    hero: 'home.png',
+    name: 'Crowdsurf',
+    blurb: 'Scroll-built pages · JS library',
+    title: 'Crowdsurf: a page that builds itself as you scroll',
+    summary: 'A JavaScript library: a crew of named cursors builds a web page in front of the reader as they scroll, dragging out boxes and typing in the text.',
+    role: 'Design and development',
+    year: 2026,
+    tech: ['JavaScript', 'CSS Custom Highlight API', 'IntersectionObserver', 'Shadow DOM', 'esbuild', 'Playwright', 'TypeScript definitions'],
+    links: { live: 'https://jugglingjon.github.io/crowdsurf/', repo: 'https://github.com/jugglingjon/crowdsurf', npm: 'https://www.npmjs.com/package/crowdsurf' },
+    tv: { type: 'slideshow', slides: ['tv-1.webp', 'tv-2.webp', 'tv-3.webp', 'tv-4.webp', 'tv-5.webp'] },
+    music: '/media/music/crowdsurf.mp3',
+    hero: 'hero.webp',
+    share: 'share.jpg',
     gallery: [
-      { src: 'home.png', alt: 'Homepage: SMASHED. STACKED. GLOWING. over a glowing burger', caption: 'The homepage' },
-      { src: 'menu.png', alt: 'Menu page: burgers, fries and shakes on neon cards', caption: 'The menu' },
-      { src: 'order.png', alt: 'Order page: a three-step order summary', caption: 'Ordering in three taps' },
+      {
+        src: 'build-hero.webp',
+        alt: "The Crowdsurf demo building its own headline: “A page that gets built while you scrol” half typed by a green cursor named Ines, the paragraph below being typed by Kofi, and a box being dragged out at the top with its size showing",
+        caption: 'The demo page, built in front of you',
+      },
+      {
+        src: 'copies.webp',
+        alt: 'A grid of cards being built: the first card finished, and five tinted outlines of it being dragged into place by cursors named Mara, Ines, Kofi and Lena',
+        caption: 'One card is built, then copied into place',
+      },
+      {
+        src: 'typing.webp',
+        alt: 'The copied cards in place, their headings done and their descriptions being typed in by several cursors at once',
+        caption: 'Each copy gets its own text typed in',
+      },
+      {
+        src: 'image.webp',
+        alt: 'A dark band being built: its paragraph and list items typed in, and an image sweeping in from the top over a grey placeholder crossed corner to corner, with its size shown as 500 × 346',
+        caption: 'Images get a placeholder, then sweep in',
+      },
+      {
+        src: 'pricing.webp',
+        alt: 'Pricing cards mid-build: Starter and Studio finished, the Agency card’s button being drawn as a shape, and the table under them having its caption typed',
+        caption: 'Buttons and form controls are drawn as shapes',
+      },
+      {
+        src: 'controls.webp',
+        alt: 'The demo’s controls panel beside cards being copied: 9 of 107 pieces built, 5 agents working, with switches for imperfect placement, natural cursor movement and dilly-dallying',
+        caption: 'The demo’s controls: progress, speed and behaviour',
+      },
+      {
+        src: 'finished.webp',
+        alt: 'The same section finished: six cards in a grid, each with an icon, a heading, a short description and a link',
+        caption: 'What you end up with: the page’s own markup',
+      },
     ],
     alt: {
-      'home.png': 'Homepage: SMASHED. STACKED. GLOWING. over a glowing burger',
-      'menu.png': 'Menu page: burgers, fries and shakes on neon cards',
-      'order.png': 'Order page: a three-step order summary',
+      'tv-1.webp': 'Crowdsurf: a page that builds itself as you scroll, with the headline being typed by a cursor and npm install crowdsurf being dragged out by another',
+      'tv-2.webp': "Built piece by piece, in front of you: the demo's headline and paragraph being typed by named cursors",
+      'tv-3.webp': 'Build one card, the crew copies the rest: five outlines of a card being dragged into place',
+      'tv-4.webp': 'Images get a placeholder, then sweep in: a picture uncovered from the top on a dark band',
+      'tv-5.webp': 'One script, one attribute: a script tag and a section marked data-crowdsurf, with zero dependencies, three browsers, and MIT on npm',
+      'hero.webp': 'Crowdsurf: a page that builds itself as you scroll, beside a grid of cards being copied into place',
     },
-    story: `Placeholder story. Neon Burger Co. opens at 9pm and closes at 4am, and its old site looked like it was written at 4am. The brief: make the brand as loud online as it is on the street, and get people from "I'm hungry" to an order in three taps.
+    story: `Crowdsurf is a JavaScript library that builds a web page in front of the reader as they scroll. Point it at a section, or at the whole page, and its elements wait hidden until they come into view. Then a small crew of named cursors builds them: boxes are dragged out with a live size readout, lines are drawn with a pen, images get a crossed placeholder and sweep in from the top, and text is typed in.
 
-The site leans on big condensed type, a neon gradient that pulses slowly on hover, and a menu built as cards that work the same with a thumb on a phone as with a mouse.
+Nothing is copied or screenshotted. Crowdsurf sorts the page's own elements into boxes, lines, text and media, hides them, and reveals each one in place, putting its inline styles back exactly as they were. Text and media are hidden with opacity, so screen readers and keyboard focus still reach them, and the typing uses the CSS Custom Highlight API, so no wrapper elements are added and nothing reflows.
 
-Orders rose by a third in the first month, and the neon gradient ended up on the cups.`,
+Repeated pieces, like a row of cards, are built once and then duplicated: a cursor drags a copy into place and types in its own text. The crew is shared across the page and grows when the reader scrolls fast, anything scrolled past unseen is finished instantly, and readers who prefer reduced motion get the finished page straight away.
+
+It drops into any page with one script tag and a data-crowdsurf attribute, or installs from npm, with no dependencies and type definitions included. Options cover speed, crew size, deliberate slips that get corrected, hand-like cursor paths and building only on a first visit, and the same browser checks run in Chromium, Firefox and WebKit on every push. It's inspired by Joel Califa's Swarm, and written from scratch.`,
     placeholder: true,
   },
   {
@@ -370,24 +406,36 @@ The models were found, license-checked, scaled to their real size and compressed
     placeholder: true,
   },
   {
-    slug: 'orbit-analytics',
+    slug: 'neon-burger',
     channel: 10,
-    name: 'Orbit Analytics',
-    blurb: 'Dashboard UI · charts',
-    title: 'Orbit Analytics: a dashboard you can read at a glance',
-    summary: 'A product analytics dashboard redesigned around the three numbers people actually check every morning.',
-    role: 'UI design and front-end development',
-    client: 'Orbit',
+    name: 'Neon Burger Co.',
+    blurb: 'Burger joint site · web',
+    title: 'Neon Burger Co.: a late-night brand online',
+    summary: 'A loud, neon-lit site for a burger joint that only opens after dark: menu, locations and ordering in three taps.',
+    role: 'Design and front-end development',
+    client: 'Neon Burger Co.',
     year: 2024,
-    tech: ['TypeScript', 'SCSS', 'D3'],
-    tv: { type: 'image', src: 'dashboard.png' },
-    music: '/media/music/orbit-analytics.mp3',
-    hero: 'dashboard.png',
-    gallery: [{ src: 'dashboard.png', alt: 'The dashboard: headline numbers, a line chart and a table of top pages' }],
-    alt: { 'dashboard.png': 'The dashboard: headline numbers, a line chart and a table of top pages' },
-    story: `Placeholder story. Orbit's dashboard had forty charts and nobody looked past the first three. The redesign puts those three numbers at the top, in type big enough to read from across the room, and folds everything else into drill-downs.
+    credits: ['Illustration: in-house'],
+    tech: ['HTML', 'SCSS', 'JavaScript', 'PHP'],
+    links: { live: 'https://example.com/neon-burger' },
+    tv: { type: 'slideshow', slides: ['home.png', 'menu.png', 'order.png'], seconds: 5 },
+    music: '/media/music/neon-burger.mp3',
+    hero: 'home.png',
+    gallery: [
+      { src: 'home.png', alt: 'Homepage: SMASHED. STACKED. GLOWING. over a glowing burger', caption: 'The homepage' },
+      { src: 'menu.png', alt: 'Menu page: burgers, fries and shakes on neon cards', caption: 'The menu' },
+      { src: 'order.png', alt: 'Order page: a three-step order summary', caption: 'Ordering in three taps' },
+    ],
+    alt: {
+      'home.png': 'Homepage: SMASHED. STACKED. GLOWING. over a glowing burger',
+      'menu.png': 'Menu page: burgers, fries and shakes on neon cards',
+      'order.png': 'Order page: a three-step order summary',
+    },
+    story: `Placeholder story. Neon Burger Co. opens at 9pm and closes at 4am, and its old site looked like it was written at 4am. The brief: make the brand as loud online as it is on the street, and get people from "I'm hungry" to an order in three taps.
 
-Charts are drawn with D3 and share one small set of colours, so a colour always means the same thing.`,
+The site leans on big condensed type, a neon gradient that pulses slowly on hover, and a menu built as cards that work the same with a thumb on a phone as with a mouse.
+
+Orders rose by a third in the first month, and the neon gradient ended up on the cups.`,
     placeholder: true,
   },
 ];

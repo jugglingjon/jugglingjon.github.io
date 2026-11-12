@@ -49,10 +49,8 @@ const VOICES = {
   stab: { wave: WAVES.pulse(0.5), a: 0.002, d: 0.08, s: 0.2, r: 0.05, gain: 0.07, cutoff: 1800, echo: 0.3 },
   bass: { wave: WAVES.saw, a: 0.003, d: 0.15, s: 0.6, r: 0.05, gain: 0.32, cutoff: 260, cutoffEnv: 900, cutoffDecay: 0.08 },
   sub: { wave: WAVES.sine, a: 0.01, d: 0.4, s: 0.85, r: 0.1, gain: 0.4 },
-  brass: { wave: WAVES.saw, a: 0.015, d: 0.2, s: 0.6, r: 0.08, gain: 0.08, cutoff: 700, cutoffEnv: 2600, cutoffDecay: 0.12, detune: [-6, 6], echo: 0.25 },
   lead: { wave: WAVES.saw, a: 0.02, d: 0.3, s: 0.7, r: 0.15, gain: 0.11, cutoff: 1900, detune: [-5, 5], vibrato: [5, 0.005], echo: 0.6 },
   pad: { wave: WAVES.saw, a: 0.6, d: 1, s: 0.8, r: 0.9, gain: 0.05, cutoff: 1100, detune: [-12, -4, 4, 12] },
-  softPad: { wave: WAVES.tri, a: 1.2, d: 2, s: 0.9, r: 1.6, gain: 0.08, detune: [-8, 0, 8], tremolo: [0.3, 0.25] },
   epiano: { wave: WAVES.epiano, a: 0.003, d: 0.9, s: 0.25, r: 0.3, gain: 0.09, tremolo: [4.5, 0.15], echo: 0.25 },
   bell: { wave: WAVES.bell, a: 0.002, d: 0.6, s: 0.0, r: 0.4, gain: 0.07, echo: 0.8 },
 };
@@ -201,27 +199,6 @@ function neonBurger() {
   return song;
 }
 
-// Orbit Analytics: an 80s business-news theme. Eb major, 108 bpm.
-function orbitAnalytics() {
-  const song = createSong({ bpm: 108, bars: 8 });
-  const roots = ['Eb2', 'C2', 'Ab1', 'Bb1'];
-  const chords = [['G3', 'Bb3', 'Eb4'], ['G3', 'C4', 'Eb4'], ['Ab3', 'C4', 'Eb4'], ['F3', 'Bb3', 'D4']];
-  each(8, (bar, b) => {
-    const i = bar % 4;
-    [0, 6, 8].forEach((s) => song.hit('kick', b + s));
-    [4, 12].forEach((s) => song.hit('clap', b + s));
-    for (let s = 0; s < 16; s++) song.hit('hat', b + s, s % 2 ? 0.5 : 1);
-    [[0, 0], [3, 7], [6, 12], [8, 0], [11, 7], [14, 12]].forEach(([s, up]) => song.note('bass', b + s, midi(roots[i]) + up, 2));
-    [[0, 3], [6, 2], [10, 2]].forEach(([s, l]) => song.chord('brass', b + s, chords[i], l));
-  });
-  const fanfare = [[[0, 'Bb4', 4], [4, 'Eb5', 4], [8, 'G5', 4], [12, 'Bb5', 4]],
-    [[0, 'G5', 6], [6, 'F5', 2], [8, 'Eb5', 4], [12, 'C5', 4]],
-    [[0, 'Ab5', 3], [3, 'G5', 3], [6, 'F5', 2], [8, 'Eb5', 4], [12, 'C5', 4]],
-    [[0, 'D5', 6], [6, 'F5', 2], [8, 'Bb5', 8]]];
-  [...fanfare, ...fanfare].forEach((notes, bar) => phrase(song, 'lead', bar * 16, notes, 0.9));
-  return song;
-}
-
 // Game of Life: 8-bit arpeggios. A minor, 140 bpm.
 function gameOfLife() {
   const song = createSong({ bpm: 140, bars: 8 });
@@ -327,7 +304,6 @@ function wav(samples) {
 
 const SONGS = {
   'neon-burger': neonBurger,
-  'orbit-analytics': orbitAnalytics,
   'game-of-life': gameOfLife,
   'gradient-reel': gradientReel,
   forecast,

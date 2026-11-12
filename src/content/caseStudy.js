@@ -18,7 +18,7 @@ export function paragraphs(text = '') {
     .join('\n');
 }
 
-const LINK_LABELS = { live: 'Visit the live site', repo: 'See the code', case: 'Read the write-up', video: 'Watch the video' };
+const LINK_LABELS = { live: 'Visit the live site', repo: 'See the code', npm: 'Get it on npm', case: 'Read the write-up', video: 'Watch the video' };
 const linkLabel = (key) => LINK_LABELS[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
 
 function sources(list, url) {
