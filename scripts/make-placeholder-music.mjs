@@ -46,7 +46,6 @@ const VOICES = {
   chip: { wave: WAVES.pulse(0.25), a: 0.002, d: 0.1, s: 0.55, r: 0.05, gain: 0.16, vibrato: [5.5, 0.004], echo: 0.5 },
   chipThin: { wave: WAVES.pulse(0.125), a: 0.001, d: 0.06, s: 0.4, r: 0.03, gain: 0.11 },
   chipBass: { wave: WAVES.tri, a: 0.002, d: 0.2, s: 0.8, r: 0.03, gain: 0.42 },
-  stab: { wave: WAVES.pulse(0.5), a: 0.002, d: 0.08, s: 0.2, r: 0.05, gain: 0.07, cutoff: 1800, echo: 0.3 },
   bass: { wave: WAVES.saw, a: 0.003, d: 0.15, s: 0.6, r: 0.05, gain: 0.32, cutoff: 260, cutoffEnv: 900, cutoffDecay: 0.08 },
   sub: { wave: WAVES.sine, a: 0.01, d: 0.4, s: 0.85, r: 0.1, gain: 0.4 },
   lead: { wave: WAVES.saw, a: 0.02, d: 0.3, s: 0.7, r: 0.15, gain: 0.11, cutoff: 1900, detune: [-5, 5], vibrato: [5, 0.005], echo: 0.6 },
@@ -137,15 +136,8 @@ function drum(kind, buf, offset, vel) {
         s.phase += (45 + 120 * Math.exp(-t / 0.03)) / RATE;
         return 0.9 * Math.sin(TAU * s.phase) * Math.exp(-t / 0.16) + 0.15 * noise() * Math.exp(-t / 0.003);
       });
-    case 'snare':
-      return write(0.3, (t, s) => 0.4 * highpass(noise(), s) * Math.exp(-t / 0.07) + 0.35 * Math.sin(TAU * 185 * t) * Math.exp(-t / 0.05));
     case 'gated': // the big 80s gated-reverb snare
       return write(0.42, (t, s) => (t < 0.32 ? 0.38 * highpass(noise(), s) * (0.4 + 0.6 * Math.exp(-t / 0.06)) : 0) + 0.35 * Math.sin(TAU * 180 * t) * Math.exp(-t / 0.06));
-    case 'clap':
-      return write(0.25, (t, s) => {
-        const burst = [0, 0.011, 0.022].some((b) => t >= b && t < b + 0.006) ? 1 : 0;
-        return 0.4 * highpass(noise(), s) * Math.max(burst, Math.exp(-(t - 0.022) / 0.06) * (t > 0.022));
-      });
     case 'hat':
       return write(0.08, (t, s) => 0.16 * highpass(highpass(noise(), s), { prev: 0 }) * Math.exp(-t / 0.018));
     case 'brush':
@@ -176,28 +168,6 @@ const each = (bars, fn) => {
 };
 // [step, note, length] lists written relative to a bar start
 const phrase = (song, voice, start, notes, vel = 1) => notes.forEach(([s, n, l]) => song.note(voice, start + s, n, l, vel));
-
-// Neon Burger Co.: bright, bouncy jingle. C major, 124 bpm.
-function neonBurger() {
-  const song = createSong({ bpm: 124, bars: 8 });
-  const roots = ['C2', 'A1', 'F1', 'G1'];
-  const stabs = [['E4', 'G4', 'C5'], ['E4', 'A4', 'C5'], ['F4', 'A4', 'C5'], ['D4', 'G4', 'B4']];
-  each(8, (bar, b) => {
-    const i = bar % 4;
-    [0, 4, 8, 12].forEach((s) => song.hit('kick', b + s));
-    [4, 12].forEach((s) => song.hit('clap', b + s));
-    [2, 6, 10, 14].forEach((s) => song.hit('hat', b + s));
-    for (let s = 0; s < 16; s += 2) song.note('bass', b + s, midi(roots[i]) + (s % 4 ? 12 : 0), 1.5);
-    [2, 6, 10, 14].forEach((s) => song.chord('stab', b + s, stabs[i], 1));
-  });
-  const A = [[[0, 'E5', 2], [2, 'G5', 2], [4, 'A5', 1], [5, 'G5', 1], [6, 'E5', 2], [8, 'C5', 2], [10, 'D5', 2], [12, 'E5', 4]],
-    [[0, 'C5', 2], [2, 'E5', 2], [4, 'A5', 3], [8, 'G5', 2], [10, 'E5', 2], [12, 'C5', 4]],
-    [[0, 'A5', 2], [2, 'C6', 2], [4, 'A5', 2], [6, 'F5', 2], [8, 'G5', 2], [10, 'A5', 2], [12, 'F5', 4]],
-    [[0, 'G5', 2], [2, 'B5', 2], [4, 'D6', 4], [8, 'B5', 2], [10, 'G5', 2], [12, 'D5', 4]]];
-  const ending = [[0, 'G5', 2], [2, 'F5', 2], [4, 'E5', 2], [6, 'D5', 2], [8, 'B4', 4], [12, 'G4', 4]];
-  [...A, A[0], A[1], A[2], ending].forEach((notes, bar) => phrase(song, 'chip', bar * 16, notes));
-  return song;
-}
 
 // Game of Life: 8-bit arpeggios. A minor, 140 bpm.
 function gameOfLife() {
@@ -303,7 +273,6 @@ function wav(samples) {
 }
 
 const SONGS = {
-  'neon-burger': neonBurger,
   'game-of-life': gameOfLife,
   'gradient-reel': gradientReel,
   forecast,

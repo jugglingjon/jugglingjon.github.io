@@ -296,6 +296,81 @@ It drops into any page with one script tag and a data-crowdsurf attribute, or in
     placeholder: true,
   },
   {
+    slug: 'balance-simulator',
+    channel: 6,
+    name: 'Balance Simulator',
+    blurb: 'Yoga balance sim · 3D web app',
+    title: 'Balance Simulator: will this yoga pose balance?',
+    summary: "Drag a 3D mannequin into yoga poses and see whether its centre of gravity stays over what's on the floor: balanced, near the edge, or tipping over.",
+    role: 'Design and development',
+    year: 2026,
+    credits: ['Mannequin: Open 3D Mannequin by GDQuest and contributors, character by Luciano Muñoz, CC BY 4.0'],
+    tech: ['JavaScript', 'three.js', 'Sass', 'Vite', 'glTF Transform'],
+    links: { live: 'https://jugglingjon.github.io/balance/', repo: 'https://github.com/jugglingjon/balance' },
+    tv: { type: 'slideshow', slides: ['tv-1.webp', 'tv-2.webp', 'tv-3.webp', 'tv-4.webp', 'tv-5.webp'] },
+    music: '/media/music/balance-simulator.mp3',
+    hero: 'hero.webp',
+    share: 'share.jpg',
+    gallery: [
+      {
+        src: 'handstand.webp',
+        alt: 'Balance Simulator: a blue mannequin in a handstand seen from the side, white dots on its joints, a green plumb line dropping from its centre of gravity to its hands, and a green Balanced label at the top',
+        caption: 'A handstand: the centre of gravity right over the hands',
+      },
+      {
+        src: 'warrior-iii.webp',
+        alt: 'Warrior III from the side: the mannequin standing on one leg, body and back leg level, arms reaching forward, its plumb line falling onto the standing foot',
+        caption: 'Warrior III, balanced on one foot',
+      },
+      {
+        src: 'near-the-edge.webp',
+        alt: 'The handstand with the legs tipped forward a little: the plumb line and label turn orange, Near the edge, with the centre of gravity 2.7 cm inside the base',
+        caption: 'Near the edge: still up, but only just',
+      },
+      {
+        src: 'off-balance.webp',
+        alt: 'The handstand with the legs tipped well over: the plumb line and label turn red, Off balance, with the centre of gravity 3.4 cm outside the hands',
+        caption: 'Off balance: the plumb line has left the base',
+      },
+      {
+        src: 'mass-dots.webp',
+        alt: 'Boat pose with mass dots on: purple dots on every body part, the largest on the torso and thighs, the smallest on the hands and feet',
+        caption: 'Mass dots: the bigger the dot, the heavier the part',
+      },
+      {
+        src: 'orbit.webp',
+        alt: 'Tree pose in the orbit view: the mannequin on one foot, arms raised, standing on a tiled floor, its base of support drawn in green under the foot',
+        caption: 'The orbit view: the base of support on the floor',
+      },
+      {
+        src: 'front-view.webp',
+        alt: 'A straddle handstand from the front: legs spread wide in a V, the plumb line falling between the hands',
+        caption: 'A straddle handstand, from the front',
+      },
+      {
+        src: 'crow.webp',
+        alt: 'Crow pose from the side: the mannequin crouched forward, knees resting on its upper arms, all its weight on its hands',
+        caption: 'Crow: all the weight forward onto the hands',
+      },
+    ],
+    alt: {
+      'tv-1.webp': 'Balance Simulator: Will it balance? beside a mannequin in tree pose, and a Balanced label',
+      'tv-2.webp': 'Drag any joint into a pose: a mannequin in Warrior III with its joints marked and its plumb line on the standing foot',
+      'tv-3.webp': 'Lean too far, and it tips: three handstands, balanced in green, near the edge in orange, and off balance in red',
+      'tv-4.webp': 'Every part has its weight: boat pose with purple mass dots, bigger on the heavier parts',
+      'tv-5.webp': 'From crow to headstand: six of the preset poses, crow, tree, headstand, straddle handstand, boat and forward fold',
+      'hero.webp': 'Will it balance? beside a mannequin in a straddle handstand on a tiled floor, its base of support in green',
+    },
+    story: `Balance Simulator answers the question every yoga student asks upside down: will this pose hold? Drag the joints of a 3D mannequin into a pose and it shows where the body's centre of gravity sits. A pose balances only while that point stays over whatever is touching the floor: the hands in a handstand, one foot in tree pose, the head and forearms in a headstand.
+
+A plumb line drops from the centre of gravity to the floor, and the base of support is drawn under whatever is planted. The status turns from green to orange once the centre of gravity drifts out of the middle half of the base, and to red when it leaves it, with the distance in centimetres. Mass dots show where each part's weight sits: the bigger the dot, the heavier the part.
+
+The body is sixteen rigid segments with adult proportions and masses. Dragging a joint turns the limb about it, while planted hands and feet stay where they are (two-bone IK), nothing goes through the floor, and joints stop at their limits. Arms can mirror each other and legs can split, eleven presets start you off from handstands, crow, tree, warrior III and boat, and the camera switches between side, front and a free orbit.
+
+It's plain JavaScript on three.js, built with Vite. The figure is GDQuest's Open 3D Mannequin (CC BY 4.0), trimmed and compressed with glTF Transform and given adult proportions at run time.`,
+    placeholder: true,
+  },
+  {
     slug: 'visual-recon',
     channel: 7,
     name: 'Visual Recon',
@@ -403,39 +478,6 @@ The models were found, license-checked, scaled to their real size and compressed
     video: { src: ['/media/test/life.mp4', '/media/test/life.webm'], poster: 'poster.jpg' },
     alt: { 'poster.jpg': 'A grid of glowing cells mid-generation' },
     story: `Placeholder story. A small experiment: seed Conway's Game of Life, run it until the pattern repeats, and render exactly one period so the video loops without a seam.`,
-    placeholder: true,
-  },
-  {
-    slug: 'neon-burger',
-    channel: 10,
-    name: 'Neon Burger Co.',
-    blurb: 'Burger joint site · web',
-    title: 'Neon Burger Co.: a late-night brand online',
-    summary: 'A loud, neon-lit site for a burger joint that only opens after dark: menu, locations and ordering in three taps.',
-    role: 'Design and front-end development',
-    client: 'Neon Burger Co.',
-    year: 2024,
-    credits: ['Illustration: in-house'],
-    tech: ['HTML', 'SCSS', 'JavaScript', 'PHP'],
-    links: { live: 'https://example.com/neon-burger' },
-    tv: { type: 'slideshow', slides: ['home.png', 'menu.png', 'order.png'], seconds: 5 },
-    music: '/media/music/neon-burger.mp3',
-    hero: 'home.png',
-    gallery: [
-      { src: 'home.png', alt: 'Homepage: SMASHED. STACKED. GLOWING. over a glowing burger', caption: 'The homepage' },
-      { src: 'menu.png', alt: 'Menu page: burgers, fries and shakes on neon cards', caption: 'The menu' },
-      { src: 'order.png', alt: 'Order page: a three-step order summary', caption: 'Ordering in three taps' },
-    ],
-    alt: {
-      'home.png': 'Homepage: SMASHED. STACKED. GLOWING. over a glowing burger',
-      'menu.png': 'Menu page: burgers, fries and shakes on neon cards',
-      'order.png': 'Order page: a three-step order summary',
-    },
-    story: `Placeholder story. Neon Burger Co. opens at 9pm and closes at 4am, and its old site looked like it was written at 4am. The brief: make the brand as loud online as it is on the street, and get people from "I'm hungry" to an order in three taps.
-
-The site leans on big condensed type, a neon gradient that pulses slowly on hover, and a menu built as cards that work the same with a thumb on a phone as with a mouse.
-
-Orders rose by a third in the first month, and the neon gradient ended up on the cups.`,
     placeholder: true,
   },
 ];

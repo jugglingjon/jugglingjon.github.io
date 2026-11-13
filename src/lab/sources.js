@@ -49,7 +49,7 @@ function videoSource(name, srcs) {
 const music = (name) => `${import.meta.env.BASE_URL}media/music/${name}.mp3`;
 
 // Test cards. They take the lowest channel numbers your work (in
-// content/projects.js) leaves free, in this order: 4 and 6 at the moment.
+// content/projects.js) leaves free, in this order: 4 and 10 at the moment.
 // `blurb` is the line under each in the listings.
 export function createTestCards() {
   return [
